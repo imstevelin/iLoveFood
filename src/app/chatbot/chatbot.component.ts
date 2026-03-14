@@ -2,261 +2,332 @@ import { Component } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { ViewChild, ElementRef, OnInit } from '@angular/core';
-import { forkJoin, of, map, Observable } from 'rxjs';
 import { AuthService } from '../services/auth.service';
 import { SearchFoodModule } from '../search-food/search-food.module';
-import { StoreDataService } from '../services/stores-data.service';
-import { SevenElevenRequestService } from '../search-food/new-search/services/seven-eleven-request.service';
+import { ChatbotSearchService } from './services/chatbot-search.service';
 import { LlmRequestService } from './services/llm-request.service';
-import { Store, StoreResponse } from './model/llm-res.model';
 
 @Component({
   selector: 'app-chatbot',
   templateUrl: './chatbot.component.html',
   styleUrls: ['./chatbot.component.scss'],
   standalone: true,
-  imports: [
-    FormsModule,
-    CommonModule,
-    SearchFoodModule
-  ],
+  imports: [FormsModule, CommonModule, SearchFoodModule],
 })
-export class ChatbotComponent {
-  @ViewChild('chatBody') chatBody!: ElementRef; // Reference to the chat body
+export class ChatbotComponent implements OnInit {
+  @ViewChild('chatBody') chatBody!: ElementRef;
 
-  isLogin: boolean = false;
-  storesInfo: any[] = [];
-  isUserLocationSearch: boolean = true;
+  isLogin = false;
   isOpen = false;
   userInput = '';
   userName = '';
   messages: { text: string; sender: string; isLoading?: boolean }[] = [];
-
-  // 為了讓 7-11 商品搜尋更精準而建立的Map
-  sevenElevenFoodCategoryMap = new Map<string, number[]>([
-    ["便當粥品", [137, 139, 140, 142, 143, 185, 187, 192]],
-    ["麵食", [144, 146, 149, 151, 153, 155]],
-    ["生鮮蔬果", [157, 158]],
-    ["沙拉", [160, 159, 189]],
-    ["配菜湯品", [161, 162]],
-    ["飯糰手卷", [163, 164, 165, 166, 167]],
-    ["麵包蛋糕", [168, 169, 170, 171]],
-    ["三明治堡類", [172, 178, 174, 175, 176, 177, 190, 191]],
-    ["甜點", [179, 180, 181, 182, 183]]
-  ]);
+  private conversationHistory: { role: string; content: string }[] = [];
+  private readonly MAX_HISTORY = 10;
 
   constructor(
     private authService: AuthService,
-    private storeDataService: StoreDataService,
-    private sevenElevenRequestService: SevenElevenRequestService,
-    private llmRequestService: LlmRequestService
+    private searchService: ChatbotSearchService,
+    private llmService: LlmRequestService
   ) { }
 
   ngOnInit() {
-    this.authService.isLoggedIn().subscribe((res) => {
-      this.isLogin = res;
-    });
-    this.authService.getUser().subscribe((user) => {
+    this.authService.isLoggedIn().subscribe(res => this.isLogin = res);
+    this.authService.getUser().subscribe(user => {
       if (!user) {
         this.isLogin = false;
-        this.putMessage(`嗨～！ 想找什麼類型的食物呢？`, "bot");
+        this.putMessage('嗨～！我是友善小精靈 ✨ 想找什麼好吃的嗎？', 'bot');
+        return;
       }
-        this.userName = user.displayName;
-        this.putMessage(`歡迎回來～${this.userName}！ 想找什麼類型的食物呢？`, "bot")
-    });
-    this.storeDataService.isLocationSearch$.subscribe(isLocationSearch => {
-      this.isUserLocationSearch = isLocationSearch;
+      this.userName = user.displayName;
+      this.putMessage(`歡迎回來～${this.userName}！想找什麼好吃的嗎？`, 'bot');
     });
   }
 
   toggleChat(event?: Event) {
-    if (event) {
-      event.stopPropagation();
-    }
+    if (event) event.stopPropagation();
     this.isOpen = !this.isOpen;
   }
 
   handleEnter(event: Event) {
     const keyboardEvent = event as KeyboardEvent;
-    if (keyboardEvent.isComposing) {
-      event.preventDefault();
-      return;
-    }
+    if (keyboardEvent.isComposing) { event.preventDefault(); return; }
     this.sendMessage();
   }
 
+  // ==========================================
+  // 主流程
+  // ==========================================
   sendMessage() {
-    if (this.userInput.trim()) {
-      // 手動篩掉711空店（711 API 會回傳所有店家資料)，只保留有商品的前 10 筆資料
-      this.storesInfo = this.storeDataService.getStores()
-        .filter(store => !(store.label === '7-11' && store.remainingQty === 0))
-        .slice(0, 10);
+    if (!this.userInput.trim()) return;
+    const input = this.userInput;
+    this.userInput = '';
+    this.putMessage(input, 'user');
 
+    if (this.messages.some(msg => msg.isLoading)) {
+      this.putMessage('我還在處理上一個問題，請稍等！', 'bot', false);
+      return;
+    }
 
-      const input = this.userInput;
-      this.userInput = ''; // 清空輸入
-      // 加入使用者訊息
-      this.putMessage(input, 'user');
+    this.putMessage('思考中...', 'bot', true);
 
-      if (this.messages.length > 0 && this.messages[this.messages.length - 1].isLoading) {
-        this.putMessage('正在搜尋中，搜尋完畢後請重新查詢...', 'bot', false);
-        return;
-      }
+    // 解析意圖並執行
+    const intent = this.parseIntent(input);
+    console.log('[友善小精靈] 意圖:', intent);
 
-      if (this.storesInfo.length === 0) {
-        this.putMessage('請先點擊「使用目前位置」搜尋按鈕，才能幫你看附近商店唷！', 'bot');
-        return;
-      } else {
-        this.putMessage('正在搜尋附近的便利商店...', 'bot', true);
-
-        // 確保 7-11 資料取得後再送到 LLM
-        this.requestSevenInfoAndCombineFm().subscribe(updatedStores => {
-          this.storesInfo = updatedStores; // 更新 storesInfo
-
-          this.llmRequestService.getLLMRes(input, this.storesInfo).subscribe({
-            next: (res) => {
-              this.messages = this.messages.filter(msg => !msg.isLoading);
-              try {
-                let content = res.choices[0].message.content.trim();
-                content = content.replace(/```(json)?/g, '');
-                const resObj: StoreResponse = JSON.parse(content);
-                
-                if (!resObj.stores) {
-                  throw new Error('Invalid store response format');
-                }
-
-                if (resObj.error) {
-                  this.putMessage(resObj.error, "bot");
-                  return;
-                }
-
-                if (resObj.stores.length === 0) {
-                  this.putMessage("找不到你想要的東西QQ", "bot");
-                  return;
-                }
-
-                let messageText = "🐈‍⬛：這些商店有你想要的！\n\n";
-                resObj.stores.forEach((store: Store) => {
-                  messageText += `🏪 ${store.storeName}  \n`;
-                  if (this.isUserLocationSearch) {
-                    messageText += `（📍 距離您 ${store.distance.toFixed(0)} 公尺）\n`;
-                  }
-                  else {
-                    messageText += `（📍 距離您搜尋的商店 ${store.distance.toFixed(0)} 公尺）\n`;
-                  }
-                  if (store.items.length > 0) {
-                    messageText += `${store.items.map((item, index) => `${index + 1}. ${item}`).join("\n")}\n\n`;
-                  } else {
-                    messageText += `⚠️ 這間店沒有找到相關商品\n\n`;
-                  }
-                });
-
-                this.putMessage(messageText, 'bot');
-              } catch (e) {
-                console.error('JSON parse error:', e);
-                this.putMessage('處理商店資訊時發生錯誤，請稍後再試', "bot");
-              }
-            },
-            error: (err) => {
-              console.error('API request error:', err);
-              this.putMessage('無法取得商店資訊，請稍後再試', "bot");
-            }
-          });
-        });
-      }
+    switch (intent.type) {
+      case 'store':
+        this.doSearchStore(input, intent.query!);
+        break;
+      case 'area':
+        this.doSearchArea(input, intent.area!, intent.keyword);
+        break;
+      case 'nearby':
+        this.doSearchNearby(input, intent.keyword);
+        break;
+      case 'chat':
+        this.doChat(input);
+        break;
     }
   }
 
+  // ==========================================
+  // 意圖解析
+  // ==========================================
+  private parseIntent(input: string): { type: string; query?: string; area?: string; keyword?: string } {
+    // 提取地區
+    const area = this.extractArea(input);
+    // 提取食品關鍵字
+    const keyword = this.extractFood(input);
+
+    // 優先順序 1: 有地區 → 搜尋該地區
+    if (area) {
+      return { type: 'area', area, keyword };
+    }
+
+    // 優先順序 2: 包含可能的店名關鍵字（至少 2 個中文字，排除常見詞）
+    const storeName = this.extractStoreName(input);
+    if (storeName) {
+      return { type: 'store', query: storeName };
+    }
+
+    // 優先順序 3: 有食品關鍵字或搜尋意圖
+    if (keyword || /附近|這裡|這邊|旁邊|有什麼|有哪些|打折|優惠|便利商店|有沒有/.test(input)) {
+      return { type: 'nearby', keyword: keyword || '' };
+    }
+
+    // 預設：聊天
+    return { type: 'chat' };
+  }
+
+  private extractArea(input: string): string {
+    const patterns = [
+      /在([\u4e00-\u9fa5]{2,5})[，,\s]/,
+      /在([\u4e00-\u9fa5]{2,5})(?:那邊|那裡|附近|這邊|地區|一帶)/,
+      /([\u4e00-\u9fa5]{2,5})(?:那邊|那裡|附近|這邊|地區|一帶)/,
+      /([\u4e00-\u9fa5]{2,4}(?:區|市|鎮|鄉|路|街|大道|夜市|商圈|車站|大學))/,
+      /([\u4e00-\u9fa5]{2,5})(?:有什麼|有哪些|有沒有)/,
+    ];
+    for (const p of patterns) {
+      const m = input.match(p);
+      if (m?.[1]) {
+        const area = m[1].replace(/[那邊裡附近這地區一帶]/g, '').trim();
+        if (area.length >= 2) return area;
+      }
+    }
+    return '';
+  }
+
+  private extractFood(input: string): string {
+    const foods = [
+      '義大利麵', '御飯糰', '關東煮', '茶葉蛋', '三明治',
+      '巧克力', '便當', '飯糰', '沙拉', '麵包', '蛋糕', '甜點',
+      '壽司', '手卷', '咖啡', '牛奶', '豆漿', '熱狗', '包子',
+      '饅頭', '粥', '湯', '水果', '蔬菜', '鮮食', '零食', '點心',
+      '飲料', '茶', '麵', '飯'
+    ];
+    for (const f of foods) {
+      if (input.includes(f)) return f;
+    }
+    return '';
+  }
+
+  private extractStoreName(input: string): string {
+    const cleaned = input
+      .replace(/[有什麼哪些東西商品食物吃的打折嗎呢啊喔？?，,。.！!]/g, '')
+      .replace(/7-?11|七十一|統一超商|全家/gi, '')
+      .replace(/門市|分店|店家|店|便利商店/g, '')
+      .replace(/我在|我想|請問|幫我|查|搜尋|什麼/g, '')
+      .trim();
+    return cleaned.length >= 2 ? cleaned : '';
+  }
+
+  // ==========================================
+  // 搜尋執行
+  // ==========================================
+  private doSearchStore(userInput: string, query: string): void {
+    this.searchService.searchByStoreName(query).subscribe({
+      next: results => {
+        console.log('[友善小精靈] 店名搜尋結果:', results.length, '間');
+        if (results.length > 0) {
+          this.respondWithResults(userInput, results, `使用者搜尋門市「${query}」的商品`);
+        } else {
+          // 店名搜尋無結果，嘗試當作地區搜尋
+          this.searchService.searchByArea(query).subscribe({
+            next: areaResults => {
+              if (areaResults.length > 0) {
+                this.respondWithResults(userInput, areaResults, `使用者搜尋「${query}」地區的門市`);
+              } else {
+                // 最後嘗試附近搜尋
+                this.searchService.searchNearby().subscribe({
+                  next: nearbyResults => {
+                    if (nearbyResults.length > 0) {
+                      this.respondWithResults(userInput, nearbyResults,
+                        `使用者搜尋「${query}」但未找到匹配門市，以下是附近門市結果`);
+                    } else {
+                      this.clearLoading();
+                      this.putMessage('目前沒有找到結果，請確認是否已允許定位權限。', 'bot');
+                    }
+                  },
+                  error: () => { this.clearLoading(); this.putMessage('搜尋失敗，請稍後再試！', 'bot'); }
+                });
+              }
+            },
+            error: () => { this.clearLoading(); this.putMessage('搜尋失敗，請稍後再試！', 'bot'); }
+          });
+        }
+      },
+      error: () => { this.clearLoading(); this.putMessage('搜尋失敗，請稍後再試！', 'bot'); }
+    });
+  }
+
+  private doSearchArea(userInput: string, area: string, keyword?: string): void {
+    this.searchService.searchByArea(area).subscribe({
+      next: results => {
+        console.log('[友善小精靈] 地區搜尋結果:', results.length, '間');
+        const context = `使用者搜尋「${area}」地區的便利商店${keyword ? '，特別想找：' + keyword : ''}`;
+        if (results.length > 0) {
+          this.respondWithResults(userInput, results, context);
+        } else {
+          this.clearLoading();
+          this.putMessage(`在「${area}」附近沒有找到有折扣商品的便利商店。`, 'bot');
+        }
+      },
+      error: () => { this.clearLoading(); this.putMessage('搜尋失敗，請稍後再試！', 'bot'); }
+    });
+  }
+
+  private doSearchNearby(userInput: string, keyword?: string): void {
+    this.searchService.searchNearby().subscribe({
+      next: results => {
+        console.log('[友善小精靈] 附近搜尋結果:', results.length, '間');
+        const context = `使用者搜尋附近的便利商店${keyword ? '，想找：' + keyword : ''}`;
+        if (results.length > 0) {
+          this.respondWithResults(userInput, results, context);
+        } else {
+          this.clearLoading();
+          this.putMessage('附近暫時沒有找到折扣商品，請確認是否已允許定位權限。', 'bot');
+        }
+      },
+      error: () => { this.clearLoading(); this.putMessage('無法取得位置，請先允許定位權限。', 'bot'); }
+    });
+  }
+
+  private doChat(userInput: string): void {
+    this.llmService.chat(userInput, this.conversationHistory).subscribe({
+      next: res => {
+        this.clearLoading();
+        let content = res?.choices?.[0]?.message?.content?.trim() || '';
+        content = content.replace(/<minimax:tool_call>[\s\S]*?<\/minimax:tool_call>/g, '').trim();
+        content = content.replace(/<invoke[\s\S]*?<\/invoke>/g, '').trim();
+        if (!content) content = '你好！想找什麼好吃的嗎？ 😊';
+        this.putMessage(content, 'bot');
+        this.addToHistory('user', userInput);
+        this.addToHistory('assistant', content);
+      },
+      error: () => { this.clearLoading(); this.putMessage('暫時無法連線，請稍後再試！', 'bot'); }
+    });
+  }
+
+  // ==========================================
+  // 將搜尋結果交給 LLM 生成回覆
+  // ==========================================
+  private respondWithResults(userInput: string, results: any[], context: string): void {
+    this.llmService.generateResponse(userInput, results, context).subscribe({
+      next: res => {
+        this.clearLoading();
+        let content = res?.choices?.[0]?.message?.content?.trim() || '';
+        content = content.replace(/<minimax:tool_call>[\s\S]*?<\/minimax:tool_call>/g, '').trim();
+        content = content.replace(/<invoke[\s\S]*?<\/invoke>/g, '').trim();
+        if (content) {
+          this.putMessage(content, 'bot');
+          this.addToHistory('user', userInput);
+          this.addToHistory('assistant', content);
+        } else {
+          this.showFallback(results);
+        }
+      },
+      error: () => {
+        this.clearLoading();
+        this.showFallback(results);
+      }
+    });
+  }
+
+  private showFallback(results: any[]): void {
+    let msg = '';
+    results.forEach((store: any) => {
+      msg += `🏪 ${store.storeName}\n`;
+      if (store.distance > 0) msg += `（📍 ${store.distance.toFixed(0)} 公尺）\n`;
+      store.foodInfo?.forEach((cat: any) => {
+        if (cat.items?.length > 0) msg += `【${cat.category}】${cat.items.slice(0, 5).join('、')}\n`;
+      });
+      msg += '\n';
+    });
+    this.putMessage(msg.trim(), 'bot');
+  }
+
+  // ==========================================
+  // 輔助
+  // ==========================================
+  private addToHistory(role: string, content: string): void {
+    this.conversationHistory.push({ role, content });
+    if (this.conversationHistory.length > this.MAX_HISTORY * 2)
+      this.conversationHistory = this.conversationHistory.slice(-this.MAX_HISTORY * 2);
+  }
+
+  private clearLoading(): void {
+    this.messages = this.messages.filter(msg => !msg.isLoading);
+  }
 
   putMessage(message: string, sender: string, isLoading?: boolean) {
     if (sender === 'bot') {
-      setTimeout(() => {
-        this.messages.push({ text: message, sender: sender, isLoading: isLoading });
-      }, 500);
-    }
-    else{
-      this.messages.push({ text: message, sender: sender });
+      setTimeout(() => this.messages.push({ text: message, sender, isLoading }), 300);
+    } else {
+      this.messages.push({ text: message, sender });
     }
   }
 
-  // Auto-scroll to bottom after view updates
   ngAfterViewChecked() {
-    if (this.isOpen && this.chatBody) {
-      this.scrollToBottom();
-    }
+    if (this.isOpen && this.chatBody) this.scrollToBottom();
   }
 
   private scrollToBottom(): void {
-    const element = this.chatBody.nativeElement;
-    element.scrollTop = element.scrollHeight;
+    const el = this.chatBody.nativeElement;
+    el.scrollTop = el.scrollHeight;
   }
 
-  private requestSevenInfoAndCombineFm(): Observable<any[]> {
-    const requests = this.storesInfo.map(storeInfo => {
-      return storeInfo.StoreNo
-        ? this.sevenElevenRequestService.getItemsByStoreNo(storeInfo.StoreNo).pipe(
-            map(res => ({
-              "storeName": storeInfo.storeName,
-              "distance": storeInfo.distance,
-              "foodInfo": res.element.StoreStockItem.CategoryStockItems.map((item: any) => ({
-                "category": this.getCategoryNameByNodeID(item.NodeID),
-                "RemainingQty": item.RemainingQty,
-                "ItemList": item.ItemList
-              }))
-            }))
-          )
-        : of({
-            "storeName": storeInfo.storeName,
-            "distance": storeInfo.distance,
-            "foodInfo": storeInfo.info
-          });
-    });
-  
-    return forkJoin(requests).pipe(
-      map(results => results.filter(result => result.foodInfo.length > 0))
-    );
-  }
-
-  private getCategoryNameByNodeID(nodeID: number): string {
-    for (const [category, ids] of this.sevenElevenFoodCategoryMap.entries()) {
-      if (ids.includes(nodeID)) {
-        return category;
-      }
-    }
-    return "未知分類";
-  }
-
-  isStoreMessage(text: string): boolean {
-    return text.includes('🏪') && text.includes('距離');
-  }
+  isStoreMessage(text: string): boolean { return text.includes('🏪'); }
 
   formatStoreMessage(text: string): string {
-    const lines = text.split('\n');
-    let formatted = '';
-    let isFirstStore = true;
-    
-    for (let i = 0; i < lines.length; i++) {
-      if (lines[i].startsWith('🏪')) {
-        if (!isFirstStore) {
-          formatted += '<br>'; // 在每間店資訊前加空行
-        }
-        else {
-          formatted += '<br>';
-        }
-        const storeName = lines[i].substring(1).trim();
-        let storeNameEncoded = '';
-        try {
-          storeNameEncoded = encodeURIComponent(storeName);
-        } catch (e) {
-          storeNameEncoded = encodeURIComponent(storeName.replace(/[^\w\u4e00-\u9fa5]/g, ''));
-        }
-        formatted += `${lines[i]} <a href="https://www.google.com/maps/search/${storeNameEncoded}" target="_blank" style="display: inline-block; margin-left: 5px;"><img src="assets/GoogleMap_icon.png" alt="Google 地圖" class="w-3 h-3 inline-block" style="width: 16px; height: 16px; vertical-align: middle;"></a><br>`;
-        isFirstStore = false;
-      } else if (lines[i].trim() !== '') {
-        formatted += `${lines[i]}<br>`;
+    return text.split('\n').map(line => {
+      if (line.startsWith('🏪')) {
+        const name = line.substring(1).trim();
+        let enc = '';
+        try { enc = encodeURIComponent(name); } catch { enc = ''; }
+        return `${line} <a href="https://www.google.com/maps/search/${enc}" target="_blank" style="display:inline-block;margin-left:4px;"><img src="assets/GoogleMap_icon.png" alt="地圖" style="width:16px;height:16px;vertical-align:middle;"></a><br>`;
       }
-    }
-    
-    return formatted;
+      return line.trim() ? `${line}<br>` : '<br>';
+    }).join('');
   }
 }

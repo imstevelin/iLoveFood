@@ -1,30 +1,40 @@
-<div class="chatbot-container" [class.open]="isOpen" *ngIf="true">
+<div class="chatbot-fab" *ngIf="!isOpen" (click)="toggleChat()">
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="white" viewBox="0 0 24 24">
+    <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z"/>
+  </svg>
+</div>
+
+<div class="chatbot-container" [class.open]="isOpen" *ngIf="isOpen">
     <div class="chatbot-header" (click)="toggleChat()">
-        黑貓幫你找💬
+        <span class="chatbot-title">✨ 友善小精靈</span>
         <button class="toggle-btn" (click)="toggleChat($event)">
-            {{ isOpen ? '➖' : '➕' }}
+            ✕
         </button>
     </div>
 
-    <div #chatBody *ngIf="isOpen" class="chatbot-body">
+    <div #chatBody class="chatbot-body">
         <div *ngFor="let msg of messages" [ngClass]="msg.sender">
             <span *ngIf="msg.sender === 'user'" class="text-gray-700">{{ msg.text }}</span>
-            <div *ngIf="msg.sender === 'bot' && !msg.isLoading" class="text-primary-default">
-                <span *ngIf="!isStoreMessage(msg.text)">🐈‍⬛：{{ msg.text }}</span>
+            <div *ngIf="msg.sender === 'bot' && !msg.isLoading" class="bot-message">
+                <span *ngIf="!isStoreMessage(msg.text)">{{ msg.text }}</span>
                 <div *ngIf="isStoreMessage(msg.text)"><span [innerHTML]="formatStoreMessage(msg.text)"></span></div>
             </div>
-            <span *ngIf="msg.sender === 'bot' && msg.isLoading" class="text-primary-default loading-text">
-                🐈‍⬛： {{ msg.text }}
+            <span *ngIf="msg.sender === 'bot' && msg.isLoading" class="bot-message loading-text">
+                {{ msg.text }}
             </span>
         </div>
-    </div>    
+    </div>
 
-    <div *ngIf="isOpen" class="chatbot-footer">
-        <input type="text" 
-            [(ngModel)]="userInput" 
-            [disabled]="messages[messages.length - 1].isLoading || false" 
+    <div class="chatbot-footer">
+        <input type="text"
+            [(ngModel)]="userInput"
+            [disabled]="messages[messages.length - 1].isLoading || false"
             (keyup.enter)="handleEnter($event)" [placeholder]="messages[messages.length - 1].isLoading || false ? '搜尋中，請稍後...' : '請輸入訊息'"
         >
-        <button (click)="sendMessage()">➤</button>
+        <button (click)="sendMessage()">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
+          </svg>
+        </button>
     </div>
 </div>

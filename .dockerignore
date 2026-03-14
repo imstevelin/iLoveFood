@@ -1,0 +1,9 @@
+node_modules
+dist
+.angular
+.git
+*.md
+.DS_Store
+ios
+android
+test.ipynb
