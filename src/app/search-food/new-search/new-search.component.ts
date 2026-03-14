@@ -783,14 +783,17 @@ export class NewSearchComponent implements OnInit {
     const centerLng = this.searchCenterLng;
 
     // 7-11：all711Stores 在 init() 時已載入
+    // JSON 欄位: name, addr, serial, lat, lng
     if (this.all711Stores && this.all711Stores.length > 0) {
       this.all711StoresSortedByDist = this.all711Stores
-        .filter((s: any) => s.Latitude && s.Longitude)
+        .filter((s: any) => s.lat && s.lng)
         .map((s: any) => ({
           ...s,
+          StoreNo: s.serial,
+          StoreName: s.name,
           distance: getDistance(
             { latitude: centerLat, longitude: centerLng },
-            { latitude: s.Latitude, longitude: s.Longitude }
+            { latitude: s.lat, longitude: s.lng }
           )
         }))
         .sort((a: any, b: any) => a.distance - b.distance);
@@ -841,9 +844,10 @@ export class NewSearchComponent implements OnInit {
     }
 
     // 建立 7-11 門市明細查詢（每間門市呼叫 getItemsByStoreNo）
+    // StoreNo 已在 prepareAllStoresByDistance 中從 serial 映射
     const sevenDetailRequests = sevenBatch.length > 0
       ? sevenBatch.map((store: any) =>
-          this.sevenElevenService.getItemsByStoreNo(store.StoreNo).pipe(
+          this.sevenElevenService.getItemsByStoreNo(store.StoreNo || store.serial).pipe(
             map((res: any) => ({
               store: store,
               detail: res?.element?.StoreStockItem?.CategoryStockItems || []
@@ -907,7 +911,7 @@ export class NewSearchComponent implements OnInit {
           if (hasMatch) {
             newMatches.push({
               ...store,
-              storeName: `7-11${store.StoreName}門市`,
+              storeName: `7-11${store.StoreName || store.name}門市`,
               label: '7-11',
               distance: store.distance,
               remainingQty: store.RemainingQty || 0,
@@ -1416,7 +1420,8 @@ export class NewSearchComponent implements OnInit {
     const sevenBatch = this.all711StoresSortedByDist
       .filter((s: any) => {
         // 排除已在 allNearbyStores 中的門市
-        return !this.allNearbyStores.some(ns => ns.StoreNo === s.StoreNo);
+        const sNo = s.StoreNo || s.serial;
+        return !this.allNearbyStores.some(ns => (ns.StoreNo || ns.serial) === sNo);
       })
       .slice(sevenBatchStart, sevenBatchStart + batchSize);
     this.productSearch711BatchIdx++;
@@ -1440,14 +1445,14 @@ export class NewSearchComponent implements OnInit {
     // 7-11 商品明細查詢
     const sevenDetailRequests = sevenBatch.length > 0
       ? sevenBatch.map((store: any) =>
-          this.sevenElevenService.getItemsByStoreNo(store.StoreNo).pipe(
+          this.sevenElevenService.getItemsByStoreNo(store.StoreNo || store.serial).pipe(
             map((res: any) => {
               const detail = res?.element?.StoreStockItem?.CategoryStockItems || [];
               const totalQty = detail.reduce((sum: number, cat: any) => sum + (cat.RemainingQty || 0), 0);
               if (totalQty === 0) return null;
               return {
                 ...store,
-                storeName: `7-11${store.StoreName}門市`,
+                storeName: `7-11${store.StoreName || store.name}門市`,
                 label: '7-11',
                 distance: store.distance,
                 remainingQty: totalQty,
