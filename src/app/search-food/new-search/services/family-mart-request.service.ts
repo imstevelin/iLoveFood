@@ -18,8 +18,8 @@ export class FamilyMartRequestService {
     baseUrl = environment.familyMartUrl.base;
 
     getStores(): Observable<any> {
-      const url = 'https://alan-cheng.github.io/Friendly-Cat/assets/family_mart_stores.json'
-      return this.requestService.get(url)
+      const url = 'assets/family_mart_stores.json';
+      return this.requestService.get(url);
     }
 
     getNearByStoreList(location: Location): Observable<any> {
@@ -35,8 +35,8 @@ export class FamilyMartRequestService {
     }
 
     getFoodDetails(): Observable<any> {
-      // URL用github的取代，不拿資料夾內的靜態資源
-      const url = 'https://alan-cheng.github.io/Friendly-Cat/assets/family_mart_products.json'
-      return this.requestService.get(url)
+      // 使用本地端資源
+      const url = 'assets/family_mart_products.json';
+      return this.requestService.get(url);
     }
 }

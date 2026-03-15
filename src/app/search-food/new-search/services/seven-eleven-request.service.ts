@@ -48,14 +48,14 @@ export class SevenElevenRequestService {
     return this.requestService.post(url, params)
   }
 
-  getItemsByStoreNo(storeNo: string): Observable<any> {
+  getItemsByStoreNo(storeNo: string, currentLocation?: { Latitude: number; Longitude: number }): Observable<any> {
     const url = this.baseUrl + environment.sevenElevenUrl.endpoint.getStoreDetail;
     const params = {
       'token': sessionStorage.getItem('711Token'),
     };
     const body = {
       storeNo: storeNo,
-      CurrentLocation: {
+      CurrentLocation: currentLocation || {
         Latitude: 25.0375197,
         Longitude: 121.5636704
       }
@@ -64,13 +64,13 @@ export class SevenElevenRequestService {
   }
 
   getFoodDetails(): Observable<any> {
-    // URL用github的取代，不拿資料夾內的靜態資源
-    const url = 'https://alan-cheng.github.io/Friendly-Cat/assets/seven_eleven_products.json'
-    return this.requestService.get(url)
+    // 使用本地端資源
+    const url = 'assets/seven_eleven_products.json';
+    return this.requestService.get(url);
   }
 
   getStores(): Observable<any> {
-    const url = 'https://alan-cheng.github.io/Friendly-Cat/assets/seven_eleven_stores.json'
-    return this.requestService.get(url)
+    const url = 'assets/seven_eleven_stores.json';
+    return this.requestService.get(url);
   }
 }

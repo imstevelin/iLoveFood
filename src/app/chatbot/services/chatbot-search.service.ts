@@ -111,7 +111,7 @@ export class ChatbotSearchService {
           const store = matched711[0];
           requests.push(
             this.ensure711Token().pipe(
-              switchMap(() => this.sevenService.getItemsByStoreNo(store.serial)),
+              switchMap(() => this.sevenService.getItemsByStoreNo(store.serial, { Latitude: parseFloat(store.lat) || 0, Longitude: parseFloat(store.lng) || 0 })),
               map(res => this.format711StoreResult(store, res)),
               catchError(() => of(null))
             )
@@ -164,7 +164,7 @@ export class ChatbotSearchService {
             switchMap(() => {
               return forkJoin(
                 stores711.map(store =>
-                  this.sevenService.getItemsByStoreNo(store.serial).pipe(
+                  this.sevenService.getItemsByStoreNo(store.serial, { Latitude: parseFloat(store.lat) || 0, Longitude: parseFloat(store.lng) || 0 }).pipe(
                     map(res => this.format711StoreResult(store, res)),
                     catchError(() => of(null))
                   )

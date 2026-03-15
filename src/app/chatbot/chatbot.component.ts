@@ -19,6 +19,7 @@ export class ChatbotComponent implements OnInit {
 
   isLogin = false;
   isOpen = false;
+  chatEnabled = false; // 預設關閉，由實驗室開關控制
   userInput = '';
   userName = '';
   messages: { text: string; sender: string; isLoading?: boolean }[] = [];
@@ -32,6 +33,24 @@ export class ChatbotComponent implements OnInit {
   ) { }
 
   ngOnInit() {
+    // 讀取實驗室開關
+    const saved = localStorage.getItem('chatEnabled');
+    this.chatEnabled = saved ? JSON.parse(saved) : false;
+
+    // 監聽其他組件透過 localStorage 改變此設定（跨分頁）
+    window.addEventListener('storage', (e) => {
+      if (e.key === 'chatEnabled') {
+        this.chatEnabled = e.newValue ? JSON.parse(e.newValue) : false;
+        if (!this.chatEnabled) this.isOpen = false;
+      }
+    });
+
+    // 監聽同頁面的自訂事件（同分頁內由 new-search 觸發）
+    window.addEventListener('chatEnabledChanged', ((e: CustomEvent) => {
+      this.chatEnabled = e.detail;
+      if (!this.chatEnabled) this.isOpen = false;
+    }) as EventListener);
+
     this.authService.isLoggedIn().subscribe(res => this.isLogin = res);
     this.authService.getUser().subscribe(user => {
       if (!user) {

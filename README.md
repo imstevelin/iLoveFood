@@ -1,110 +1,59 @@
-# 友善黑貓 FriendlyCat App
+# iLoveFood (友善食光地圖)
 
-### 功能
+iLoveFood 是一個基於 Angular 構建的 Web 應用程式，旨在幫助使用者快速尋找附近的 7-11 與全家便利商店的「友善食光」及折扣商品。
 
-* 2025/12：店家搜尋新增「同音搜尋」，例如： 辛巴裡 -> 可以搜尋到 鑫巴黎 便利商店
+## 🌟 核心功能
 
-* 2025/03：新增聊天機器人功能，可使用對話搜尋食物
+*   **📍 定位搜尋**: 允許使用設備 GPS 快速尋找附近有折扣商品的門市。
+*   **🏪 門市/商品搜尋**: 支援輸入關鍵字、拼音等方式搜尋特定門市或商品。
+*   **🛒 即時庫存顯示**: 整合 7-11 與全家便利商店的資料，顯示各門市的食物分類與剩餘數量。
+*   **❤️ 收藏功能**: 整合 Firebase Authentication 與 Firestore，讓使用者可以登入並收藏常用門市。
+*   **🤖 智能客服**: 內建聊天室功能，提供互動式的操作輔助。
 
-* 查詢所在位置附近便利商店的即期商品
+## 🛠 技術堆疊
 
-* 以店家名稱、地址查詢特定店家即期商品
+*   **前端框架**: Angular (搭配 TypeScript)
+*   **樣式與 UI組件**: SCSS, Angular Material, Tailwind CSS
+*   **後端與資料庫**: Firebase (Authentication, Firestore, Hosting)
+*   **地圖與距離計算**: Geolib
+*   **資料來源**: 本地靜態 JSON (`src/assets/`) 結合官方 API (跨域請求)
 
-* 全家便利商店(FamilyMart)顯示：
-    1. 商品圖片
-    2. 商品資訊
-* 7-11(Seven-Eleven)顯示：
-    1. 商品圖片
-    2. 商品價格
-    3. 商品資訊
-* 會員功能 - 收藏喜愛的商店
+## 📂 專案結構簡介
 
-## DEMO
-#### 連結： [友善黑貓](https://friendlycat.alan-cheng.com/)
->
->
->
->### 1. 搜尋功能
->
-> * 關鍵字彈出可選店家，點擊店家顯示該店家搜尋結果
->
-> * 點選「使用目前位置」則以目前為中心搜尋附近店家，並顯示距離
->
->![友善黑貓搜尋頁](https://github.com/Alan-Cheng/Friendly-Cat/blob/main/demo/search.png?raw=true "搜尋頁面")
->
->
->### 2. 商品列表
->
-> - 點選食物分類，顯示該分類下各商品詳細資訊
->
->![友善黑貓商品頁](https://github.com/Alan-Cheng/Friendly-Cat/blob/main/demo/store_product.png?raw=true "商品頁面")
->
->
->### 3. 會員功能
->
-> - 加入會員後可由導覽列登入，商店右方愛心可將該店加入收藏
->
->![友善黑貓會員功能](https://github.com/Alan-Cheng/Friendly-Cat/blob/main/demo/member.png?raw=true "會員功能")
->
->
->### 4. 聊天機器人功能
->
-> - 可使用聊天機器人，自動搜尋想找的食物資訊
->
->![友善黑貓聊天機器人功能](https://github.com/Alan-Cheng/Friendly-Cat/blob/main/demo/chatbot.png?raw=true "聊天機器人功能")
+*   `src/app/`: 應用程式核心邏輯與組件 (`search-food`, `chatbot`, `services` 等)。
+*   `src/assets/`: 存放靜態資源，包含圖片以及 `seven_eleven_stores.json`, `family_mart_products.json` 等本地門市數據。
+*   `src/environments/`: 開發與正式環境配置，包含 Firebase 金鑰與 API 端點。
+*   `scripts/`: 包含一些測試 API 的 Node.js 腳本。
+*   `crawer.py`: 根目錄下的 Python 爬蟲腳本，用於抓取或更新靜態資料。
 
+## 🚀 開發指南
 
+### 1. 安裝依賴
+```bash
+npm install
+```
 
-## 技術工具
+### 2. 啟動開發伺服器
+```bash
+npm start
+```
+或是使用 Angular CLI:
+```bash
+ng serve
+```
+然後在瀏覽器開啟 `http://localhost:4200/`。
 
+### 3. 編譯正式版本
+```bash
+npm run build
+```
+或是:
+```bash
+ng build
+```
+編譯後的檔案會產生在 `dist/` 目錄中，即可部署至 Firebase Hosting 或其他伺服器。
 
+## 📝 備註
 
->| 技術  | 版本 |
->| ------------- |:-------------:|
->| Angular       | ^14.2.0      |
->| Node.js       | 18.20.4      |
->| TypeScript    | ~4.7.2       |
->| Tailwindcss   | ^2.2.19      |
->| Python        | 3.12.4       |
->| Firebase Authentication      | --           |
->| Firebase Storage        | --       |
->| Cloudflare Worker        | --       |
->| Chatbot(OpenRouter-DeepSeek V3)      | --       |
-
----
-
-> ## 執行開發伺服器
->>
->使用指令`ng serve` 啟動於`http://localhost:4200/`，偵測到更新時會自動刷新畫面。
-
-> ## Local Build 指令
->
->- 輸出靜態資源於/docs，加上專案名稱前綴為GitHub-Pages存取路徑：
->
->`ng build --configuration=production --base-href /Friendly-Cat/ --output-path=docs --aot`
->
->- 輸出於專案根目錄之/dict/<專案名稱>：
->
->`ng build --configuration=production --aot`
->
-
-> ## iOS APP Build指令
->
->
-> - 輸出靜態資源於專案根目錄之/dist：
->
->`ng build --configuration=production --output-path=dist --aot`
->
-> - 將更新後的打包檔案同步至iOS專案資料夾：
->
->`npx cap sync ios`
->
-> - 開啟Xcode：
->
->`npx cap open ios`
->
-
-> ## 部署
->
-> - **GitHub Pages**: 自動部署到 `https://alan-cheng.github.io/Friendly-Cat/`
-> - **Cloudflare Pages**: 自動部署到 `https://friendlycat.alan-cheng.com/`
+*   **API 跨域限制**: 應用中調用了 7-11 等官方 API，可能需要處理 CORS 問題或確保在正確的網域下執行。
+*   **資料更新**: 目前依賴 `src/assets/` 內的 JSON 檔案來提供門市與商品的基本對照表。這些資料可透過爬蟲定期更新。

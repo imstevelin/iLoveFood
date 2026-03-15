@@ -34,8 +34,8 @@
   }
 }
 
-/* ===== Favorites Button ===== */
-.favorites-btn {
+/* ===== Header Icon Buttons (Home + Hamburger) ===== */
+.header-icon-btn {
   width: 44px;
   height: 44px;
   border-radius: 12px;
@@ -55,14 +55,18 @@
     transform: scale(1.05);
   }
 
+  &:active {
+    transform: scale(0.95);
+  }
+
   &.active {
     background: var(--accent-light);
     border-color: rgba(91, 127, 255, 0.3);
   }
 }
 
-/* ===== Favorites Panel ===== */
-.favorites-panel {
+/* ===== Menu Panel (replaces Favorites Panel) ===== */
+.menu-panel {
   max-height: 0;
   overflow: hidden;
   opacity: 0;
@@ -71,13 +75,25 @@
               padding 0.3s ease;
 
   &.open {
-    max-height: 400px;
+    max-height: 600px;
     opacity: 1;
     padding: 12px 0;
   }
 }
 
-.favorites-item {
+.menu-section-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 8px 16px 4px;
+}
+
+.menu-link-item {
   display: flex;
   align-items: center;
   gap: 12px;
@@ -85,10 +101,93 @@
   border-radius: 12px;
   cursor: pointer;
   transition: background 0.2s ease;
+  text-decoration: none;
+  color: inherit;
+  font-size: 14px;
 
   &:hover {
     background: var(--accent-light);
   }
+
+  span {
+    font-weight: 500;
+  }
+}
+
+.menu-divider {
+  height: 1px;
+  background: rgba(226, 232, 240, 0.5);
+  margin: 6px 16px;
+}
+
+/* Lab subsection expand */
+.lab-subsection {
+  max-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  transition: max-height 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+              opacity 0.25s ease;
+
+  &.open {
+    max-height: 200px;
+    opacity: 1;
+  }
+}
+
+.lab-toggle-row {
+  justify-content: space-between;
+  padding-left: 44px;
+}
+
+/* Toggle Switch */
+.toggle-switch {
+  position: relative;
+  display: inline-block;
+  width: 44px;
+  height: 24px;
+
+  input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+  }
+}
+
+.toggle-slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: #cbd5e1;
+  border-radius: 24px;
+  transition: background 0.3s ease;
+
+  &::before {
+    content: '';
+    position: absolute;
+    height: 18px;
+    width: 18px;
+    left: 3px;
+    bottom: 3px;
+    background: white;
+    border-radius: 50%;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+  }
+}
+
+.toggle-switch input:checked + .toggle-slider {
+  background: var(--accent);
+}
+
+.toggle-switch input:checked + .toggle-slider::before {
+  transform: translateX(20px);
+}
+
+.rotate-180 {
+  transform: rotate(180deg);
 }
 
 /* ===== Loading Overlay ===== */
@@ -113,7 +212,7 @@
   50% { opacity: 0.5; }
 }
 
-/* ===== Store Card Glass ===== */
+/* ===== Store Card Glass — Brand Themed ===== */
 .store-glass-card {
   background: rgba(255, 255, 255, 0.58);
   backdrop-filter: blur(20px);
@@ -125,14 +224,108 @@
   margin-bottom: 12px;
   transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
               box-shadow 0.3s ease;
+  position: relative;
+  overflow: hidden;
 
   &:hover {
-    transform: translateY(-1px);
+    transform: translateY(-2px);
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
   }
 }
 
-/* ===== Store Icon Badge ===== */
+/* 7-11 Brand Card */
+.card-seven {
+  background: linear-gradient(160deg, rgba(255, 127, 36, 0.07) 0%, rgba(255, 255, 255, 0.62) 40%),
+              rgba(255, 255, 255, 0.60);
+  border: 1px solid rgba(255, 147, 66, 0.18);
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 12px;
+    right: 12px;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, rgba(255, 107, 0, 0.4), transparent);
+    border-radius: 2px;
+  }
+
+  &:hover {
+    box-shadow: 0 10px 40px rgba(255, 107, 0, 0.10),
+               0 2px 12px rgba(0, 0, 0, 0.04);
+  }
+}
+
+/* FamilyMart Brand Card */
+.card-family {
+  background: linear-gradient(160deg, rgba(0, 179, 134, 0.07) 0%, rgba(255, 255, 255, 0.62) 40%),
+              rgba(255, 255, 255, 0.60);
+  border: 1px solid rgba(0, 179, 134, 0.18);
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 12px;
+    right: 12px;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, rgba(0, 179, 134, 0.4), transparent);
+    border-radius: 2px;
+  }
+
+  &:hover {
+    box-shadow: 0 10px 40px rgba(0, 179, 134, 0.10),
+               0 2px 12px rgba(0, 0, 0, 0.04);
+  }
+}
+
+/* About Section Inline Card */
+.card-about {
+  background: linear-gradient(160deg, rgba(59, 130, 246, 0.07) 0%, rgba(255, 255, 255, 0.62) 40%),
+              rgba(255, 255, 255, 0.60);
+  border: 1px solid rgba(59, 130, 246, 0.25);
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 12px;
+    right: 12px;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, rgba(59, 130, 246, 0.5), transparent);
+    border-radius: 2px;
+  }
+
+  &:hover {
+    box-shadow: 0 10px 40px rgba(59, 130, 246, 0.12),
+               0 2px 12px rgba(0, 0, 0, 0.04);
+  }
+}
+
+/* Location Permission Inline Card */
+.card-location {
+  background: linear-gradient(160deg, rgba(239, 68, 68, 0.07) 0%, rgba(255, 255, 255, 0.62) 40%),
+              rgba(255, 255, 255, 0.60);
+  border: 1px solid rgba(239, 68, 68, 0.25);
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 12px;
+    right: 12px;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, rgba(239, 68, 68, 0.5), transparent);
+    border-radius: 2px;
+  }
+
+  &:hover {
+    box-shadow: 0 10px 40px rgba(239, 68, 68, 0.12),
+               0 2px 12px rgba(0, 0, 0, 0.04);
+  }
+}
+
+/* ===== Store Icon Badge — Brand Tint ===== */
 .store-icon-badge {
   width: 44px;
   height: 44px;
@@ -143,6 +336,27 @@
   background: rgba(255, 255, 255, 0.7);
   border: 1px solid rgba(226, 232, 240, 0.4);
   flex-shrink: 0;
+  transition: transform 0.2s ease;
+}
+
+.badge-seven {
+  background: rgba(255, 107, 0, 0.08);
+  border-color: rgba(255, 107, 0, 0.2);
+}
+
+.badge-family {
+  background: rgba(0, 179, 134, 0.08);
+  border-color: rgba(0, 179, 134, 0.2);
+}
+
+.badge-about {
+  background: rgba(59, 130, 246, 0.08);
+  border-color: rgba(59, 130, 246, 0.25);
+}
+
+.badge-location {
+  background: rgba(239, 68, 68, 0.08);
+  border-color: rgba(239, 68, 68, 0.25);
 }
 
 /* ===== Distance Badge ===== */
@@ -159,6 +373,11 @@
   margin-top: 4px;
 }
 
+.badge-family-dist {
+  color: #059669;
+  background: rgba(0, 179, 134, 0.1);
+}
+
 /* ===== Category Grid ===== */
 .category-chip {
   border: 1px solid rgba(226, 232, 240, 0.4);
@@ -167,16 +386,21 @@
   text-align: center;
   cursor: pointer;
   padding: 8px;
-  transition: all 0.2s ease;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 
   &:hover {
     background: rgba(255, 255, 255, 0.75);
-    transform: scale(1.03);
+    transform: scale(1.05);
+  }
+
+  &:active {
+    transform: scale(0.95);
   }
 
   &.selected {
     background: var(--accent-light);
     border-color: rgba(91, 127, 255, 0.3);
+    transform: scale(1.02);
   }
 }
 
@@ -188,6 +412,42 @@
   color: #c2410c;
   padding: 2px 8px;
   border-radius: 20px;
+}
+
+/* ===== Category Expand Animation ===== */
+.category-expand-wrapper {
+  animation: expand-in 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
+  margin-top: 12px;
+}
+
+@keyframes expand-in {
+  0% {
+    opacity: 0;
+    max-height: 0;
+    transform: translateY(-8px);
+  }
+  100% {
+    opacity: 1;
+    max-height: 2000px;
+    transform: translateY(0);
+  }
+}
+
+/* ===== Card Scroll Animation ===== */
+.card-animate-in {
+  animation: card-slide-in 0.5s cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+@keyframes card-slide-in {
+  0% {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* ===== Scroll Hint ===== */
@@ -281,36 +541,7 @@
   }
 }
 
-/* ===== Responsive ===== */
-/* ===== Location Permission Blocker ===== */
-.location-blocker {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 9999;
-  background: rgba(248, 250, 252, 0.95);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 24px;
-}
-
-.location-blocker-card {
-  text-align: center;
-  max-width: 360px;
-  width: 100%;
-  background: rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(226, 232, 240, 0.5);
-  border-radius: 24px;
-  padding: 40px 32px;
-  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.08);
-}
+/* Removes Fullscreen Blocker Overlay Code */
 
 /* ===== Responsive ===== */
 @media (max-width: 640px) {
@@ -320,5 +551,10 @@
   .store-glass-card {
     padding: 12px;
     border-radius: 14px;
+  }
+  .header-icon-btn {
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
   }
 }
