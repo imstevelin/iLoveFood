@@ -1,11 +1,12 @@
-<!-- 友善錢包 — Glassmorphism Login Dialog -->
+<!-- 友善超人 — Glassmorphism Login Dialog -->
 <div class="login-wrapper">
   <!-- Header -->
   <div class="flex justify-between items-center mb-6">
     <div class="flex items-center gap-3">
       <div class="login-icon-badge">
         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="var(--accent)" viewBox="0 0 24 24">
-          <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+          <path
+            d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
         </svg>
       </div>
       <h2 class="text-xl font-bold m-0 flex items-center pt-0.5" style="color: var(--text-primary)">
@@ -13,7 +14,8 @@
       </h2>
     </div>
     <button (click)="close(false)" class="close-btn p-2 text-gray-400 hover:text-gray-600 focus:outline-none">
-      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"
+        viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"></path>
       </svg>
     </button>
@@ -30,47 +32,50 @@
       <div class="relative">
         <div class="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none text-gray-400">
           <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 24 24">
-            <path d="M6.62 10.79a15.053 15.053 0 0 0 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/>
+            <path
+              d="M6.62 10.79a15.053 15.053 0 0 0 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z" />
           </svg>
         </div>
-        <input
-          type="tel"
-          id="phone"
-          formControlName="phone"
-          placeholder="09xx-xxx-xxx"
-          maxlength="10"
-          autocomplete="tel"
-          class="input-field w-full pl-11 pr-4 py-3 text-base"
-        />
+        <input type="tel" id="phone" formControlName="phone" placeholder="09xx-xxx-xxx" maxlength="10"
+          autocomplete="tel" class="input-field w-full pl-11 pr-4 py-3 text-base" />
       </div>
-      
+
       <!-- 錯誤提示增加動畫 -->
       <div class="error-wrapper mt-2" *ngIf="f['phone'].touched && f['phone'].invalid">
         <small class="text-red-500 font-medium flex items-center gap-1" *ngIf="f['phone'].errors?.['required']">
-          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 24 24">
+            <path
+              d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z" />
+          </svg>
           手機號碼為必填
         </small>
         <small class="text-red-500 font-medium flex items-center gap-1" *ngIf="f['phone'].errors?.['pattern']">
-          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 24 24">
+            <path
+              d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z" />
+          </svg>
           請輸入有效的 10 碼台灣手機號碼 (09開頭)
         </small>
       </div>
     </div>
 
     <!-- Error Message -->
-    <div *ngIf="errorMessage" class="error-wrapper mb-4 p-3 rounded-xl" style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.2);">
+    <div *ngIf="errorMessage" class="error-wrapper mb-4 p-3 rounded-xl"
+      style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.2);">
       <p class="text-red-600 text-sm font-medium m-0 flex items-center gap-2">
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
+          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z" />
+        </svg>
         {{ errorMessage }}
       </p>
     </div>
 
-    <button 
-      type="submit" 
+    <button type="submit"
       class="login-btn w-full py-3.5 px-4 font-semibold rounded-xl mt-4 flex justify-center items-center gap-2">
       登入 / 開始收藏
-      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M5 12h14M12 5l7 7-7 7"/>
+      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" stroke="currentColor"
+        stroke-width="2.5" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M5 12h14M12 5l7 7-7 7" />
       </svg>
     </button>
   </form>

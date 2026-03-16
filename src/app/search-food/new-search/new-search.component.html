@@ -1,12 +1,20 @@
-<!-- 友善錢包 — Liquid Glass UI -->
+<!-- 友善超人 — Liquid Glass UI -->
 
 <!-- ===== Fixed Search Bar ===== -->
 <div class="search-bar-fixed">
   <div class="max-w-3xl mx-auto">
-    <div class="flex items-center gap-3">
+    <div class="flex items-center gap-2 md:gap-3">
+
+      <!-- Logo Banner -->
+      <div class="shrink-0 flex items-center" (click)="goHome()" style="cursor: pointer;">
+        <!-- 電腦版顯示寬版 Banner -->
+        <img src="assets/banner.png" alt="珍食超人" class="hidden md:block h-10 w-auto object-contain drop-shadow-sm transition-transform hover:scale-105 active:scale-95" />
+        <!-- 手機版顯示正方形 Icon -->
+        <img src="assets/iLoveFood-icon.png?v=3" alt="珍食超人" class="block md:hidden h-8 w-auto object-contain drop-shadow-sm transition-transform hover:scale-105 active:scale-95" />
+      </div>
 
       <!-- Search Input -->
-      <form (ngSubmit)="onSubmit()" class="flex-1">
+      <form (ngSubmit)="onSubmit()" class="flex-1 min-w-0">
         <div class="search-input-glass flex items-center h-11 px-3">
           <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 256 256"
             class="text-gray-400 shrink-0">
@@ -17,8 +25,7 @@
           <input mat-input type="search"
             class="flex-1 bg-transparent border-none outline-none text-sm px-3 h-full placeholder:text-gray-400"
             [matAutocomplete]="auto" [(ngModel)]="searchTerm" (input)="onInput($event)" (keydown)="onKeyDown($event)"
-            enterkeyhint="search"
-            placeholder="搜尋門市名稱、商品或種類" name="first" />
+            enterkeyhint="search" placeholder="搜尋門市名稱、商品或種類" name="first" />
         </div>
 
         <!-- Autocomplete Dropdown -->
@@ -29,7 +36,8 @@
               <img *ngIf="item.label === '7-11'" src="{{ sevenElevenIconUrl }}" alt="7-11" class="w-4 h-4" />
               <img *ngIf="item.label === '全家'" src="{{ familyMartIconUrl }}" alt="全家" class="w-4 h-4" />
               <div class="flex flex-col">
-                <span class="text-sm">{{ item.label === '全家' ? item.name.replace('店', '') + '門市' : item.name + '門市' }}</span>
+                <span class="text-sm">{{ item.label === '全家' ? item.name.replace('店', '') + '門市' : item.name + '門市'
+                  }}</span>
                 <span class="text-xs text-gray-400">{{ item.addr }}</span>
               </div>
             </div>
@@ -54,16 +62,15 @@
       <!-- Home Button -->
       <button class="header-icon-btn" (click)="goHome()" aria-label="回首頁">
         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="#6b7280" viewBox="0 0 24 24">
-          <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
+          <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" />
         </svg>
       </button>
 
       <!-- Hamburger Menu Button -->
-      <button #menuButton class="header-icon-btn" [class.active]="showMenu" (click)="toggleMenu()"
-        aria-label="選單">
+      <button #menuButton class="header-icon-btn" [class.active]="showMenu" (click)="toggleMenu()" aria-label="選單">
         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 24 24"
           [style.color]="showMenu ? 'var(--accent)' : '#6b7280'">
-          <path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/>
+          <path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z" />
         </svg>
       </button>
     </div>
@@ -74,7 +81,8 @@
       <!-- Section: 我的收藏 -->
       <div class="menu-section-title">
         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="#ef4444" viewBox="0 0 24 24">
-          <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+          <path
+            d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
         </svg>
         我的收藏
       </div>
@@ -82,7 +90,8 @@
         <div *ngIf="favoriteStores.length === 0" class="text-center text-sm text-gray-400 py-2">
           尚未收藏任何店家
         </div>
-        <div *ngFor="let store of favoriteStores" class="menu-link-item" (click)="onFavoriteStoreSearch(store); showMenu = false">
+        <div *ngFor="let store of favoriteStores" class="menu-link-item"
+          (click)="onFavoriteStoreSearch(store); showMenu = false">
           <img *ngIf="store.storeName?.includes('7-11')" [src]="sevenElevenIconUrl" alt="7-11" class="w-5 h-5" />
           <img *ngIf="store.storeName?.includes('全家')" [src]="familyMartIconUrl" alt="全家" class="w-5 h-5" />
           <span class="text-sm font-medium">{{ store.storeName }}</span>
@@ -98,7 +107,8 @@
           <p>登入後可收藏喜愛的店家</p>
           <button class="login-prompt-btn" (click)="loginOrlogout()">
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+              <path
+                d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
             </svg>
             登入
           </button>
@@ -110,7 +120,8 @@
       <!-- Section: 回報問題 -->
       <a class="menu-link-item" href="https://forms.gle/PLACEHOLDER_FORM" target="_blank" rel="noopener">
         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="#f59e0b" viewBox="0 0 24 24">
-          <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H5.17L4 17.17V4h16v12zM11 5h2v6h-2zm0 8h2v2h-2z"/>
+          <path
+            d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H5.17L4 17.17V4h16v12zM11 5h2v6h-2zm0 8h2v2h-2z" />
         </svg>
         <span>回報問題</span>
       </a>
@@ -118,7 +129,7 @@
       <!-- Section: 致謝與關於 -->
       <a class="menu-link-item" (click)="toggleAboutCard()">
         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="#6366f1" viewBox="0 0 24 24">
-          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/>
+          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z" />
         </svg>
         <span>關於網站</span>
       </a>
@@ -128,12 +139,13 @@
       <!-- Section: 實驗室 -->
       <div class="menu-link-item" (click)="toggleLabSection()">
         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="#8b5cf6" viewBox="0 0 24 24">
-          <path d="M7 2v2h1v7.15l-4.78 7.17A2 2 0 0 0 4.89 21h14.22a2 2 0 0 0 1.67-3.07L16 10.57V4h1V2H7zm6 9.15l3.72 5.85H7.28L11 11.15V4h2v7.15z"/>
+          <path
+            d="M7 2v2h1v7.15l-4.78 7.17A2 2 0 0 0 4.89 21h14.22a2 2 0 0 0 1.67-3.07L16 10.57V4h1V2H7zm6 9.15l3.72 5.85H7.28L11 11.15V4h2v7.15z" />
         </svg>
         <span>實驗室</span>
-        <svg class="ml-auto transition-transform" [class.rotate-180]="showLabSection"
-          xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="#9ca3af" viewBox="0 0 24 24">
-          <path d="M7 10l5 5 5-5z"/>
+        <svg class="ml-auto transition-transform" [class.rotate-180]="showLabSection" xmlns="http://www.w3.org/2000/svg"
+          width="14" height="14" fill="#9ca3af" viewBox="0 0 24 24">
+          <path d="M7 10l5 5 5-5z" />
         </svg>
       </div>
       <div class="lab-subsection" [class.open]="showLabSection">
@@ -156,46 +168,51 @@
 <div class="max-w-3xl mx-auto px-4 pb-8" style="padding-top: 8px;">
 
   <!-- Loading indicator (only when no results yet) -->
-  <div *ngIf="(loadingService.loading$ | async) && totalStoresShowList.length === 0" class="loading-overlay animate-fade-in-up">
+  <div *ngIf="(loadingService.loading$ | async) && totalStoresShowList.length === 0"
+    class="loading-overlay animate-fade-in-up">
     <mat-progress-spinner mode="indeterminate" diameter="32"></mat-progress-spinner>
     <span class="loading-text">{{ loadingService.message$ | async }}</span>
   </div>
 
   <!-- Store Search: No stock alert -->
-  <div *ngIf="searchMode === 'store' && totalStoresShowList.length > 0 && (totalStoresShowList[0]?.distance > 1 || totalStoresShowList[0]?.remainingQty === 0)"
+  <div
+    *ngIf="searchMode === 'store' && totalStoresShowList.length > 0 && (totalStoresShowList[0]?.distance > 1 || totalStoresShowList[0]?.remainingQty === 0)"
     class="result-header-glass animate-fade-in-up">
     您搜尋的商店目前無折扣商品，以下為附近店家
   </div>
 
   <!-- ===== Inline Cards Container ===== -->
   <ng-container *ngIf="showAboutCard || locationDenied">
-    
+
     <!-- === About Card === -->
     <div class="store-glass-card card-about card-animate-in" *ngIf="showAboutCard">
       <div class="flex items-center gap-3 mb-4">
         <div class="store-icon-badge badge-about">
           <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="#3b82f6" viewBox="0 0 24 24">
-            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/>
+            <path
+              d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z" />
           </svg>
         </div>
         <div class="flex-1 min-w-0">
           <h2 class="text-lg font-bold truncate inline-card-title p-0" style="color: #1e3a8a; margin: 3px 0 0 0;">
-            友善錢包 - 關於網站
+            友善超人 - 關於網站
           </h2>
         </div>
         <button (click)="showAboutCard = false" class="shrink-0 p-1">
-          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="#9ca3af" viewBox="0 0 24 24" stroke-width="2">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="#9ca3af"
+            viewBox="0 0 24 24" stroke-width="2">
             <path d="M18 6L6 18M6 6l12 12"></path>
           </svg>
         </button>
       </div>
-      
+
       <div class="about-content" style="color: var(--text-secondary); font-size: 14px; line-height: 1.6;">
         <h3 class="font-bold text-gray-800 mb-2 mt-4" style="font-size: 15px;">致謝</h3>
         <p class="mb-3">
           感謝所有貢獻者與使用者的支持。本專案的資料來源包含全家便利商店與統一超商的公開 API。
         </p>
-        <div class="credits-grid grid grid-cols-2 gap-3 mb-5 p-3 rounded-lg" style="background: rgba(243, 244, 246, 0.5);">
+        <div class="credits-grid grid grid-cols-2 gap-3 mb-5 p-3 rounded-lg"
+          style="background: rgba(243, 244, 246, 0.5);">
           <div>
             <span class="block text-xs font-semibold text-gray-500">開發者</span>
             <span class="block text-sm font-medium text-gray-800">— 請在此填入您的名字 —</span>
@@ -212,7 +229,7 @@
 
         <h3 class="font-bold text-gray-800 mb-2 mt-4" style="font-size: 15px;">關於</h3>
         <p class="mb-4">
-          友善錢包是一個即時追蹤附近便利商店（全家、7-11）折扣鮮食商品的工具。
+          友善超人是一個即時追蹤附近便利商店（全家、7-11）折扣鮮食商品的工具。
           我們的目標是幫助您輕鬆找到附近最划算的美食，減少食物浪費，同時節省開支。
         </p>
 
@@ -232,7 +249,8 @@
       <div class="flex items-center gap-3 mb-3">
         <div class="store-icon-badge badge-location">
           <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="#ef4444" viewBox="0 0 24 24">
-             <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+            <path
+              d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" />
           </svg>
         </div>
         <div class="flex-1 min-w-0">
@@ -243,11 +261,12 @@
       </div>
       <div class="pl-0 mt-2">
         <p style="font-size: 14px; color: var(--text-secondary); margin-bottom: 16px; line-height: 1.6;">
-          友善錢包需要您的位置資訊來搜尋附近的優惠門市。<br>請在瀏覽器設定中授予位置權限後重新整理頁面。
+          友善超人需要您的位置資訊來搜尋附近的優惠門市。<br>請在瀏覽器設定中授予位置權限後重新整理頁面。
         </p>
-        <button class="resume-search-btn !bg-red-500 hover:!bg-red-600" (click)="onUseCurrentLocation()" style="width: 100%; justify-content: center;">
+        <button class="resume-search-btn !bg-red-500 hover:!bg-red-600" (click)="onUseCurrentLocation()"
+          style="width: 100%; justify-content: center;">
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
-            <path d="M12 8V4l8 8-8 8v-4H4V8z"/>
+            <path d="M12 8V4l8 8-8 8v-4H4V8z" />
           </svg>
           重新嘗試定位
         </button>
@@ -261,104 +280,118 @@
       <!-- Only render card if store has content -->
       <div class="store-glass-card card-animate-in"
         [ngClass]="{'card-seven': store.label === '7-11', 'card-family': store.label === '全家'}"
-        [style.animation-delay]="(i % 10) * 0.06 + 's'"
-        *ngIf="store.label === '7-11' ? store.RemainingQty > 0 : true">
+        [style.animation-delay]="(i % 10) * 0.06 + 's'" *ngIf="store.label === '7-11' ? store.RemainingQty > 0 : true">
 
-      <!-- === 7-11 Store Card === -->
-      <ng-container *ngIf="store.label === '7-11' && store.RemainingQty > 0">
-        <div class="flex items-center gap-3 mb-3">
-          <div class="store-icon-badge badge-seven">
-            <img [src]="sevenElevenIconUrl" alt="7-11" width="22" height="22" />
-          </div>
-          <div class="flex-1 min-w-0">
-            <h2 class="text-sm font-semibold truncate flex items-center gap-1.5 flex-wrap" style="margin: 1px 0 0 0;">
-              7-11{{ store.StoreName }}門市
-              <a href="https://www.google.com/maps/search/7-ELEVEN{{ store.StoreName }}門市" target="_blank">
-                <img src="assets/GoogleMap_icon.png" alt="地圖" class="w-5 h-5 inline-block" />
-              </a>
-              <span *ngIf="store.distance" class="distance-badge">
-                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
-                </svg>
-                {{ store.distance >= 1000 ? (store.distance / 1000 | number:'1.1-1') + ' km' : (store.distance | number:'1.0-0') + ' m' }}
-              </span>
-            </h2>
-          </div>
-          <button (click)="toggleFavorite(store)" class="shrink-0 p-1" *ngIf="user">
-            <svg *ngIf="favoriteStoreNameSet.has(store.storeName)" xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="#ef4444" viewBox="0 0 24 24">
-              <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
-            </svg>
-            <svg *ngIf="!favoriteStoreNameSet.has(store.storeName)" xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" stroke="#d1d5db" viewBox="0 0 24 24" stroke-width="2">
-              <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
-            </svg>
-          </button>
-        </div>
-        <div class="grid grid-cols-4 gap-2 mt-2">
-          <ng-container *ngFor="let category of foodCategories | slice:0:10; trackBy: trackByCategory">
-            <div *ngIf="getSubCategoryTotalQty(store, category) > 0"
-              class="category-chip" [class.selected]="store.selectedCategory === category"
-              (click)="toggleSubCategoryDetails(store, category)">
-              <img [src]="category.ImageUrl" [alt]="category.Name"
-                class="w-8 h-8 sm:w-12 sm:h-12 mx-auto mb-1 object-cover" />
-              <span class="block text-xs font-medium leading-tight mb-1">{{ category.Name }}</span>
-              <span class="category-qty-badge">{{ getSubCategoryTotalQty(store, category) }}</span>
+        <!-- === 7-11 Store Card === -->
+        <ng-container *ngIf="store.label === '7-11' && store.RemainingQty > 0">
+          <div class="flex items-center gap-3 mb-3">
+            <div class="store-icon-badge badge-seven">
+              <img [src]="sevenElevenIconUrl" alt="7-11" width="22" height="22" />
             </div>
-          </ng-container>
-        </div>
-        <!-- Category details with expand animation -->
-        <div *ngIf="store.selectedCategory" class="category-expand-wrapper">
-          <app-display [store]="store" [category]="store.selectedCategory" [foodDetails]="foodDetails711"></app-display>
-        </div>
-      </ng-container>
+            <div class="flex-1 min-w-0">
+              <h2 class="text-sm font-semibold truncate flex items-center gap-1.5 flex-wrap" style="margin: 1px 0 0 0;">
+                7-11{{ store.StoreName }}門市
+                <a href="https://www.google.com/maps/search/7-ELEVEN{{ store.StoreName }}門市" target="_blank">
+                  <img src="assets/GoogleMap_icon.png" alt="地圖" class="w-5 h-5 inline-block" />
+                </a>
+                <span *ngIf="store.distance" class="distance-badge">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor"
+                    viewBox="0 0 24 24">
+                    <path
+                      d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" />
+                  </svg>
+                  {{ store.distance >= 1000 ? (store.distance / 1000 | number:'1.1-1') + ' km' : (store.distance |
+                  number:'1.0-0') + ' m' }}
+                </span>
+              </h2>
+            </div>
+            <button (click)="toggleFavorite(store)" class="shrink-0 p-1" *ngIf="user">
+              <svg *ngIf="favoriteStoreNameSet.has(store.storeName)" xmlns="http://www.w3.org/2000/svg" width="20"
+                height="20" fill="#ef4444" viewBox="0 0 24 24">
+                <path
+                  d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
+              </svg>
+              <svg *ngIf="!favoriteStoreNameSet.has(store.storeName)" xmlns="http://www.w3.org/2000/svg" width="20"
+                height="20" fill="none" stroke="#d1d5db" viewBox="0 0 24 24" stroke-width="2">
+                <path
+                  d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
+              </svg>
+            </button>
+          </div>
+          <div class="grid grid-cols-4 gap-2 mt-2">
+            <ng-container *ngFor="let category of foodCategories | slice:0:10; trackBy: trackByCategory">
+              <div *ngIf="getSubCategoryTotalQty(store, category) > 0" class="category-chip"
+                [class.selected]="store.selectedCategory === category"
+                (click)="toggleSubCategoryDetails(store, category)">
+                <img [src]="category.ImageUrl" [alt]="category.Name"
+                  class="w-8 h-8 sm:w-12 sm:h-12 mx-auto mb-1 object-cover" />
+                <span class="block text-xs font-medium leading-tight mb-1">{{ category.Name }}</span>
+                <span class="category-qty-badge">{{ getSubCategoryTotalQty(store, category) }}</span>
+              </div>
+            </ng-container>
+          </div>
+          <!-- Category details with expand animation -->
+          <div *ngIf="store.selectedCategory" class="category-expand-wrapper">
+            <app-display [store]="store" [category]="store.selectedCategory"
+              [foodDetails]="foodDetails711"></app-display>
+          </div>
+        </ng-container>
 
-      <!-- === FamilyMart Store Card === -->
-      <ng-container *ngIf="store.label === '全家'">
-        <div class="flex items-center gap-3 mb-3">
-          <div class="store-icon-badge badge-family">
-            <img [src]="familyMartIconUrl" alt="全家" width="22" height="22" />
+        <!-- === FamilyMart Store Card === -->
+        <ng-container *ngIf="store.label === '全家'">
+          <div class="flex items-center gap-3 mb-3">
+            <div class="store-icon-badge badge-family">
+              <img [src]="familyMartIconUrl" alt="全家" width="22" height="22" />
+            </div>
+            <div class="flex-1 min-w-0">
+              <h2 class="text-sm font-semibold truncate flex items-center gap-1.5 flex-wrap" style="margin: 1px 0 0 0;">
+                {{ store.name }}
+                <a href="https://www.google.com/maps/search/全家便利商店{{ fStoreName(store.name) }}" target="_blank">
+                  <img src="assets/GoogleMap_icon.png" alt="地圖" class="w-5 h-5 inline-block" />
+                </a>
+                <span *ngIf="store.distance" class="distance-badge badge-family-dist">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor"
+                    viewBox="0 0 24 24">
+                    <path
+                      d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" />
+                  </svg>
+                  {{ store.distance >= 1000 ? (store.distance / 1000 | number:'1.1-1') + ' km' : (store.distance |
+                  number:'1.0-0') + ' m' }}
+                </span>
+              </h2>
+            </div>
+            <button (click)="toggleFavorite(store)" class="shrink-0 p-1" *ngIf="user">
+              <svg *ngIf="favoriteStoreNameSet.has(store.storeName)" xmlns="http://www.w3.org/2000/svg" width="20"
+                height="20" fill="#ef4444" viewBox="0 0 24 24">
+                <path
+                  d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
+              </svg>
+              <svg *ngIf="!favoriteStoreNameSet.has(store.storeName)" xmlns="http://www.w3.org/2000/svg" width="20"
+                height="20" fill="none" stroke="#d1d5db" viewBox="0 0 24 24" stroke-width="2">
+                <path
+                  d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
+              </svg>
+            </button>
           </div>
-          <div class="flex-1 min-w-0">
-            <h2 class="text-sm font-semibold truncate flex items-center gap-1.5 flex-wrap" style="margin: 1px 0 0 0;">
-              {{ store.name }}
-              <a href="https://www.google.com/maps/search/全家便利商店{{ fStoreName(store.name) }}" target="_blank">
-                <img src="assets/GoogleMap_icon.png" alt="地圖" class="w-5 h-5 inline-block" />
-              </a>
-              <span *ngIf="store.distance" class="distance-badge badge-family-dist">
-                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
-                </svg>
-                {{ store.distance >= 1000 ? (store.distance / 1000 | number:'1.1-1') + ' km' : (store.distance | number:'1.0-0') + ' m' }}
-              </span>
-            </h2>
+          <div class="grid grid-cols-4 gap-2 mt-2">
+            <div *ngFor="let category of store.info | slice:0:10; trackBy: trackByCategory" class="category-chip"
+              [class.selected]="store.selectedCategory === category" (click)="toggleSubCategoryDetails(store, category)"
+              [class.pointer-events-none]="getFSubCategoryQty(store, category) === 0">
+              <img [src]="getFUrl(category)" [alt]="getFCatName(category)"
+                class="w-8 h-8 sm:w-12 sm:h-12 mx-auto mb-1 object-cover"
+                [ngStyle]="{'opacity': getFSubCategoryQty(store, category) === 0 ? 0.3 : 1}" />
+              <span class="block text-xs font-medium leading-tight mb-1">{{ getFCatName(category) }}</span>
+              <span class="category-qty-badge">{{ getFSubCategoryQty(store, category) }}</span>
+            </div>
           </div>
-          <button (click)="toggleFavorite(store)" class="shrink-0 p-1" *ngIf="user">
-            <svg *ngIf="favoriteStoreNameSet.has(store.storeName)" xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="#ef4444" viewBox="0 0 24 24">
-              <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
-            </svg>
-            <svg *ngIf="!favoriteStoreNameSet.has(store.storeName)" xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" stroke="#d1d5db" viewBox="0 0 24 24" stroke-width="2">
-              <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
-            </svg>
-          </button>
-        </div>
-        <div class="grid grid-cols-4 gap-2 mt-2">
-          <div *ngFor="let category of store.info | slice:0:10; trackBy: trackByCategory"
-            class="category-chip" [class.selected]="store.selectedCategory === category"
-            (click)="toggleSubCategoryDetails(store, category)"
-            [class.pointer-events-none]="getFSubCategoryQty(store, category) === 0">
-            <img [src]="getFUrl(category)" [alt]="getFCatName(category)"
-              class="w-8 h-8 sm:w-12 sm:h-12 mx-auto mb-1 object-cover"
-              [ngStyle]="{'opacity': getFSubCategoryQty(store, category) === 0 ? 0.3 : 1}" />
-            <span class="block text-xs font-medium leading-tight mb-1">{{ getFCatName(category) }}</span>
-            <span class="category-qty-badge">{{ getFSubCategoryQty(store, category) }}</span>
+          <!-- Category details with expand animation -->
+          <div *ngIf="store.selectedCategory" class="category-expand-wrapper">
+            <app-display [store]="store" [category]="store.selectedCategory"
+              [foodDetails]="foodDetailsFamilyMart"></app-display>
           </div>
-        </div>
-        <!-- Category details with expand animation -->
-        <div *ngIf="store.selectedCategory" class="category-expand-wrapper">
-          <app-display [store]="store" [category]="store.selectedCategory" [foodDetails]="foodDetailsFamilyMart"></app-display>
-        </div>
-      </ng-container>
-    </div>
-  </ng-container>
+        </ng-container>
+      </div>
+    </ng-container>
   </ng-container>
 
   <!-- ===== Product Search: Continuous search indicator ===== -->
@@ -373,14 +406,16 @@
     <div *ngIf="productSearchPaused" class="search-paused-indicator animate-fade-in-up">
       <button class="resume-search-btn" (click)="resumeProductSearch()">
         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
-          <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
+          <path
+            d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z" />
         </svg>
         繼續搜尋更多結果
       </button>
     </div>
 
     <!-- All exhausted -->
-    <div *ngIf="!productSearchRunning && !productSearchPaused && totalStoresShowList.length > 0" class="scroll-hint" style="animation: none;">
+    <div *ngIf="!productSearchRunning && !productSearchPaused && totalStoresShowList.length > 0" class="scroll-hint"
+      style="animation: none;">
       已搜尋完所有門市
     </div>
   </ng-container>
@@ -393,10 +428,13 @@
   </ng-container>
 
   <!-- ===== Empty State ===== -->
-  <div *ngIf="!(loadingService.loading$ | async) && totalStoresShowList.length === 0 && !productSearchRunning && !locationDenied && !showAboutCard"
+  <div
+    *ngIf="!(loadingService.loading$ | async) && totalStoresShowList.length === 0 && !productSearchRunning && !locationDenied && !showAboutCard"
     class="text-center py-12 text-gray-400 animate-fade-in-up">
-    <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" fill="currentColor" viewBox="0 0 24 24" class="mx-auto mb-3 opacity-40">
-      <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
+    <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" fill="currentColor" viewBox="0 0 24 24"
+      class="mx-auto mb-3 opacity-40">
+      <path
+        d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z" />
     </svg>
     <p class="text-sm">搜尋門市或商品，探索附近的優惠</p>
   </div>

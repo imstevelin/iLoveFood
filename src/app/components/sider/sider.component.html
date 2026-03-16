@@ -5,7 +5,7 @@
     <mat-icon>menu</mat-icon>
   </button>
 
-  <span class="text-with-shadow">友善錢包 Friendly Wallet</span>
+  <span class="text-with-shadow">友善超人 Friendly Wallet</span>
 </mat-toolbar>
 
 <!-- 側邊欄遮罩 -->
@@ -15,7 +15,7 @@
 <div class="sidebar" [class.open]="sidebarOpen">
   <!-- 側邊欄標題 -->
   <div class="sidebar-header">
-    <h3>{{user ? "友善錢包 Friendly Wallet" : "登入後可收藏店家"}}</h3>
+    <h3>{{user ? "友善超人 Friendly Wallet" : "登入後可收藏店家"}}</h3>
     <button mat-icon-button (click)="closeSidebar()" class="close-btn">
       <mat-icon>close</mat-icon>
     </button>
@@ -29,23 +29,12 @@
       <mat-icon class="search-icon">search</mat-icon>
       <span class="search-title">搜尋食物</span>
     </div>
-    
+
     <div class="search-input-container">
       <div class="search-input-wrapper">
-        <input 
-          type="text" 
-          [(ngModel)]="foodSearchTerm" 
-          (keyup.enter)="onSearchClick()"
-          (input)="onSearchInputChange()"
-          [placeholder]="getSearchPlaceholder()"
-          [disabled]="!hasStoreData"
-          class="search-input"
-        />
-        <button 
-          class="search-button" 
-          (click)="onSearchClick()"
-          [disabled]="!hasStoreData"
-        >
+        <input type="text" [(ngModel)]="foodSearchTerm" (keyup.enter)="onSearchClick()" (input)="onSearchInputChange()"
+          [placeholder]="getSearchPlaceholder()" [disabled]="!hasStoreData" class="search-input" />
+        <button class="search-button" (click)="onSearchClick()" [disabled]="!hasStoreData">
           <mat-icon>search</mat-icon>
         </button>
       </div>
@@ -57,11 +46,8 @@
         <span class="result-count">找到 {{ foodSearchResults.length }} 個結果</span>
       </div>
       <div class="result-list">
-        <div 
-          *ngFor="let result of foodSearchResults" 
-          class="result-item"
-          (click)="onFoodResultClick(result); closeSidebar()"
-        >
+        <div *ngFor="let result of foodSearchResults" class="result-item"
+          (click)="onFoodResultClick(result); closeSidebar()">
           <div class="result-info">
             <span class="food-name">{{ result.foodName }}</span>
             <div class="store-details">
@@ -103,7 +89,7 @@
       <mat-icon class="favorites-icon">favorite</mat-icon>
       <span class="favorites-title">收藏店家</span>
     </div>
-    
+
     <ng-container *ngFor="let store of favoriteStores">
       <div *ngIf="user" class="store-item" (click)="onSearchStore(store); closeSidebar()">
         <!-- 根據店名判斷顯示圖標 -->

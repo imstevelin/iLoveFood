@@ -1,4 +1,4 @@
-/* Global Styles — 友善錢包 Friendly Wallet */
+/* Global Styles — 友善超人 Friendly Wallet */
 /* Apple HIG-Inspired Animation System */
 @tailwind base;
 @tailwind components;
@@ -30,25 +30,19 @@
   /* Spring easing — simulates iOS UISpringAnimation (damping ~0.8, response ~0.4s)
      Generated via CSS linear() to approximate spring physics:
      Fast start → overshoots slightly → settles naturally */
-  --spring: linear(
-    0, 0.009, 0.035 2.1%, 0.141 4.4%, 0.723 12.9%, 0.938 16.7%,
-    1.017, 1.077 21.8%, 1.112 24%, 1.116, 1.108 27.1%,
-    1.067 30.2%, 1.013 34.8%, 0.991 38.2%, 0.985 43.2%,
-    0.997 53.7%, 1.001 60.2%, 1
-  );
+  --spring: linear(0, 0.009, 0.035 2.1%, 0.141 4.4%, 0.723 12.9%, 0.938 16.7%,
+      1.017, 1.077 21.8%, 1.112 24%, 1.116, 1.108 27.1%,
+      1.067 30.2%, 1.013 34.8%, 0.991 38.2%, 0.985 43.2%,
+      0.997 53.7%, 1.001 60.2%, 1);
 
   /* Snappy spring — quicker, less bounce (button presses, toggles) */
-  --spring-snappy: linear(
-    0, 0.11 2.6%, 0.434 7.1%, 0.786 12.5%, 0.965 17.2%,
-    1.034 20.3%, 1.065 22.7%, 1.071 24.3%, 1.062 26.4%,
-    1.014 33%, 0.997 39%, 1.001 53%, 1
-  );
+  --spring-snappy: linear(0, 0.11 2.6%, 0.434 7.1%, 0.786 12.5%, 0.965 17.2%,
+      1.034 20.3%, 1.065 22.7%, 1.071 24.3%, 1.062 26.4%,
+      1.014 33%, 0.997 39%, 1.001 53%, 1);
 
   /* Gentle spring — subtle, no overshoot (cards, panels) */
-  --spring-gentle: linear(
-    0, 0.007, 0.029 2.2%, 0.118 4.7%, 0.625 14.4%, 0.826 19%,
-    0.942 23.8%, 0.987 27.6%, 1.004 38.3%, 1
-  );
+  --spring-gentle: linear(0, 0.007, 0.029 2.2%, 0.118 4.7%, 0.625 14.4%, 0.826 19%,
+      0.942 23.8%, 0.987 27.6%, 1.004 38.3%, 1);
 
   /* Standard durations following Apple timing */
   --duration-instant: 100ms;
@@ -63,7 +57,8 @@
   --transition-gentle: var(--duration-slow) var(--spring-gentle);
 }
 
-html, body {
+html,
+body {
   height: 100%;
   margin: 0;
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -87,7 +82,7 @@ html {
   border-radius: var(--card-radius);
   box-shadow: var(--glass-shadow);
   transition: transform var(--transition-spring),
-              box-shadow var(--transition-spring);
+    box-shadow var(--transition-spring);
 }
 
 .glass-card:hover {
@@ -97,8 +92,15 @@ html {
 
 /* Fade-in-up animation — Apple deceleration curve */
 @keyframes fadeInUp {
-  from { opacity: 0; transform: translateY(16px) scale(0.98); }
-  to { opacity: 1; transform: translateY(0) scale(1); }
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 .animate-fade-in-up {
@@ -113,7 +115,7 @@ html {
   border-radius: 16px !important;
   border: 1px solid rgba(255, 255, 255, 0.3) !important;
   box-shadow: 0 12px 48px rgba(0, 0, 0, 0.12),
-              0 0 0 1px rgba(0, 0, 0, 0.04) !important;
+    0 0 0 1px rgba(0, 0, 0, 0.04) !important;
   margin-top: 4px !important;
   /* Spring entrance */
   animation: dropdownIn var(--duration-normal) var(--spring) both !important;
@@ -124,6 +126,7 @@ html {
     opacity: 0;
     transform: translateY(-6px) scale(0.97);
   }
+
   to {
     opacity: 1;
     transform: translateY(0) scale(1);
@@ -134,7 +137,7 @@ html {
   border-radius: 12px !important;
   margin: 2px 4px !important;
   transition: background var(--duration-fast) var(--spring-snappy),
-              transform var(--duration-fast) var(--spring-snappy) !important;
+    transform var(--duration-fast) var(--spring-snappy) !important;
 }
 
 .mat-mdc-option:hover {
@@ -153,7 +156,7 @@ html {
 .glass-dialog .mat-mdc-dialog-container {
   /* 確保外部容器完全透明，避免阻擋高斯模糊 */
   background: transparent !important;
-  
+
   .mdc-dialog__surface,
   .mat-mdc-dialog-surface {
     /* 真實的玻璃高頻模糊，底色調白一點 */
@@ -163,7 +166,7 @@ html {
     border-radius: 28px !important;
     border: 1px solid rgba(255, 255, 255, 0.8) !important;
     box-shadow: 0 24px 64px rgba(0, 0, 0, 0.16),
-                0 0 0 1px rgba(255, 255, 255, 0.5) inset !important;
+      0 0 0 1px rgba(255, 255, 255, 0.5) inset !important;
     overflow: hidden !important;
   }
 }
@@ -177,7 +180,10 @@ html {
 
 /* ===== Accessibility: Reduce Motion ===== */
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
+
+  *,
+  *::before,
+  *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;

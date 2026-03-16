@@ -1,4 +1,4 @@
-/* 友善錢包 — Apple HIG-Inspired Animation System */
+/* 友善超人 — Apple HIG-Inspired Animation System */
 /* All transitions use spring physics, are interruptible, and non-linear */
 
 /* ===== Fixed Search Bar ===== */
@@ -16,7 +16,7 @@
   padding: 12px 16px;
   /* Interruptible: smooth bar appearance */
   transition: background var(--transition-gentle),
-              box-shadow var(--transition-gentle);
+    box-shadow var(--transition-gentle);
 }
 
 .search-bar-spacer {
@@ -32,13 +32,13 @@
   border-radius: 14px;
   /* Spring transition — interruptible on rapid focus/blur */
   transition: border-color var(--transition-spring),
-              box-shadow var(--transition-spring),
-              background var(--transition-spring);
+    box-shadow var(--transition-spring),
+    background var(--transition-spring);
 
   &:focus-within {
     border-color: rgba(91, 127, 255, 0.5);
     box-shadow: 0 0 0 4px rgba(91, 127, 255, 0.12),
-                0 2px 12px rgba(91, 127, 255, 0.08);
+      0 2px 12px rgba(91, 127, 255, 0.08);
     background: rgba(255, 255, 255, 0.82);
   }
 }
@@ -60,9 +60,9 @@
   flex-shrink: 0;
   /* Spring release — transition handles the spring-back when :active releases */
   transition: transform var(--transition-snappy),
-              background var(--transition-snappy),
-              border-color var(--transition-snappy),
-              box-shadow var(--transition-snappy);
+    background var(--transition-snappy),
+    border-color var(--transition-snappy),
+    box-shadow var(--transition-snappy);
   /* GPU acceleration for smooth transforms */
   will-change: transform;
 
@@ -92,9 +92,9 @@
   opacity: 0;
   transform: translateY(-4px);
   transition: max-height var(--duration-expand) var(--spring-gentle),
-              opacity var(--duration-normal) var(--spring-gentle),
-              transform var(--duration-normal) var(--spring-gentle),
-              padding var(--duration-normal) var(--spring-gentle);
+    opacity var(--duration-normal) var(--spring-gentle),
+    transform var(--duration-normal) var(--spring-gentle),
+    padding var(--duration-normal) var(--spring-gentle);
 
   &.open {
     max-height: 600px;
@@ -128,7 +128,7 @@
   font-size: 14px;
   /* Spring hover + instant press */
   transition: background var(--transition-snappy),
-              transform var(--transition-snappy);
+    transform var(--transition-snappy);
 
   &:hover {
     background: var(--accent-light);
@@ -157,8 +157,8 @@
   opacity: 0;
   transform: translateY(-4px);
   transition: max-height var(--duration-expand) var(--spring-gentle),
-              opacity var(--duration-normal) var(--spring-gentle),
-              transform var(--duration-normal) var(--spring-gentle);
+    opacity var(--duration-normal) var(--spring-gentle),
+    transform var(--duration-normal) var(--spring-gentle);
 
   &.open {
     max-height: 200px;
@@ -209,15 +209,15 @@
     /* Spring bounce for the knob */
     transition: transform var(--transition-spring);
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15),
-                0 0 1px rgba(0, 0, 0, 0.1);
+      0 0 1px rgba(0, 0, 0, 0.1);
   }
 }
 
-.toggle-switch input:checked + .toggle-slider {
+.toggle-switch input:checked+.toggle-slider {
   background: var(--accent);
 }
 
-.toggle-switch input:checked + .toggle-slider::before {
+.toggle-switch input:checked+.toggle-slider::before {
   transform: translateX(20px);
 }
 
@@ -225,6 +225,7 @@
 .rotate-180 {
   transform: rotate(180deg);
 }
+
 svg.transition-transform {
   transition: transform var(--transition-spring);
 }
@@ -247,8 +248,15 @@ svg.transition-transform {
 }
 
 @keyframes breathe {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.4; }
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.4;
+  }
 }
 
 /* ===== Store Card — Spring-powered interactions ===== */
@@ -265,8 +273,8 @@ svg.transition-transform {
   overflow: hidden;
   /* Spring transitions — interruptible on rapid scroll/interaction */
   transition: transform var(--transition-spring),
-              box-shadow var(--transition-spring),
-              opacity var(--transition-spring);
+    box-shadow var(--transition-spring),
+    opacity var(--transition-spring);
   will-change: transform, opacity;
 
   &:hover {
@@ -291,6 +299,7 @@ svg.transition-transform {
     opacity: 0;
     transform: translateY(24px) scale(0.96);
   }
+
   100% {
     opacity: 1;
     transform: translateY(0) scale(1);
@@ -300,7 +309,7 @@ svg.transition-transform {
 /* 7-11 Brand Card */
 .card-seven {
   background: linear-gradient(160deg, rgba(255, 127, 36, 0.07) 0%, rgba(255, 255, 255, 0.62) 40%),
-              rgba(255, 255, 255, 0.60);
+    rgba(255, 255, 255, 0.60);
   border: 1px solid rgba(255, 147, 66, 0.18);
 
   &::before {
@@ -316,14 +325,14 @@ svg.transition-transform {
 
   &:hover {
     box-shadow: 0 10px 40px rgba(255, 107, 0, 0.10),
-               0 2px 12px rgba(0, 0, 0, 0.04);
+      0 2px 12px rgba(0, 0, 0, 0.04);
   }
 }
 
 /* FamilyMart Brand Card */
 .card-family {
   background: linear-gradient(160deg, rgba(0, 179, 134, 0.07) 0%, rgba(255, 255, 255, 0.62) 40%),
-              rgba(255, 255, 255, 0.60);
+    rgba(255, 255, 255, 0.60);
   border: 1px solid rgba(0, 179, 134, 0.18);
 
   &::before {
@@ -339,14 +348,14 @@ svg.transition-transform {
 
   &:hover {
     box-shadow: 0 10px 40px rgba(0, 179, 134, 0.10),
-               0 2px 12px rgba(0, 0, 0, 0.04);
+      0 2px 12px rgba(0, 0, 0, 0.04);
   }
 }
 
 /* About Section Inline Card */
 .card-about {
   background: linear-gradient(160deg, rgba(59, 130, 246, 0.07) 0%, rgba(255, 255, 255, 0.62) 40%),
-              rgba(255, 255, 255, 0.60);
+    rgba(255, 255, 255, 0.60);
   border: 1px solid rgba(59, 130, 246, 0.25);
 
   &::before {
@@ -362,14 +371,14 @@ svg.transition-transform {
 
   &:hover {
     box-shadow: 0 10px 40px rgba(59, 130, 246, 0.12),
-               0 2px 12px rgba(0, 0, 0, 0.04);
+      0 2px 12px rgba(0, 0, 0, 0.04);
   }
 }
 
 /* Location Permission Inline Card */
 .card-location {
   background: linear-gradient(160deg, rgba(239, 68, 68, 0.07) 0%, rgba(255, 255, 255, 0.62) 40%),
-              rgba(255, 255, 255, 0.60);
+    rgba(255, 255, 255, 0.60);
   border: 1px solid rgba(239, 68, 68, 0.25);
 
   &::before {
@@ -385,7 +394,7 @@ svg.transition-transform {
 
   &:hover {
     box-shadow: 0 10px 40px rgba(239, 68, 68, 0.12),
-               0 2px 12px rgba(0, 0, 0, 0.04);
+      0 2px 12px rgba(0, 0, 0, 0.04);
   }
 }
 
@@ -401,7 +410,7 @@ svg.transition-transform {
   border: 1px solid rgba(226, 232, 240, 0.4);
   flex-shrink: 0;
   transition: transform var(--transition-snappy),
-              box-shadow var(--transition-snappy);
+    box-shadow var(--transition-snappy);
 }
 
 .badge-seven {
@@ -441,8 +450,15 @@ svg.transition-transform {
 }
 
 @keyframes badgeIn {
-  from { opacity: 0; transform: scale(0.8); }
-  to { opacity: 1; transform: scale(1); }
+  from {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
 .badge-family-dist {
@@ -460,9 +476,9 @@ svg.transition-transform {
   padding: 8px;
   /* Spring transition — every property smoothly interpolates */
   transition: transform var(--transition-spring),
-              background var(--transition-snappy),
-              border-color var(--transition-snappy),
-              box-shadow var(--transition-snappy);
+    background var(--transition-snappy),
+    border-color var(--transition-snappy),
+    box-shadow var(--transition-snappy);
   will-change: transform;
 
   &:hover {
@@ -483,7 +499,7 @@ svg.transition-transform {
     border-color: rgba(91, 127, 255, 0.3);
     transform: scale(1.02);
     box-shadow: 0 0 0 2px rgba(91, 127, 255, 0.08),
-                0 4px 16px rgba(91, 127, 255, 0.1);
+      0 4px 16px rgba(91, 127, 255, 0.1);
   }
 }
 
@@ -513,6 +529,7 @@ svg.transition-transform {
     max-height: 0;
     transform: translateY(-12px) scaleY(0.95);
   }
+
   100% {
     opacity: 1;
     max-height: 3000px;
@@ -562,8 +579,8 @@ svg.transition-transform {
   border: none;
   cursor: pointer;
   transition: transform var(--transition-spring),
-              background var(--transition-snappy),
-              box-shadow var(--transition-spring);
+    background var(--transition-snappy),
+    box-shadow var(--transition-spring);
   will-change: transform;
 
   &:hover {
@@ -615,8 +632,8 @@ svg.transition-transform {
   border: none;
   cursor: pointer;
   transition: transform var(--transition-spring),
-              background var(--transition-snappy),
-              box-shadow var(--transition-spring);
+    background var(--transition-snappy),
+    box-shadow var(--transition-spring);
   will-change: transform;
 
   &:hover {
@@ -675,10 +692,12 @@ a[href*="google.com/maps"] {
   .search-bar-fixed {
     padding: 8px 12px;
   }
+
   .store-glass-card {
     padding: 12px;
     border-radius: 14px;
   }
+
   .header-icon-btn {
     width: 38px;
     height: 38px;
