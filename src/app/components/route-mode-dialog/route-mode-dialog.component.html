@@ -1,0 +1,36 @@
+<div class="p-6 md:p-8 flex flex-col items-center justify-center text-center relative overflow-hidden bg-white/40">
+  
+  <!-- Icon & Title -->
+  <div class="mb-5 flex flex-col items-center">
+    <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-purple-500 to-indigo-600 shadow-lg shadow-purple-500/30 flex items-center justify-center mb-4">
+      <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" fill="white" viewBox="0 0 256 256">
+        <path d="M228.92,49.69a8,8,0,0,0-6.86-1.45L160.93,63.52,99.58,32.84a8,8,0,0,0-7.16,0L27.08,65.18A8,8,0,0,0,24,72.35V206.31a8,8,0,0,0,10.92,7.45l61.15-15.29,61.35,30.68a8,8,0,0,0,7.16,0l65.34-32.34A8,8,0,0,0,232,189.65V56.35A8,8,0,0,0,228.92,49.69ZM96,49.33l56,28V206.67l-56-28ZM40,78.22l40-18.46V187.12L40,197.12Zm176,99.56-40,19.8V88.88l40-10Z"></path>
+      </svg>
+    </div>
+    <h2 class="text-xl font-bold text-gray-800 m-0">分析導航路線</h2>
+    <p class="text-sm text-gray-500 mt-2 mb-0 px-2 leading-relaxed">我們偵測到 Google Maps 的導航連結，<br>請選擇您預計使用的交通工具，<br>以便為您找出最順路門市。</p>
+  </div>
+
+  <!-- Mode Selection Buttons -->
+  <div class="flex gap-4 w-full mt-2">
+    <!-- Motorcycle Option -->
+    <button mat-button class="mode-btn flex-1" (click)="selectMode('BICYCLING')">
+      <div class="flex flex-col items-center gap-2 pointer-events-none">
+        <span class="text-3xl">🛵</span>
+        <span class="font-medium">機車</span>
+      </div>
+    </button>
+    
+    <!-- Car Option -->
+    <button mat-button class="mode-btn flex-1" (click)="selectMode('DRIVING')">
+      <div class="flex flex-col items-center gap-2 pointer-events-none">
+        <span class="text-3xl">🚗</span>
+        <span class="font-medium">汽車</span>
+      </div>
+    </button>
+  </div>
+  
+  <button mat-button class="w-full mt-4 text-gray-400 hover:text-gray-600 transition-colors bg-transparent border-none py-2 rounded-xl text-sm font-medium" (click)="onCancel()">
+    取消
+  </button>
+</div>

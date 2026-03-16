@@ -10,6 +10,7 @@ import { AuthService } from 'src/app/services/auth.service';
 
 import { MessageDialogComponent } from 'src/app/components/message-dialog/message-dialog.component';
 import { LoginPageComponent } from 'src/app/components/login-page/login-page.component';
+import { RouteModeDialogComponent } from 'src/app/components/route-mode-dialog/route-mode-dialog.component';
 import { FoodCategory, LocationData, StoreStockItem, Store, Location, FoodDetail711 } from '../model/seven-eleven.model'
 import { fStore, StoreModel, FoodDetailFamilyMart } from '../model/family-mart.model';
 import { StoreDataService } from 'src/app/services/stores-data.service';
@@ -565,10 +566,23 @@ export class NewSearchComponent implements OnInit {
     return false;
   }
 
-  // 使用本地 JSON 資料和拼音比對進行搜尋（支援門市、商品、種類）
+  // 使用本地 JSON 資料和拼音比對進行搜尋（支援門市、商品、種類，也支援 Google Maps 連結）
   handleSearch(input: string): void {
     if (input.length >= 1) {
       this.unifiedDropDownList = [];
+
+      // --- 0. 判斷是否為 Google Maps 連結 ---
+      const isMapsLink = input.includes('maps.app.goo.gl') || input.includes('google.com/maps/dir');
+      if (isMapsLink) {
+        this.unifiedDropDownList = [{
+          name: '分析 Google Maps 導航路線',
+          addr: '自動為您找出沿途順路的門市',
+          label: '導航',
+          type: 'route' as const,
+          originalUrl: input.trim()
+        }];
+        return; // 找到連結就不顯示其他雜項搜尋結果
+      }
 
       // --- 1. 篩選門市候選 ---
       const filteredFamilyMartStores = this.dropDownFamilyMartList
@@ -717,6 +731,12 @@ export class NewSearchComponent implements OnInit {
   onOptionSelect(event: MatAutocompleteSelectedEvent | null, lat?: number, lng?: number): void {
     const selectedValue = event?.option?.value;
 
+    // 如果選中的是「導航路線」，執行路線解析
+    if (selectedValue && selectedValue.type === 'route') {
+      this.handleRouteSelection(selectedValue.originalUrl);
+      return;
+    }
+
     // 如果選中的是「商品」或「種類」，執行商品搜尋模式
     if (selectedValue && (selectedValue.type === 'product' || selectedValue.type === 'category')) {
       this.onProductOrCategorySelect(selectedValue);
@@ -794,6 +814,390 @@ export class NewSearchComponent implements OnInit {
           }
         }
       );
+  }
+
+  // ==========================================
+  // Google Maps 路徑分析
+  // ==========================================
+  private handleRouteSelection(originalUrl: string): void {
+    const dialogRef = this.dialog.open(RouteModeDialogComponent, {
+      width: '400px',
+      panelClass: 'glass-dialog',
+      data: { originalUrl }
+    });
+
+    dialogRef.afterClosed().subscribe((selectedMode: 'DRIVING' | 'BICYCLING') => {
+      if (!selectedMode) return;
+      this.loadingService.show("正在解析 Google Maps 路線...");
+      
+      try {
+        const urlObj = new URL(originalUrl);
+        // 如果是短網址，需要透過 Proxy 展開；否則直接解析
+        if (urlObj.hostname.includes('goo.gl')) {
+          this.resolveMapsUrlAndFetchRoute(originalUrl, selectedMode);
+        } else {
+          this.parseAndFetchDirections(originalUrl, selectedMode);
+        }
+      } catch (e) {
+        this.parseAndFetchDirections(originalUrl, selectedMode);
+      }
+    });
+  }
+
+  private resolveMapsUrlAndFetchRoute(shortUrl: string, travelMode: 'DRIVING' | 'BICYCLING'): void {
+    // 使用專屬的 Cloudflare Worker 代理伺服器
+    const proxyUrl = `https://maps-proxy.imstevelin.workers.dev/?url=${encodeURIComponent(shortUrl)}`;
+    
+    this.http.get<any>(proxyUrl).subscribe({
+      next: (res) => {
+        let expandedUrl = shortUrl;
+        if (res && res.resolvedUrl) {
+          expandedUrl = res.resolvedUrl;
+        } else if (res && res.url) {
+          expandedUrl = res.url;
+        }
+
+        // 檢查是否有 html 內含座標 (如果 Cloudflare worker 沒有正確跳轉而是拿回網頁)
+        if (res && res.html && expandedUrl === shortUrl) {
+          const regex = /!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/g;
+          let match;
+          const coords = [];
+          while ((match = regex.exec(res.html)) !== null) {
+            coords.push({ lat: parseFloat(match[1]), lng: parseFloat(match[2]) });
+          }
+          if (coords.length >= 2) {
+            this.fetchDirectionsWithCoords(coords[0], coords[coords.length - 1], travelMode);
+            return;
+          }
+        }
+
+        this.parseAndFetchDirections(expandedUrl, travelMode);
+      },
+      error: () => {
+        // Fallback proxy: 使用 codetabs 獲取重導向後的 HTML 內容
+        this.http.get(`https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(shortUrl)}`, { responseType: 'text' }).subscribe({
+          next: (htmlStr) => {
+            // 直接從回傳的 HTML 中解析 !3d<lat>!4d<lng>
+            const regex = /!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/g;
+            let match;
+            const coords = [];
+            while ((match = regex.exec(htmlStr)) !== null) {
+              coords.push({ lat: parseFloat(match[1]), lng: parseFloat(match[2]) });
+            }
+
+            if (coords.length >= 2) {
+              const origin = coords[0];
+              const destination = coords[coords.length - 1]; // 通常最後一個是終點
+              this.fetchDirectionsWithCoords(origin, destination, travelMode);
+            } else {
+              // 找不到座標，試著解析其中的 URL
+              const matchUrl = htmlStr.match(/URL='([^']+)'/i) || htmlStr.match(/href="([^"]+)"/i);
+              const resolvedUrl = matchUrl ? matchUrl[1] : shortUrl;
+              this.parseAndFetchDirections(resolvedUrl, travelMode);
+            }
+          },
+          error: (err) => {
+            console.error('Proxy 解析失敗，嘗試直接解析', err);
+            this.parseAndFetchDirections(shortUrl, travelMode);
+          }
+        });
+      }
+    });
+  }
+
+  // 給 Codetabs 抓出經緯度後直接使用的入口
+  private fetchDirectionsWithCoords(origin: any, destination: any, travelMode: 'DRIVING' | 'BICYCLING'): void {
+    this.loadingService.show("路線規劃中...");
+    
+    const directionsService = new (window as any).google.maps.DirectionsService();
+    directionsService.route({
+      origin: origin as any,
+      destination: destination as any,
+      travelMode: (window as any).google.maps.TravelMode[travelMode],
+      region: 'tw'
+    }, (result: any, status: any) => {
+      if (status === (window as any).google.maps.DirectionsStatus.OK && result) {
+        this.processDirectionsResult(result);
+      } else {
+        console.error('Directions API 錯誤', status);
+        this.loadingService.hide();
+        alert('Google Maps 路線規劃失敗：' + status);
+      }
+    });
+  }
+
+  private parseAndFetchDirections(url: string, travelMode: 'DRIVING' | 'BICYCLING'): void {
+    // Google Maps URL 通常長這樣：
+    // https://www.google.com/maps/dir/起點/終點/...
+    // 或 https://maps.google.com/?geocode=...&daddr=終點&saddr=起點
+    let origin: string | any = '';
+    let destination: string | any = '';
+    let waypoints: any[] = [];
+
+    try {
+      const urlObj = new URL(url);
+      
+      // 解析 /dir/ 格式
+      if (urlObj.pathname.includes('/dir/')) {
+        const pathParts = urlObj.pathname.split('/dir/')[1].split('/');
+        const locations = [];
+        
+        for (const part of pathParts) {
+          if (!part) continue;
+          if (part.startsWith('@') || part.startsWith('data=') || part.startsWith('am=t')) break; // 忽略畫面座標與設定
+          locations.push(decodeURIComponent(part).replace(/\+/g, ' ')); // 替換掉可能殘留的加號
+        }
+        
+        if (locations.length >= 2) {
+          origin = locations[0];
+          destination = locations[locations.length - 1]; // 最後一個是終點
+          for (let i = 1; i < locations.length - 1; i++) {
+            waypoints.push({ location: locations[i], stopover: true });
+          }
+        }
+      } else if (urlObj.searchParams.has('saddr') && urlObj.searchParams.has('daddr')) {
+        origin = decodeURIComponent(urlObj.searchParams.get('saddr') || '');
+        let rawDaddr = decodeURIComponent(urlObj.searchParams.get('daddr') || '');
+        
+        // 處理包含中繼點的格式 (例如 A +to:B +to:C)
+        // 注意 URL 解碼後 + 可能是空格或保留 +
+        const partsList = rawDaddr.split(/\s?\+?to:\s?/i);
+        if (partsList.length > 1) {
+          destination = partsList[partsList.length - 1]; // 最後一個是終點
+          for (let i = 0; i < partsList.length - 1; i++) {
+             waypoints.push({ location: partsList[i], stopover: true });
+          }
+        } else {
+          destination = rawDaddr;
+        }
+      } else if (urlObj.searchParams.has('destination')) {
+        origin = decodeURIComponent(urlObj.searchParams.get('origin') || '');
+        let rawDest = decodeURIComponent(urlObj.searchParams.get('destination') || '');
+        
+        // 處理 intent url 的 waypoints
+        if (urlObj.searchParams.has('waypoints')) {
+          const wpts = decodeURIComponent(urlObj.searchParams.get('waypoints') || '').split('|');
+          wpts.forEach(w => {
+            if (w) waypoints.push({ location: w, stopover: true });
+          });
+        }
+        destination = rawDest;
+      } else {
+        throw new Error('無法識別起終點格式');
+      }
+
+      // 嘗試取出字串中的經緯度 (例如 24.123,120.456)
+      const parseLatLng = (str: string) => {
+        if (!str) return str;
+        const match = str.match(/^(-?\d+\.\d+),(-?\d+\.\d+)$/);
+        return match ? { lat: parseFloat(match[1]), lng: parseFloat(match[2]) } : str;
+      };
+
+      origin = parseLatLng(origin as string);
+      destination = parseLatLng(destination as string);
+
+    } catch (e) {
+      console.error('URL 解析錯誤:', e);
+      this.showRouteErrorDialog();
+      return;
+    }
+
+    if (!origin || !destination) {
+      this.showRouteErrorDialog();
+      return;
+    }
+
+    const requestOpts: any = {
+      origin: origin as any,
+      destination: destination as any,
+      travelMode: (window as any).google.maps.TravelMode[travelMode],
+      region: 'tw'
+    };
+
+    if (waypoints.length > 0) {
+      requestOpts.waypoints = waypoints;
+    }
+
+    const directionsService = new (window as any).google.maps.DirectionsService();
+    directionsService.route(requestOpts, (result: any, status: any) => {
+      if (status === (window as any).google.maps.DirectionsStatus.OK && result) {
+        this.processDirectionsResult(result, travelMode);
+      } else {
+        console.error('Directions API 錯誤', status);
+        this.loadingService.hide();
+        alert('Google Maps 路線規劃失敗：' + status);
+      }
+    });
+  }
+
+  private showRouteErrorDialog(): void {
+    this.loadingService.hide();
+    this.dialog.open(MessageDialogComponent, {
+      width: '400px',
+      panelClass: 'glass-dialog',
+      data: {
+        title: '路線解析失敗',
+        message: '由於 Google 的安全限制，短網址 (maps.app.goo.gl) 解析失敗。請嘗試在電腦版 Google Maps 複製「完整網址」(包含 /dir/ 起終點)，再次貼上搜尋框。'
+      }
+    });
+  }
+
+  private processDirectionsResult(result: any, travelMode?: string): void {
+    this.loadingService.show("正在尋找沿路經過的門市...");
+    
+    const sampledPoints: {lat: number, lng: number}[] = [];
+    let lastSampledPoint: any = null;
+
+    const legs = result.routes[0].legs;
+    const isDriving = travelMode === 'DRIVING';
+
+    for (const leg of legs) {
+      for (const step of leg.steps) {
+        // 高架/國道過濾邏輯
+        let skipStep = false;
+        if (isDriving) {
+          const text = (step.instructions || '') + ' ' + (step.html_instructions || '');
+          // 檢查是否包含封閉型道路關鍵字
+          if (text.includes('國道') || text.includes('快速道路') || text.includes('快速公路') || text.includes('高架')) {
+            skipStep = true;
+          }
+        }
+
+        if (skipStep) {
+          // 捨棄此封閉路段，不進行周邊超商取樣
+          continue;
+        }
+
+        const stepPath = step.path;
+        if (!stepPath || stepPath.length === 0) continue;
+
+        for (const point of stepPath) {
+          if (!lastSampledPoint) {
+            sampledPoints.push({ lat: point.lat(), lng: point.lng() });
+            lastSampledPoint = point;
+          } else {
+            const dist = (window as any).google.maps.geometry.spherical.computeDistanceBetween(lastSampledPoint, point);
+            if (dist >= 2000) { // 每 2 公里取樣
+              sampledPoints.push({ lat: point.lat(), lng: point.lng() });
+              lastSampledPoint = point;
+            }
+          }
+        }
+      }
+    }
+
+    // 確保終點有被包含
+    if (legs.length > 0) {
+      const finalLeg = legs[legs.length - 1];
+      const finalPoint = finalLeg.end_location;
+      if (lastSampledPoint) {
+        const distToLast = (window as any).google.maps.geometry.spherical.computeDistanceBetween(lastSampledPoint, finalPoint);
+        if (distToLast > 500) {
+          sampledPoints.push({ lat: finalPoint.lat(), lng: finalPoint.lng() });
+        }
+      } else {
+        sampledPoints.push({ lat: finalPoint.lat(), lng: finalPoint.lng() });
+      }
+    }
+
+    this.searchMode = 'route' as any;
+    this.isLocationSearchMode = false;
+    this.totalStoresShowList = [];
+    this.allNearbyStores = [];
+    this.hasMoreStores = false;
+    this.searchCenterLat = sampledPoints[0]?.lat || this.latitude;
+    this.searchCenterLng = sampledPoints[0]?.lng || this.longitude;
+
+    // 清空追踪 state
+    this.fmQueriedPKeys.clear();
+    this.sevenQueriedStoreNos.clear();
+
+    const sevenRequests = sampledPoints.map(p => {
+      const loc: LocationData = {
+        CurrentLocation: { Latitude: p.lat, Longitude: p.lng },
+        SearchLocation: { Latitude: p.lat, Longitude: p.lng }
+      };
+      return this.sevenElevenService.getNearByStoreList(loc).pipe(
+        timeout(8000), catchError(() => of(null))
+      );
+    });
+
+    const fmRequests = sampledPoints.map(p => {
+      return this.familyMartService.getNearByStoreList({
+        Latitude: p.lat, Longitude: p.lng
+      }).pipe(
+        timeout(8000), catchError(() => of(null))
+      );
+    });
+
+    forkJoin({
+      sevenResults: forkJoin(sevenRequests),
+      fmResults: forkJoin(fmRequests)
+    }).subscribe(({ sevenResults, fmResults }) => {
+      const allStores: any[] = [];
+
+      // 7-11 解析
+      sevenResults.forEach((res: any) => {
+        if (!res || !res.element || !res.element.StoreStockItemList) return;
+        res.element.StoreStockItemList.forEach((store: any) => {
+          if (!store.RemainingQty || store.RemainingQty <= 0) return;
+          const storeNo = store.StoreNo || '';
+          if (this.sevenQueriedStoreNos.has(storeNo)) return;
+          this.sevenQueriedStoreNos.add(storeNo);
+
+          // 計算該店距離這條「路線」的最佳最短距離 (選用路徑上最近的點代表)
+          // 但簡化起見，算距離起點的距離排序
+          const dist = getDistance(
+            { latitude: this.searchCenterLat, longitude: this.searchCenterLng },
+            { latitude: parseFloat(store.Y), longitude: parseFloat(store.X) }
+          );
+
+          allStores.push({
+            ...store,
+            storeName: `7-11${store.StoreName}門市`,
+            label: '7-11',
+            distance: dist,
+            remainingQty: store.RemainingQty,
+            showDistance: true,
+            CategoryStockItems: store.CategoryStockItems
+          });
+        });
+      });
+
+      // 全家解析
+      fmResults.forEach((res: any) => {
+        if (!res || res.code !== 1 || !res.data) return;
+        res.data.forEach((store: any) => {
+          const pkey = store.oldPKey || store.name;
+          if (this.fmQueriedPKeys.has(pkey)) return;
+          this.fmQueriedPKeys.add(pkey);
+
+          const dist = getDistance(
+            { latitude: this.searchCenterLat, longitude: this.searchCenterLng },
+            { latitude: store.latitude, longitude: store.longitude }
+          );
+
+          allStores.push({
+            ...store,
+            storeName: store.name,
+            label: '全家',
+            distance: dist,
+            showDistance: true
+          });
+        });
+      });
+
+      allStores.sort((a, b) => a.distance - b.distance);
+      allStores.forEach(s => this.precomputeCategoryQty(s));
+
+      this.allNearbyStores = allStores;
+      this.totalStoresShowList = allStores.slice(0, 20); // 先顯示前 20 筆
+      this.hasMoreStores = allStores.length > 20;
+      this.storeDataService.setStores(this.allNearbyStores);
+      this.storeDataService.setIsUserLocationSearch(false);
+      
+      this.loadingService.hide();
+    });
   }
 
   // ==========================================

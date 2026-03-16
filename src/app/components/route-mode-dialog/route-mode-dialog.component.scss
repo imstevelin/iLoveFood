@@ -1,0 +1,24 @@
+.mode-btn {
+  padding-top: 1rem;
+  padding-bottom: 1rem;
+  border-radius: 1rem;
+  border-width: 2px;
+  border-color: transparent;
+  background-color: rgba(255, 255, 255, 0.6);
+  transition-property: all;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 300ms;
+  height: auto;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+  
+  &:hover {
+    background-color: rgba(255, 255, 255, 0.9);
+    border-color: rgb(233, 213, 255);
+    transform: scale(1.03);
+    box-shadow: 0 12px 24px rgba(168, 85, 247, 0.1);
+  }
+  
+  &:active {
+    transform: scale(0.97);
+  }
+}
