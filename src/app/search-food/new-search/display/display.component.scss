@@ -1,0 +1,186 @@
+/* Display Component — Apple HIG-Inspired Animations */
+/* Product cards with blurred image backgrounds and 3x scaled product images */
+
+/* ===== Product Card — Blurred Background ===== */
+.product-card {
+  position: relative;
+  border-radius: 16px;
+  overflow: hidden;
+  /* 與超商卡片類似的邊框與玻璃質感 */
+  border: 1px solid rgba(200, 210, 224, 0.8);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
+  background: rgba(255, 255, 255, 0.5); /* 基底玻璃質感 */
+  transition: transform var(--transition-spring),
+              box-shadow var(--transition-spring),
+              border-color var(--transition-spring);
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    border-color: rgba(91, 127, 255, 0.4);
+  }
+
+  &:active {
+    transform: translateY(0) scale(0.99);
+    transition-duration: 80ms;
+  }
+}
+
+/* Blurred background layer — product image as faint color tint */
+.product-card-bg {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  filter: blur(40px) saturate(1.8);
+  /* 放大背景 3～3.5 倍以裁切掉大量留白 */
+  transform: scale(3.5);
+  opacity: 0.25;
+  z-index: 0;
+  /* Prevent the blur from being too intense on dark images */
+  mix-blend-mode: normal;
+  /* Smooth transition when image changes */
+  transition: opacity var(--transition-gentle);
+}
+
+/* Content layer — sits above the blurred background */
+.product-card-content {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 16px;
+  /* 疊加一層半透明白色使文字清晰可讀，並強化玻璃效果 */
+  background: rgba(255, 255, 255, 0.65);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+
+  @media (min-width: 640px) {
+    flex-direction: row;
+  }
+}
+
+/* ===== 3x Scaled Product Image ===== */
+/* Container clips the oversized image */
+.product-img-wrapper {
+  width: 96px;
+  height: 96px;
+  border-radius: 14px;
+  overflow: hidden;
+  flex-shrink: 0;
+  cursor: pointer;
+  margin-bottom: 16px;
+  /* Subtle inner shadow for depth */
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.04),
+              0 2px 8px rgba(0, 0, 0, 0.06);
+  /* Light background for images with transparency */
+  background: rgba(245, 245, 245, 0.8);
+  transition: transform var(--transition-spring),
+              box-shadow var(--transition-spring);
+
+  &:hover {
+    transform: scale(1.04);
+    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.04),
+                0 4px 16px rgba(0, 0, 0, 0.1);
+  }
+
+  &:active {
+    transform: scale(0.95);
+    transition-duration: 60ms;
+  }
+
+  @media (min-width: 640px) {
+    width: 128px;
+    height: 128px;
+    margin-bottom: 0;
+    margin-right: 24px;
+  }
+}
+
+/* Image actual sizing */
+.product-img-normal {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  /* Smooth transition for image load */
+  transition: transform var(--transition-spring);
+}
+
+/* ===== Sub-category section — spring reveal ===== */
+.sub-category-item {
+  animation: subcatSpringIn 450ms var(--spring-gentle) both;
+}
+
+@keyframes subcatSpringIn {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Product item cards — staggered entrance */
+li {
+  animation: itemFadeIn 400ms var(--spring-gentle) both;
+}
+
+/* Stagger product items */
+li:nth-child(1) { animation-delay: 0ms; }
+li:nth-child(2) { animation-delay: 40ms; }
+li:nth-child(3) { animation-delay: 80ms; }
+li:nth-child(4) { animation-delay: 120ms; }
+li:nth-child(5) { animation-delay: 160ms; }
+li:nth-child(6) { animation-delay: 200ms; }
+li:nth-child(7) { animation-delay: 240ms; }
+li:nth-child(8) { animation-delay: 280ms; }
+li:nth-child(n+9) { animation-delay: 320ms; }
+
+@keyframes itemFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ===== Tag badges — pop in ===== */
+div[class*="bg-green-100"],
+div[class*="bg-red-100"],
+div[class*="bg-yellow-100"] {
+  animation: tagPopIn 300ms var(--spring) both;
+}
+
+@keyframes tagPopIn {
+  from {
+    opacity: 0;
+    transform: scale(0.7);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Loading spinner — smooth entrance */
+mat-progress-spinner {
+  animation: spinnerIn 400ms var(--spring-gentle) both;
+}
+
+@keyframes spinnerIn {
+  from {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}

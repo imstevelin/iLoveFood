@@ -1,4 +1,5 @@
-/* 友善錢包 — new-search component styles */
+/* 友善錢包 — Apple HIG-Inspired Animation System */
+/* All transitions use spring physics, are interruptible, and non-linear */
 
 /* ===== Fixed Search Bar ===== */
 .search-bar-fixed {
@@ -13,6 +14,9 @@
   border-bottom: 1px solid rgba(226, 232, 240, 0.5);
   box-shadow: 0 1px 12px rgba(0, 0, 0, 0.04);
   padding: 12px 16px;
+  /* Interruptible: smooth bar appearance */
+  transition: background var(--transition-gentle),
+              box-shadow var(--transition-gentle);
 }
 
 .search-bar-spacer {
@@ -26,15 +30,21 @@
   -webkit-backdrop-filter: blur(12px);
   border: 1px solid rgba(203, 213, 225, 0.4);
   border-radius: 14px;
-  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+  /* Spring transition — interruptible on rapid focus/blur */
+  transition: border-color var(--transition-spring),
+              box-shadow var(--transition-spring),
+              background var(--transition-spring);
 
   &:focus-within {
     border-color: rgba(91, 127, 255, 0.5);
-    box-shadow: 0 0 0 3px rgba(91, 127, 255, 0.1);
+    box-shadow: 0 0 0 4px rgba(91, 127, 255, 0.12),
+                0 2px 12px rgba(91, 127, 255, 0.08);
+    background: rgba(255, 255, 255, 0.82);
   }
 }
 
 /* ===== Header Icon Buttons (Home + Hamburger) ===== */
+/* Apple haptic feedback pattern: instant press, spring release */
 .header-icon-btn {
   width: 44px;
   height: 44px;
@@ -47,36 +57,49 @@
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   flex-shrink: 0;
+  /* Spring release — transition handles the spring-back when :active releases */
+  transition: transform var(--transition-snappy),
+              background var(--transition-snappy),
+              border-color var(--transition-snappy),
+              box-shadow var(--transition-snappy);
+  /* GPU acceleration for smooth transforms */
+  will-change: transform;
 
   &:hover {
-    background: rgba(255, 255, 255, 0.85);
-    transform: scale(1.05);
+    background: rgba(255, 255, 255, 0.88);
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
   }
 
+  /* Instant press — no delay, immediate visual feedback */
   &:active {
-    transform: scale(0.95);
+    transform: scale(0.88);
+    transition-duration: 60ms;
   }
 
   &.active {
     background: var(--accent-light);
     border-color: rgba(91, 127, 255, 0.3);
+    box-shadow: 0 0 0 2px rgba(91, 127, 255, 0.08);
   }
 }
 
-/* ===== Menu Panel (replaces Favorites Panel) ===== */
+/* ===== Menu Panel ===== */
+/* Interruptible expand/collapse — CSS transition auto-interrupts */
 .menu-panel {
   max-height: 0;
   overflow: hidden;
   opacity: 0;
-  transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1),
-              opacity 0.3s ease,
-              padding 0.3s ease;
+  transform: translateY(-4px);
+  transition: max-height var(--duration-expand) var(--spring-gentle),
+              opacity var(--duration-normal) var(--spring-gentle),
+              transform var(--duration-normal) var(--spring-gentle),
+              padding var(--duration-normal) var(--spring-gentle);
 
   &.open {
     max-height: 600px;
     opacity: 1;
+    transform: translateY(0);
     padding: 12px 0;
   }
 }
@@ -100,13 +123,20 @@
   padding: 10px 16px;
   border-radius: 12px;
   cursor: pointer;
-  transition: background 0.2s ease;
   text-decoration: none;
   color: inherit;
   font-size: 14px;
+  /* Spring hover + instant press */
+  transition: background var(--transition-snappy),
+              transform var(--transition-snappy);
 
   &:hover {
     background: var(--accent-light);
+  }
+
+  &:active {
+    transform: scale(0.97);
+    transition-duration: 60ms;
   }
 
   span {
@@ -120,17 +150,20 @@
   margin: 6px 16px;
 }
 
-/* Lab subsection expand */
+/* Lab subsection expand — spring with subtle Y movement */
 .lab-subsection {
   max-height: 0;
   overflow: hidden;
   opacity: 0;
-  transition: max-height 0.35s cubic-bezier(0.4, 0, 0.2, 1),
-              opacity 0.25s ease;
+  transform: translateY(-4px);
+  transition: max-height var(--duration-expand) var(--spring-gentle),
+              opacity var(--duration-normal) var(--spring-gentle),
+              transform var(--duration-normal) var(--spring-gentle);
 
   &.open {
     max-height: 200px;
     opacity: 1;
+    transform: translateY(0);
   }
 }
 
@@ -139,7 +172,7 @@
   padding-left: 44px;
 }
 
-/* Toggle Switch */
+/* ===== Toggle Switch — Apple-style bouncy knob ===== */
 .toggle-switch {
   position: relative;
   display: inline-block;
@@ -162,7 +195,7 @@
   bottom: 0;
   background: #cbd5e1;
   border-radius: 24px;
-  transition: background 0.3s ease;
+  transition: background var(--transition-snappy);
 
   &::before {
     content: '';
@@ -173,8 +206,10 @@
     bottom: 3px;
     background: white;
     border-radius: 50%;
-    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+    /* Spring bounce for the knob */
+    transition: transform var(--transition-spring);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15),
+                0 0 1px rgba(0, 0, 0, 0.1);
   }
 }
 
@@ -186,8 +221,12 @@
   transform: translateX(20px);
 }
 
+/* Chevron rotation — spring */
 .rotate-180 {
   transform: rotate(180deg);
+}
+svg.transition-transform {
+  transition: transform var(--transition-spring);
 }
 
 /* ===== Loading Overlay ===== */
@@ -204,15 +243,15 @@
   font-size: 14px;
   font-weight: 500;
   color: var(--text-secondary);
-  animation: pulse-opacity 1.5s ease-in-out infinite;
+  animation: breathe 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
-@keyframes pulse-opacity {
+@keyframes breathe {
   0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
+  50% { opacity: 0.4; }
 }
 
-/* ===== Store Card Glass — Brand Themed ===== */
+/* ===== Store Card — Spring-powered interactions ===== */
 .store-glass-card {
   background: rgba(255, 255, 255, 0.58);
   backdrop-filter: blur(20px);
@@ -222,14 +261,39 @@
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.05);
   padding: 16px;
   margin-bottom: 12px;
-  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
-              box-shadow 0.3s ease;
   position: relative;
   overflow: hidden;
+  /* Spring transitions — interruptible on rapid scroll/interaction */
+  transition: transform var(--transition-spring),
+              box-shadow var(--transition-spring),
+              opacity var(--transition-spring);
+  will-change: transform, opacity;
 
   &:hover {
     transform: translateY(-2px);
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+  }
+
+  &:active {
+    transform: translateY(0) scale(0.99);
+    transition-duration: 80ms;
+  }
+}
+
+/* ===== Card Entrance Animation ===== */
+/* Apple-style: fade + subtle scale + Y translation via spring */
+.card-animate-in {
+  animation: cardSpringIn var(--duration-slow) var(--spring-gentle) both;
+}
+
+@keyframes cardSpringIn {
+  0% {
+    opacity: 0;
+    transform: translateY(24px) scale(0.96);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
   }
 }
 
@@ -336,7 +400,8 @@
   background: rgba(255, 255, 255, 0.7);
   border: 1px solid rgba(226, 232, 240, 0.4);
   flex-shrink: 0;
-  transition: transform 0.2s ease;
+  transition: transform var(--transition-snappy),
+              box-shadow var(--transition-snappy);
 }
 
 .badge-seven {
@@ -371,6 +436,13 @@
   padding: 2px 8px;
   border-radius: 8px;
   margin-top: 4px;
+  /* Subtle scale-in */
+  animation: badgeIn var(--duration-normal) var(--spring) both;
+}
+
+@keyframes badgeIn {
+  from { opacity: 0; transform: scale(0.8); }
+  to { opacity: 1; transform: scale(1); }
 }
 
 .badge-family-dist {
@@ -378,7 +450,7 @@
   background: rgba(0, 179, 134, 0.1);
 }
 
-/* ===== Category Grid ===== */
+/* ===== Category Grid — Spring Chip Interactions ===== */
 .category-chip {
   border: 1px solid rgba(226, 232, 240, 0.4);
   border-radius: 12px;
@@ -386,21 +458,32 @@
   text-align: center;
   cursor: pointer;
   padding: 8px;
-  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  /* Spring transition — every property smoothly interpolates */
+  transition: transform var(--transition-spring),
+              background var(--transition-snappy),
+              border-color var(--transition-snappy),
+              box-shadow var(--transition-snappy);
+  will-change: transform;
 
   &:hover {
-    background: rgba(255, 255, 255, 0.75);
-    transform: scale(1.05);
+    background: rgba(255, 255, 255, 0.78);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    transform: scale(1.04);
   }
 
+  /* Instant haptic press */
   &:active {
-    transform: scale(0.95);
+    transform: scale(0.92);
+    transition-duration: 60ms;
   }
 
+  /* Selected state — gentle spring scale */
   &.selected {
     background: var(--accent-light);
     border-color: rgba(91, 127, 255, 0.3);
     transform: scale(1.02);
+    box-shadow: 0 0 0 2px rgba(91, 127, 255, 0.08),
+                0 4px 16px rgba(91, 127, 255, 0.1);
   }
 }
 
@@ -412,41 +495,28 @@
   color: #c2410c;
   padding: 2px 8px;
   border-radius: 20px;
+  /* Subtle pop */
+  transition: transform var(--transition-snappy);
 }
 
 /* ===== Category Expand Animation ===== */
+/* Interruptible spring expand — replaces hard keyframe animation */
 .category-expand-wrapper {
-  animation: expand-in 0.35s cubic-bezier(0.4, 0, 0.2, 1);
   overflow: hidden;
   margin-top: 12px;
+  animation: springExpandIn var(--duration-expand) var(--spring) both;
 }
 
-@keyframes expand-in {
+@keyframes springExpandIn {
   0% {
     opacity: 0;
     max-height: 0;
-    transform: translateY(-8px);
+    transform: translateY(-12px) scaleY(0.95);
   }
   100% {
     opacity: 1;
-    max-height: 2000px;
-    transform: translateY(0);
-  }
-}
-
-/* ===== Card Scroll Animation ===== */
-.card-animate-in {
-  animation: card-slide-in 0.5s cubic-bezier(0.4, 0, 0.2, 1) both;
-}
-
-@keyframes card-slide-in {
-  0% {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  100% {
-    opacity: 1;
-    transform: translateY(0);
+    max-height: 3000px;
+    transform: translateY(0) scaleY(1);
   }
 }
 
@@ -456,7 +526,7 @@
   padding: 16px;
   font-size: 13px;
   color: var(--text-secondary);
-  animation: pulse-opacity 2s ease-in-out infinite;
+  animation: breathe 2.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
 /* ===== Search Progress Indicator ===== */
@@ -469,14 +539,16 @@
   font-size: 13px;
   font-weight: 500;
   color: var(--text-secondary);
-  animation: pulse-opacity 2s ease-in-out infinite;
+  animation: breathe 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
 .search-paused-indicator {
   text-align: center;
   padding: 20px;
+  animation: fadeInUp var(--duration-slow) var(--spring-gentle) both;
 }
 
+/* ===== Buttons — Apple haptic press style ===== */
 .resume-search-btn {
   display: inline-flex;
   align-items: center;
@@ -489,11 +561,20 @@
   font-size: 14px;
   border: none;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: transform var(--transition-spring),
+              background var(--transition-snappy),
+              box-shadow var(--transition-spring);
+  will-change: transform;
 
   &:hover {
     background: var(--accent-hover);
-    transform: scale(1.03);
+    box-shadow: 0 4px 20px rgba(91, 127, 255, 0.25);
+  }
+
+  /* Instant press, spring release */
+  &:active {
+    transform: scale(0.94);
+    transition-duration: 60ms;
   }
 }
 
@@ -533,15 +614,61 @@
   font-size: 14px;
   border: none;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: transform var(--transition-spring),
+              background var(--transition-snappy),
+              box-shadow var(--transition-spring);
+  will-change: transform;
 
   &:hover {
     background: var(--accent-hover);
-    transform: scale(1.03);
+    box-shadow: 0 4px 20px rgba(91, 127, 255, 0.25);
+  }
+
+  &:active {
+    transform: scale(0.94);
+    transition-duration: 60ms;
   }
 }
 
-/* Removes Fullscreen Blocker Overlay Code */
+/* ===== Favorite Button — Heart bounce micro-interaction ===== */
+button[class*="shrink-0"] {
+  transition: transform var(--transition-spring);
+  will-change: transform;
+
+  &:active {
+    transform: scale(0.75);
+    transition-duration: 60ms;
+  }
+
+  /* Heart SVG animation */
+  svg {
+    transition: transform var(--transition-spring);
+  }
+
+  &:active svg {
+    transform: scale(0.8);
+  }
+}
+
+/* ===== Close Button — Spring press ===== */
+button svg path {
+  transition: stroke var(--transition-snappy);
+}
+
+/* ===== Google Map Icon — Hover spring ===== */
+a[href*="google.com/maps"] {
+  display: inline-flex;
+  transition: transform var(--transition-snappy);
+
+  &:hover {
+    transform: scale(1.15);
+  }
+
+  &:active {
+    transform: scale(0.9);
+    transition-duration: 60ms;
+  }
+}
 
 /* ===== Responsive ===== */
 @media (max-width: 640px) {

@@ -1,7 +1,7 @@
 import { Component, Input, OnChanges, SimpleChanges, OnInit, ElementRef, ViewChild } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
 
-import { Item, CategoryStockItem, FoodDetail711  } from '../../model/seven-eleven.model';  // 根據你的實際路徑導入模型
+import { Item, CategoryStockItem, FoodDetail711  } from '../../model/seven-eleven.model';
 import { ProductModel, FoodDetailFamilyMart } from '../../model/family-mart.model'
 
 import { ImageDialogComponent } from '../image-dialog/image-dialog.component';
@@ -16,14 +16,19 @@ import Fuse from 'fuse.js';
   styleUrls: ['./display.component.scss']
 })
 export class DisplayComponent implements OnChanges, OnInit {
-  @Input() store!: any;  // 接收父組件傳遞的 store
-  @Input() category!: any;  // 接收父組件傳遞的 category
+  @Input() store!: any;
+  @Input() category!: any;
   @Input() foodDetails!: any[];
 
   subCategories: any[] = [];
   subCategoriesName: string = '';
-  itemsBySubCategory: { [key: string]: Item[] } = {};  // 儲存每個子分類的商品列表
+  itemsBySubCategory: { [key: string]: Item[] } = {};
   isLoading: boolean = false;
+
+  // === 效能優化：快取 Fuse 實例與食物詳情查詢結果 ===
+  private fuse711: Fuse<any> | null = null;
+  private fuseFamilyMart: Fuse<any> | null = null;
+  foodDetailCache: { [itemName: string]: any } = {};  // 模板直接讀取此快取
 
   constructor(
     private sevenElevenRequestService: SevenElevenRequestService,
@@ -33,33 +38,80 @@ export class DisplayComponent implements OnChanges, OnInit {
   ngOnInit() {}
 
   ngOnChanges(changes: SimpleChanges): void {
-    // 若組件輸入有變化時，重新載入子商品列表
+    // foodDetails 變化時，重建 Fuse 實例（僅建立一次）
+    if (changes['foodDetails'] && this.foodDetails && this.foodDetails.length > 0) {
+      this.buildFuseInstances();
+    }
     if (changes['category'] || changes['store']) {
-      this.loadSubCategories();  // 重新加載子分類資料
+      this.foodDetailCache = {};  // 清空快取，因為門市/分類變了
+      this.loadSubCategories();
+    }
+  }
+
+  // 建立 Fuse 實例（只在 foodDetails 變化時呼叫一次）
+  private buildFuseInstances(): void {
+    if (!this.foodDetails || this.foodDetails.length === 0) return;
+
+    // 判斷是 7-11 還是全家的 foodDetails（7-11 用 'name'，全家用 'title'）
+    const sample = this.foodDetails[0];
+    if (sample.name !== undefined) {
+      this.fuse711 = new Fuse(this.foodDetails, {
+        includeScore: true,
+        threshold: 0.3,
+        keys: ['name']
+      });
+    }
+    if (sample.title !== undefined) {
+      this.fuseFamilyMart = new Fuse(this.foodDetails, {
+        includeScore: true,
+        threshold: 0.3,
+        keys: ['title']
+      });
+    }
+  }
+
+  // 批次預算所有商品的食物詳情，存入 foodDetailCache
+  private precomputeFoodDetails(): void {
+    if (!this.foodDetails || this.foodDetails.length === 0) return;
+
+    const is711 = this.store.StoreName != null;
+
+    for (const subCatName of Object.keys(this.itemsBySubCategory)) {
+      const items = this.itemsBySubCategory[subCatName];
+      if (!items) continue;
+      for (const item of items) {
+        if (this.foodDetailCache[item.ItemName]) continue;  // 已快取
+        if (is711) {
+          this.foodDetailCache[item.ItemName] = this._lookupFoodDetail711(item);
+        } else {
+          this.foodDetailCache[item.ItemName] = this._lookupFoodDetailFamilyMart(item);
+        }
+      }
     }
   }
 
   loadSubCategories() {
     if (this.store && this.category) {
       if (this.store.StoreName) {
-        this.subCategories = this.category.Children;  // 更新子分類列表
+        this.subCategories = this.category.Children;
         this.subCategoriesName = this.category.Name;
-        this.loadItemsBySubCategory();  // 載入子分類下的所有商品資料
+        this.loadItemsBySubCategory();
       }
       else if (this.store.name) {
-        this.subCategories = this.category.categories
-        // 全家直接把商品丟進itemsBySubCategory
+        this.subCategories = this.category.categories;
         var items: Item[] = [];
         this.subCategories.forEach((cat) => {
           items.push(
             ...cat.products.map((product: ProductModel) => ({
-              ItemName: product.name,       // 映射到 ItemName
-              RemainingQty: product.qty,    // 映射到 RemainingQty
+              ItemName: product.name,
+              RemainingQty: product.qty,
             }))
           );
           this.itemsBySubCategory[cat.name] = items || [];
           items = [];
         });
+        // 全家：資料已就緒，立即預算食物詳情
+        this.precomputeFoodDetails();
       }
     }
   }
@@ -71,8 +123,6 @@ export class DisplayComponent implements OnChanges, OnInit {
         if (response.isSuccess && response.element.StoreStockItem) {
           let categoryStockItems: CategoryStockItem[] = response.element.StoreStockItem.CategoryStockItems;
 
-          // 7-11耍白痴，麵包跟甜點的分類裡面都有蛋糕，會造成子分類顯示錯誤
-          // 懶得修正資料結構，直接愚蠢的修改食物子分類名稱來區分唄
           if (this.subCategoriesName == "甜點") {
             let sweetCakeId = "";
             this.subCategories = this.subCategories.map((subCategory) => {
@@ -107,19 +157,17 @@ export class DisplayComponent implements OnChanges, OnInit {
           }
 
           this.subCategories.forEach(subCategory => {
-
             const items: Item[] = [];
-
-            // 遍歷 CategoryStockItems，根據子分類名稱過濾並提取 ItemList
             categoryStockItems.forEach(category => {
               if (category.Name === subCategory.Name) {
                 items.push(...category.ItemList);
               }
             });
-
-            // 把結果保存到 itemsBySubCategory
             this.itemsBySubCategory[subCategory.Name] = items || [];
           });
+
+          // 7-11：API 回傳後立即預算食物詳情
+          this.precomputeFoodDetails();
         }
         this.isLoading = false;
       }, error => {
@@ -129,57 +177,37 @@ export class DisplayComponent implements OnChanges, OnInit {
     }
   }
 
-  // getSubCategoryQty(subCategoryName: string): number {
-  //   let qty = 0;
-  //   const items = this.itemsBySubCategory[subCategoryName];
-  //   if (items) {
-  //     items.forEach(item => {
-  //       qty += item.RemainingQty;
-  //     });
-  //   }
-  //   return qty;
-  // }
-
   getDiscountedPrice(originalPrice: string): string {
-    // 解析原價
     const price = parseFloat(originalPrice.replace('NT$', '').trim());
     const currentTime = new Date();
     const currentHour = currentTime.getHours();
 
     let discountedPrice = price;
 
-    // 設定折扣邏輯
     if (currentHour >= 19 && currentHour < 20) {
-      discountedPrice *= 0.8; // 19:00~19:59 八折
+      discountedPrice *= 0.8;
     } else if ((currentHour >= 10 && currentHour < 18) || (currentHour >= 20 || currentHour < 3)) {
-      discountedPrice *= 0.65; // 10:00~17:59 以及 20:00~03:00 六五折
+      discountedPrice *= 0.65;
     }
     else {
-      // 待查清其餘時段是幾折==，目前假設八折
       discountedPrice *= 0.8;
     }
     return discountedPrice.toString();
   }
 
-  getFoodDetail711(item: Item): FoodDetail711 {
-    // 設置 Fuse.js 配置選項
-    const options = {
-      includeScore: true, // 需要包含匹配度分數
-      threshold: 0.3, // 設置模糊搜尋的閾值，0.3 表示較為寬鬆的匹配
-      keys: ['name'] // 搜尋的欄位是 'name'
-    };
+  // 內部查詢方法（僅在 precomputeFoodDetails 中呼叫，不再從模板呼叫）
+  private _lookupFoodDetail711(item: Item): any {
+    if (!this.fuse711) {
+      // Fuse 尚未建立時 fallback：直接建立（應該很少發生）
+      this.buildFuseInstances();
+    }
 
-    // 初始化 Fuse 進行模糊搜尋
-    const fuse = new Fuse(this.foodDetails, options);
+    const result = this.fuse711 ? this.fuse711.search(item.ItemName) : [];
 
-    // 查找最匹配的項目
-    const result = fuse.search(item.ItemName);
-
-    // 如果找到匹配項，則返回最相似的那個
-    const foodDetail = result.length > 0 ? result[0].item : {
+    const foodDetail = result.length > 0 ? { ...result[0].item } : {
       category: '',
       content: '',
-      image: 'assets/此商品暫無圖片.png', // 默認圖片
+      image: 'assets/此商品暫無圖片.png',
       kcal: '',
       name: '',
       new: 'False',
@@ -187,32 +215,21 @@ export class DisplayComponent implements OnChanges, OnInit {
       special_sale: 'False'
     };
 
-    // 計算折扣後的價格
     const discountedPrice = this.getDiscountedPrice(foodDetail.price);
-
-    // 將計算結果新增到 foodDetail 物件中
     foodDetail['discountedPrice'] = discountedPrice;
-    foodDetail['originalPrice'] = foodDetail.price; // 原價
+    foodDetail['originalPrice'] = foodDetail.price;
 
     return foodDetail;
   }
 
-  getFoodDetailFamilyMart(item: Item): FoodDetailFamilyMart {
-    // 設置 Fuse.js 配置選項
-    const options = {
-      includeScore: true,
-      threshold: 0.3,
-      keys: ['title']
-    };
+  private _lookupFoodDetailFamilyMart(item: Item): any {
+    if (!this.fuseFamilyMart) {
+      this.buildFuseInstances();
+    }
 
-    // 初始化 Fuse 進行模糊搜尋
-    const fuse = new Fuse(this.foodDetails, options);
+    const result = this.fuseFamilyMart ? this.fuseFamilyMart.search(item.ItemName) : [];
 
-    // 查找最匹配的項目
-    const result = fuse.search(item.ItemName);
-
-    // 如果找到匹配項，則返回最相似的那個
-    const foodDetail = result.length > 0 ? result[0].item :
+    const foodDetail = result.length > 0 ? { ...result[0].item } :
     {
       "category": "",
       "title": "",
@@ -226,10 +243,19 @@ export class DisplayComponent implements OnChanges, OnInit {
     return foodDetail;
   }
 
+  // 保留公開方法供向後相容（但模板不再使用）
+  getFoodDetail711(item: Item): any {
+    return this.foodDetailCache[item.ItemName] || this._lookupFoodDetail711(item);
+  }
+
+  getFoodDetailFamilyMart(item: Item): any {
+    return this.foodDetailCache[item.ItemName] || this._lookupFoodDetailFamilyMart(item);
+  }
+
   openImageDialog(imageUrl: string): void {
     this.dialog.open(ImageDialogComponent, {
       data: { image: imageUrl },
-      panelClass: 'custom-dialog' // 可用於自定義樣式
+      panelClass: 'custom-dialog'
     });
   }
 }

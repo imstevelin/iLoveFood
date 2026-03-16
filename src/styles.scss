@@ -1,4 +1,5 @@
 /* Global Styles — 友善錢包 Friendly Wallet */
+/* Apple HIG-Inspired Animation System */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -23,6 +24,43 @@
   --bg-gradient-start: #f8fafc;
   --bg-gradient-mid: #f1f5f9;
   --bg-gradient-end: #eef2ff;
+
+  /* ===== Apple-Style Animation Tokens ===== */
+
+  /* Spring easing — simulates iOS UISpringAnimation (damping ~0.8, response ~0.4s)
+     Generated via CSS linear() to approximate spring physics:
+     Fast start → overshoots slightly → settles naturally */
+  --spring: linear(
+    0, 0.009, 0.035 2.1%, 0.141 4.4%, 0.723 12.9%, 0.938 16.7%,
+    1.017, 1.077 21.8%, 1.112 24%, 1.116, 1.108 27.1%,
+    1.067 30.2%, 1.013 34.8%, 0.991 38.2%, 0.985 43.2%,
+    0.997 53.7%, 1.001 60.2%, 1
+  );
+
+  /* Snappy spring — quicker, less bounce (button presses, toggles) */
+  --spring-snappy: linear(
+    0, 0.11 2.6%, 0.434 7.1%, 0.786 12.5%, 0.965 17.2%,
+    1.034 20.3%, 1.065 22.7%, 1.071 24.3%, 1.062 26.4%,
+    1.014 33%, 0.997 39%, 1.001 53%, 1
+  );
+
+  /* Gentle spring — subtle, no overshoot (cards, panels) */
+  --spring-gentle: linear(
+    0, 0.007, 0.029 2.2%, 0.118 4.7%, 0.625 14.4%, 0.826 19%,
+    0.942 23.8%, 0.987 27.6%, 1.004 38.3%, 1
+  );
+
+  /* Standard durations following Apple timing */
+  --duration-instant: 100ms;
+  --duration-fast: 200ms;
+  --duration-normal: 350ms;
+  --duration-slow: 500ms;
+  --duration-expand: 450ms;
+
+  /* Shared transition shortcuts */
+  --transition-spring: var(--duration-normal) var(--spring);
+  --transition-snappy: var(--duration-fast) var(--spring-snappy);
+  --transition-gentle: var(--duration-slow) var(--spring-gentle);
 }
 
 html, body {
@@ -48,8 +86,8 @@ html {
   border: 1px solid var(--glass-border);
   border-radius: var(--card-radius);
   box-shadow: var(--glass-shadow);
-  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
-              box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: transform var(--transition-spring),
+              box-shadow var(--transition-spring);
 }
 
 .glass-card:hover {
@@ -57,14 +95,14 @@ html {
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.1);
 }
 
-/* Fade-in animation */
+/* Fade-in-up animation — Apple deceleration curve */
 @keyframes fadeInUp {
-  from { opacity: 0; transform: translateY(16px); }
-  to { opacity: 1; transform: translateY(0); }
+  from { opacity: 0; transform: translateY(16px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
 .animate-fade-in-up {
-  animation: fadeInUp 0.4s cubic-bezier(0.4, 0, 0.2, 1) both;
+  animation: fadeInUp var(--duration-slow) var(--spring-gentle) both;
 }
 
 /* Override Angular Material for glass aesthetic */
@@ -74,19 +112,75 @@ html {
   -webkit-backdrop-filter: blur(20px) !important;
   border-radius: 16px !important;
   border: 1px solid rgba(255, 255, 255, 0.3) !important;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08) !important;
+  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.12),
+              0 0 0 1px rgba(0, 0, 0, 0.04) !important;
   margin-top: 4px !important;
+  /* Spring entrance */
+  animation: dropdownIn var(--duration-normal) var(--spring) both !important;
+}
+
+@keyframes dropdownIn {
+  from {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 .mat-mdc-option {
   border-radius: 12px !important;
   margin: 2px 4px !important;
+  transition: background var(--duration-fast) var(--spring-snappy),
+              transform var(--duration-fast) var(--spring-snappy) !important;
 }
 
 .mat-mdc-option:hover {
   background: rgba(91, 127, 255, 0.06) !important;
 }
 
+.mat-mdc-option:active {
+  transform: scale(0.98) !important;
+}
+
 .mat-mdc-progress-spinner circle {
   stroke: var(--accent) !important;
+}
+
+/* ===== Global Glass Dialogs (Login, Messages, etc) ===== */
+.glass-dialog .mat-mdc-dialog-container {
+  /* 確保外部容器完全透明，避免阻擋高斯模糊 */
+  background: transparent !important;
+  
+  .mdc-dialog__surface,
+  .mat-mdc-dialog-surface {
+    /* 真實的玻璃高頻模糊，底色調白一點 */
+    background: rgba(255, 255, 255, 0.85) !important;
+    backdrop-filter: blur(40px) saturate(200%) !important;
+    -webkit-backdrop-filter: blur(40px) saturate(200%) !important;
+    border-radius: 28px !important;
+    border: 1px solid rgba(255, 255, 255, 0.8) !important;
+    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.16),
+                0 0 0 1px rgba(255, 255, 255, 0.5) inset !important;
+    overflow: hidden !important;
+  }
+}
+
+/* 登入視窗顯示時，整個頁面套上薄薄的模糊效果 */
+.cdk-overlay-backdrop-showing {
+  background: rgba(0, 0, 0, 0.2) !important;
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
+}
+
+/* ===== Accessibility: Reduce Motion ===== */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

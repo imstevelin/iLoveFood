@@ -25,10 +25,8 @@ import { MessageDialogComponent } from './components/message-dialog/message-dial
 import { LoginPageComponent } from './components/login-page/login-page.component'
 
 import { provideFirebaseApp, initializeApp } from '@angular/fire/app';
-import { provideAuth, getAuth } from '@angular/fire/auth';
 import { provideAnalytics, getAnalytics } from '@angular/fire/analytics';
 import { AngularFireModule } from '@angular/fire/compat';
-import { AngularFireAuthModule } from '@angular/fire/compat/auth';  // 引入認證模組
 import { AngularFireDatabaseModule } from '@angular/fire/compat/database';
 
 import { environment } from 'src/environments/environment';
@@ -51,7 +49,6 @@ import { ChatbotComponent } from './chatbot/chatbot.component';
     FormsModule,
     ReactiveFormsModule,
     AngularFireModule.initializeApp(environment.firebaseConfig),  // 初始化 Firebase
-    AngularFireAuthModule,  // 引入 Firebase 認證模組
     AngularFireDatabaseModule,
     MatDividerModule,
     MatCardModule,
@@ -61,7 +58,6 @@ import { ChatbotComponent } from './chatbot/chatbot.component';
   providers: [
     provideHttpClient(withInterceptorsFromDi()),
     provideFirebaseApp(() => initializeApp(environment.firebaseConfig)),  // 提供 Firebase 初始化
-    provideAuth(() => getAuth()),  // 提供 Firebase 認證
     provideAnalytics(() => getAnalytics()),
   ],
 })

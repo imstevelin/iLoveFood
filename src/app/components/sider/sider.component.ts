@@ -87,12 +87,13 @@ export class SiderComponent {
     } else {
       const dialogRef = this.dialog.open(LoginPageComponent, {
         width: '500px', // 設定對話框的寬度
+        panelClass: 'glass-dialog',
         data: {},
       });
       dialogRef.afterClosed().subscribe(result => {
         if (result) {
           this.authService.getUser().subscribe((user) => {
-            if (user && user.emailVerified) {
+            if (user) {
               this.user = user;
               this.userUpdated.emit(user); // 通知父組件用戶已登錄
             }

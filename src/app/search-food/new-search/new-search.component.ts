@@ -44,6 +44,10 @@ export class NewSearchComponent implements OnInit {
   searchMode: 'location' | 'store' | 'product' = 'location';
   isLocationSearchMode: boolean = true; // 是否使用定位搜尋
 
+  // === 效能優化 ===
+  favoriteStoreNameSet: Set<string> = new Set();  // O(1) 收藏查詢
+  private scrollTicking: boolean = false;          // scroll throttle
+
   searchForm: FormGroup; // 表單
   searchTerm: string = '';
   searchSelectedStore: any = null;
@@ -131,6 +135,9 @@ export class NewSearchComponent implements OnInit {
 
   searchInput$ = new Subject<string>();
 
+  @ViewChild('menuPanel') menuPanel!: ElementRef;
+  @ViewChild('menuButton') menuButton!: ElementRef;
+
   constructor(
     private http: HttpClient,
     private geolocationService: GeolocationService,
@@ -200,7 +207,7 @@ export class NewSearchComponent implements OnInit {
 
     // 訂閱 getUser 方法來獲取用戶資料
     this.authService.getUser().subscribe(user => {
-      if (user && user.emailVerified) {
+      if (user) {
         this.user = user;  // 設定用戶資料
         this.loadFavoriteStores();
       }
@@ -325,19 +332,48 @@ export class NewSearchComponent implements OnInit {
   }
 
   getSubCategoryTotalQty(store: any, category: any): number {
-    let totalQty = 0;
+    // 使用預算快取（如果有）
+    const cacheKey = category.ID || category.name;
+    if (store._categoryQtyCache && store._categoryQtyCache[cacheKey] !== undefined) {
+      return store._categoryQtyCache[cacheKey];
+    }
 
-    // 遍歷商店中的所有商品，檢查是否屬於當前分類及子分類
-    for (const stockItem of store.CategoryStockItems) {
-      // 遍歷每個分類的子項目，檢查是否屬於這個 category
-      for (const child of category.Children) {
-        if (stockItem.NodeID === child.ID) {
-          totalQty += stockItem.RemainingQty;
+    let totalQty = 0;
+    if (store.CategoryStockItems) {
+      for (const stockItem of store.CategoryStockItems) {
+        for (const child of category.Children) {
+          if (stockItem.NodeID === child.ID) {
+            totalQty += stockItem.RemainingQty;
+          }
         }
       }
     }
-
     return totalQty;
+  }
+
+  // 預算所有分類數量到 store._categoryQtyCache
+  private precomputeCategoryQty(store: any): void {
+    if (!store._categoryQtyCache) {
+      store._categoryQtyCache = {};
+    }
+    if (store.label === '7-11' && store.CategoryStockItems && this.foodCategories) {
+      for (const category of this.foodCategories) {
+        let totalQty = 0;
+        for (const stockItem of store.CategoryStockItems) {
+          for (const child of category.Children) {
+            if (stockItem.NodeID === child.ID) {
+              totalQty += stockItem.RemainingQty;
+            }
+          }
+        }
+        store._categoryQtyCache[category.ID] = totalQty;
+      }
+    }
+    if (store.label === '全家' && store.info) {
+      for (const cat of store.info) {
+        store._categoryQtyCache[cat.name] = cat.qty;
+      }
+    }
   }
 
   // 當用戶點擊某個分類時，切換選中的分類與店鋪
@@ -354,8 +390,11 @@ export class NewSearchComponent implements OnInit {
   }
 
   trackByCategory(index: number, category: any): string {
-    // 7-11 使用 ID，全家使用 name
     return category.ID || category.name || index.toString();
+  }
+
+  trackByDropdownItem(index: number, item: any): string {
+    return (item.type || '') + ':' + (item.name || index.toString());
   }
 
   // mat-autocomplete 顯示函式：防止 [object Object]
@@ -409,32 +448,37 @@ export class NewSearchComponent implements OnInit {
       this.authService.logout();
       this.user = null;
       this.favoriteStores = [];
-      const dialogRef = this.dialog.open(MessageDialogComponent, {
-        width: '300px',
-        data: {
-          title: '登出成功',
-          message: '已順利登出',
-          imgPath: 'assets/S__222224406.jpg'
-        }
-      });
-      dialogRef.afterClosed().subscribe(() => {
-        this.favoriteStores = [];
-      });
     } else {
       const dialogRef = this.dialog.open(LoginPageComponent, {
         width: '500px',
+        panelClass: 'glass-dialog',
         data: {},
       });
       dialogRef.afterClosed().subscribe(result => {
         if (result) {
           this.authService.getUser().subscribe(user => {
-            if (user && user.emailVerified) {
-              this.user = user;
+            this.user = user;
+            if (this.user) {
               this.loadFavoriteStores();
             }
           });
         }
       });
+    }
+  }
+
+  // 監聽全域點擊事件，如果點擊在選單外部則關閉選單
+  @HostListener('document:click', ['$event'])
+  onDocumentClick(event: MouseEvent) {
+    if (this.showMenu) {
+      const clickedInsideMenuButton = this.menuButton?.nativeElement.contains(event.target);
+      const clickedInsideMenuPanel = this.menuPanel?.nativeElement.contains(event.target);
+      const clickedInsideOverlay = (event.target as HTMLElement).closest('.cdk-overlay-container');
+      
+      if (!clickedInsideMenuButton && !clickedInsideMenuPanel && !clickedInsideOverlay) {
+        this.showMenu = false;
+        this.showLabSection = false; // 同時收起實驗室
+      }
     }
   }
 
@@ -1381,6 +1425,7 @@ export class NewSearchComponent implements OnInit {
         showDistance: true,
         CategoryStockItems: store.CategoryStockItems
       };
+      this.precomputeCategoryQty(transformedStore);
       this.totalStoresShowList.push(transformedStore);
     });
 
@@ -1555,6 +1600,9 @@ export class NewSearchComponent implements OnInit {
         // 按距離排序
         allStores.sort((a, b) => a.distance - b.distance);
 
+        // 預算分類數量快取
+        allStores.forEach(s => this.precomputeCategoryQty(s));
+
         // 儲存 API 回傳的門市
         this.allNearbyStores = allStores;
 
@@ -1722,6 +1770,7 @@ export class NewSearchComponent implements OnInit {
 
       // 按距離排序後加入
       newStores.sort((a, b) => a.distance - b.distance);
+      newStores.forEach(s => this.precomputeCategoryQty(s));
       this.allNearbyStores = [...this.allNearbyStores, ...newStores];
 
       // 顯示下一頁
@@ -1747,22 +1796,26 @@ export class NewSearchComponent implements OnInit {
     });
   }
 
-  // 監聽滾動事件，觸發無限滾動
+  // 監聽滾動事件，觸發無限滾動（使用 requestAnimationFrame 節流）
   @HostListener('window:scroll', [])
   onWindowScroll(): void {
-    if (!this.hasMoreStores || this.isLoadingMore) return;
+    if (this.scrollTicking) return;
+    this.scrollTicking = true;
+    requestAnimationFrame(() => {
+      this.scrollTicking = false;
+      if (!this.hasMoreStores || this.isLoadingMore) return;
 
-    const scrollPosition = window.innerHeight + window.scrollY;
-    const documentHeight = document.documentElement.scrollHeight;
+      const scrollPosition = window.innerHeight + window.scrollY;
+      const documentHeight = document.documentElement.scrollHeight;
 
-    // 滾動到底部前 200px 時觸發載入
-    if (scrollPosition >= documentHeight - 200) {
-      if (this.searchMode === 'product') {
-        this.loadMoreProductResults();
-      } else if (this.searchMode === 'store' || this.searchMode === 'location') {
-        this.loadMoreStores();
+      if (scrollPosition >= documentHeight - 200) {
+        if (this.searchMode === 'product') {
+          this.loadMoreProductResults();
+        } else if (this.searchMode === 'store' || this.searchMode === 'location') {
+          this.loadMoreStores();
+        }
       }
-    }
+    });
   }
 
   // 確保至少載入 minInitialStores 間門市
@@ -1807,64 +1860,47 @@ export class NewSearchComponent implements OnInit {
   }
 
   loadFavoriteStores() {
-    if (this.user.emailVerified) {
+    if (this.user) {
       const userRef = this.firestore.collection('users').doc(this.user.uid);
       userRef.collection('favorites').valueChanges().subscribe(favorites => {
         this.favoriteStores = favorites;
+        // 維護 Set 以供 O(1) 查詢
+        this.favoriteStoreNameSet = new Set(favorites.map((f: any) => f.storeName));
       });
     }
   }
 
   toggleFavorite(store: any) {
-    if (this.user.emailVerified) {
+    if (this.user) {
       const userRef = this.firestore.collection('users').doc(this.user.uid);
       const favoriteRef = userRef.collection('favorites').doc(store.storeName);
 
       // 如果商店已經在喜愛清單內，刪除它
       if (this.isFavorite(store)) {
-        const dialogRef = this.dialog.open(MessageDialogComponent, {
-          data: {
-            title: "取消收藏",
-            message: `已將『${store.storeName}』從收藏中移除`,
-            imgPath: "assets/S__222224406.jpg"
-          }
-        });
-        dialogRef.afterClosed().subscribe(result => {
-          favoriteRef.delete();
-        });
+        favoriteRef.delete();
       } else {
-        const dialogRef = this.dialog.open(MessageDialogComponent, {
-          data: {
-            title: "新增收藏",
-            message: `『${store.storeName}』已加入您的收藏店家`,
-            imgPath: "assets/S__222224406.jpg"
-          }
-        });
+        const favoriteData: any = {
+          storeName: store.storeName
+        };
+        // 依照商店設定選擇性的資料
+        if (store.StoreName) {
+          favoriteData.store711Name = store.StoreName;
+          favoriteData.label = '7-11';
+        }
+        if (store.longitude && store.latitude) {
+          favoriteData.storeFLongitude = store.longitude;
+          favoriteData.storeFLatitude = store.latitude;
+          favoriteData.label = '全家';
+        }
 
-        dialogRef.afterClosed().subscribe(result => {
-          const favoriteData: any = {
-            storeName: store.storeName
-          };
-          // 依照商店設定選擇性的資料
-          if (store.StoreName) {
-            favoriteData.store711Name = store.StoreName;
-            favoriteData.label = '7-11';
-          }
-          if (store.longitude && store.latitude) {
-            favoriteData.storeFLongitude = store.longitude;
-            favoriteData.storeFLatitude = store.latitude;
-            favoriteData.label = '全家';
-          }
-
-          favoriteRef.set(favoriteData);
-        });
+        favoriteRef.set(favoriteData);
       }
     } else {
     }
   }
 
   isFavorite(store: any): boolean {
-    return this.favoriteStores.some(favStore => favStore.storeName === store.storeName);
+    return this.favoriteStoreNameSet.has(store.storeName);
   }
 
   onUserUpdated(user: any) {

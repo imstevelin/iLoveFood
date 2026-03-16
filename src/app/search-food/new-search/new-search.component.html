@@ -23,7 +23,7 @@
 
         <!-- Autocomplete Dropdown -->
         <mat-autocomplete #auto="matAutocomplete" (optionSelected)="onOptionSelect($event)" [displayWith]="displayFn">
-          <mat-option *ngFor="let item of unifiedDropDownList" [value]="item">
+          <mat-option *ngFor="let item of unifiedDropDownList; trackBy: trackByDropdownItem" [value]="item">
             <div *ngIf="item.type === 'store'" class="flex items-center gap-2 py-1">
               <span class="text-xs px-1.5 py-0.5 rounded-md bg-blue-50 text-blue-600">🏪</span>
               <img *ngIf="item.label === '7-11'" src="{{ sevenElevenIconUrl }}" alt="7-11" class="w-4 h-4" />
@@ -59,7 +59,7 @@
       </button>
 
       <!-- Hamburger Menu Button -->
-      <button class="header-icon-btn" [class.active]="showMenu" (click)="toggleMenu()"
+      <button #menuButton class="header-icon-btn" [class.active]="showMenu" (click)="toggleMenu()"
         aria-label="選單">
         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 24 24"
           [style.color]="showMenu ? 'var(--accent)' : '#6b7280'">
@@ -69,7 +69,7 @@
     </div>
 
     <!-- ===== Menu Panel ===== -->
-    <div class="menu-panel" [class.open]="showMenu">
+    <div #menuPanel class="menu-panel" [class.open]="showMenu">
 
       <!-- Section: 我的收藏 -->
       <div class="menu-section-title">
@@ -285,10 +285,10 @@
             </h2>
           </div>
           <button (click)="toggleFavorite(store)" class="shrink-0 p-1" *ngIf="user">
-            <svg *ngIf="isFavorite(store)" xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="#ef4444" viewBox="0 0 24 24">
+            <svg *ngIf="favoriteStoreNameSet.has(store.storeName)" xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="#ef4444" viewBox="0 0 24 24">
               <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
             </svg>
-            <svg *ngIf="!isFavorite(store)" xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" stroke="#d1d5db" viewBox="0 0 24 24" stroke-width="2">
+            <svg *ngIf="!favoriteStoreNameSet.has(store.storeName)" xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" stroke="#d1d5db" viewBox="0 0 24 24" stroke-width="2">
               <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
             </svg>
           </button>
@@ -332,10 +332,10 @@
             </h2>
           </div>
           <button (click)="toggleFavorite(store)" class="shrink-0 p-1" *ngIf="user">
-            <svg *ngIf="isFavorite(store)" xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="#ef4444" viewBox="0 0 24 24">
+            <svg *ngIf="favoriteStoreNameSet.has(store.storeName)" xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="#ef4444" viewBox="0 0 24 24">
               <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
             </svg>
-            <svg *ngIf="!isFavorite(store)" xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" stroke="#d1d5db" viewBox="0 0 24 24" stroke-width="2">
+            <svg *ngIf="!favoriteStoreNameSet.has(store.storeName)" xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" stroke="#d1d5db" viewBox="0 0 24 24" stroke-width="2">
               <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
             </svg>
           </button>

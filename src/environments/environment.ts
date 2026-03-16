@@ -28,14 +28,12 @@ export const environment = {
     }
   },
   firebaseConfig: {
-    apiKey: "AIzaSyA3i_YLXpXuHNrmrHULrqnsIj5Z919aCfw",
-    authDomain: "friendly-cat-for-you.firebaseapp.com",
-    databaseURL: "https://friendly-cat-for-you-default-rtdb.firebaseio.com",
-    projectId: "friendly-cat-for-you",
-    storageBucket: "friendly-cat-for-you.firebasestorage.app",
-    messagingSenderId: "614210455616",
-    appId: "1:614210455616:web:cedabfd68dca95ae4337a5",
-    measurementId: "G-3V3740GPG7"
+    apiKey: "AIzaSyAsPcTvRVa51DW3und2SMu-ghLlCKIlD-Q",
+    authDomain: "chat-9bfed.firebaseapp.com",
+    projectId: "chat-9bfed",
+    storageBucket: "chat-9bfed.firebasestorage.app",
+    messagingSenderId: "7612717796",
+    appId: "1:7612717796:web:9e231d7f1d97ebf4352af1"
   }
 };
 
