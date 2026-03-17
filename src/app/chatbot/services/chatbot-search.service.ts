@@ -6,6 +6,7 @@ import { SevenElevenRequestService } from '../../search-food/new-search/services
 import { FamilyMartRequestService } from '../../search-food/new-search/services/family-mart-request.service';
 import { GeolocationService } from '../../services/geolocation.service';
 import { LocationData, Location } from '../../search-food/model/seven-eleven.model';
+import { pinyin } from 'pinyin-pro';
 
 /**
  * ChatbotSearchService — 聊天機器人的搜尋引擎
@@ -75,136 +76,136 @@ export class ChatbotSearchService {
   }
 
   // ============================================================
-  // 搜尋：按店名
+  // 原子化工具 1：按關鍵字找門市 (不拉庫存)
   // ============================================================
-  searchByStoreName(query: string): Observable<any[]> {
+  findStoresByKeyword(keyword: string): Observable<any[]> {
     return this.ensureReady().pipe(
-      switchMap(() => {
-        // 清理查詢詞
-        const cleaned = query
+      map(() => {
+        if (!keyword || keyword.trim().length < 1) return [];
+
+        const cleaned = keyword
           .replace(/[有什麼哪些東西商品食物吃的打折嗎呢啊喔？?，,。.！!]/g, '')
-          .replace(/7-?11|七十一|統一超商|全家/gi, '')
-          .replace(/門市|分店|店家|店|便利商店/g, '')
-          .replace(/我在|我想|請問|幫我|查|搜尋/g, '')
+          .replace(/請幫|請問|幫我|我想|查|搜尋/g, '')
           .trim();
 
-        if (cleaned.length < 2) return of([]);
+        if (cleaned.length < 1) return [];
 
-        // 在 7-11 中搜尋
-        const matched711 = this.all711Stores.filter(s => {
-          const name = s.name || '';
-          return name.includes(cleaned) || cleaned.includes(name);
-        });
+        // 7-11
+        const matched711 = this.all711Stores.filter(item => {
+          return this.matchesSearchTerm(item.name || '', item.name_pinyin || '', cleaned) ||
+                 this.matchesSearchTerm(item.addr || '', item.addr_pinyin || '', cleaned);
+        }).slice(0, 10).map(s => ({
+          brand: '7-11',
+          store_name: `7-11${s.name}門市`,
+          store_id: s.serial,
+          lat: parseFloat(s.lat) || 0,
+          lng: parseFloat(s.lng) || 0,
+          address: s.addr || ''
+        }));
 
-        // 在全家中搜尋
-        const matchedFm = this.allFmStores.filter(s => {
-          const name = (s.Name || '').replace(/全家/g, '').replace(/店$/g, '').trim();
-          return name.length >= 2 && (name.includes(cleaned) || cleaned.includes(name));
-        });
+        // 全家
+        const matchedFm = this.allFmStores.filter(item => {
+          const name = (item.Name || '').replace('全家', '');
+          return this.matchesSearchTerm(name, item.Name_pinyin || '', cleaned) ||
+                 this.matchesSearchTerm(item.addr || '', item.addr_pinyin || '', cleaned);
+        }).slice(0, 10).map(s => ({
+          brand: 'FamilyMart',
+          store_name: s.Name || '',
+          store_id: s.pkeynew || s.pkey || '',
+          lat: parseFloat(s.py_wgs84) || 0,
+          lng: parseFloat(s.px_wgs84) || 0,
+          address: s.addr || s.address || ''
+        }));
 
-        if (matched711.length === 0 && matchedFm.length === 0) return of([]);
-
-        // 取第一個匹配的門市，查詢商品明細
-        const requests: Observable<any>[] = [];
-
-        if (matched711.length > 0) {
-          const store = matched711[0];
-          requests.push(
-            this.ensure711Token().pipe(
-              switchMap(() => this.sevenService.getItemsByStoreNo(store.serial, { Latitude: parseFloat(store.lat) || 0, Longitude: parseFloat(store.lng) || 0 })),
-              map(res => this.format711StoreResult(store, res)),
-              catchError(() => of(null))
-            )
-          );
-        }
-
-        if (matchedFm.length > 0) {
-          const store = matchedFm[0];
-          const lat = parseFloat(store.py_wgs84) || 0;
-          const lng = parseFloat(store.px_wgs84) || 0;
-          if (lat && lng) {
-            requests.push(
-              this.fmService.getNearByStoreList({ Latitude: lat, Longitude: lng } as Location).pipe(
-                map(res => this.formatFmStoreResult(store, res)),
-                catchError(() => of(null))
-              )
-            );
-          }
-        }
-
-        return forkJoin(requests).pipe(
-          map(results => results.filter(r => r !== null))
-        );
+        return [...matched711, ...matchedFm];
       })
     );
   }
 
   // ============================================================
-  // 搜尋：按地區
+  // 原子化工具 2：查詢該特定門市庫存
   // ============================================================
-  searchByArea(area: string, maxStores: number = 5): Observable<any[]> {
-    return this.ensureReady().pipe(
-      switchMap(() => {
-        // 找出地址含有該地區的門市
-        const stores711 = this.all711Stores
-          .filter(s => (s.addr || '').includes(area))
-          .slice(0, maxStores);
-
-        const storesFm = this.allFmStores
-          .filter(s => (s.addr || '').includes(area) || (s.Name || '').includes(area))
-          .slice(0, maxStores);
-
-        if (stores711.length === 0 && storesFm.length === 0) return of([]);
-
-        const requests: Observable<any>[] = [];
-
-        // 7-11 門市：每間都查商品明細
-        if (stores711.length > 0) {
-          const sevenReqs = this.ensure711Token().pipe(
-            switchMap(() => {
-              return forkJoin(
-                stores711.map(store =>
-                  this.sevenService.getItemsByStoreNo(store.serial, { Latitude: parseFloat(store.lat) || 0, Longitude: parseFloat(store.lng) || 0 }).pipe(
-                    map(res => this.format711StoreResult(store, res)),
-                    catchError(() => of(null))
-                  )
-                )
-              );
-            })
-          );
-          requests.push(sevenReqs.pipe(map(arr => arr.filter((x: any) => x !== null))));
-        }
-
-        // 全家門市：用第一間的座標查附近（API 會回傳附近多間）
-        if (storesFm.length > 0) {
-          const firstFm = storesFm[0];
-          const lat = parseFloat(firstFm.py_wgs84) || 0;
-          const lng = parseFloat(firstFm.px_wgs84) || 0;
-          if (lat && lng) {
-            requests.push(
-              this.fmService.getNearByStoreList({ Latitude: lat, Longitude: lng } as Location).pipe(
-                map((res: any) => {
-                  if (res?.code === 1 && res.data) {
-                    // 只保留地址包含目標地區的門市
-                    return res.data
-                      .filter((s: any) => (s.addr || s.address || '').includes(area) || (s.name || '').includes(area))
-                      .slice(0, maxStores)
-                      .map((s: any) => this.formatFmNearbyResult(s))
-                      .filter((r: any) => r !== null);
-                  }
-                  return [];
-                }),
-                catchError(() => of([]))
-              )
-            );
+  queryStoreInventory(brand: string, storeId: string, lat: number, lng: number): Observable<any> {
+    if (brand === '7-11') {
+      return this.ensure711Token().pipe(
+        switchMap(() => this.sevenService.getItemsByStoreNo(storeId, { Latitude: lat, Longitude: lng })),
+        map(res => {
+          const cats = res?.element?.StoreStockItem?.CategoryStockItems || [];
+          const foodInfo = this.formatCategories(cats);
+          if (foodInfo.length === 0) return { message: '該門市目前無友善食光庫存' };
+          return {
+            brand: '7-11',
+            foodInfo
+          };
+        }),
+        catchError(() => of({ error: '查詢失敗' }))
+      );
+    } else if (brand === 'FamilyMart') {
+      const pkeys = storeId ? [storeId] : [];
+      // 由於本地 family_mart_stores.json 的 pkeynew (例如大里金瑞店 023987) 可能和 API 實際要的 oldPKey (022391) 脫鉤，
+      // 如果帶 pkeynew 去查，回傳會是空的。為了避免這個問題，我們先試著帶 PKey 查，如果是空的，就退回純座標搜尋（跟 Web UI 一致）。
+      return this.fmService.getNearByStoreList({ Latitude: lat, Longitude: lng } as Location, pkeys).pipe(
+        switchMap((res: any) => {
+          if (res?.code === 1 && res.data && res.data.length > 0) {
+            return of(res);
           }
-        }
+          // 退回純座標查詢
+          return this.fmService.getNearByStoreList({ Latitude: lat, Longitude: lng } as Location, []);
+        }),
+        map((res: any) => {
+          if (res?.code !== 1 || !res.data || res.data.length === 0) {
+            return { message: '該門市目前無友善食光庫存' };
+          }
+          // 在純座標搜尋的回傳清單中，找出符合原預期門市 (可以用距離最近，或是名稱比對)
+          // 這邊簡單點：取第一筆通常是因為座標極近。如果是帶 PKey 成功的也只會有一筆。
+          const target = res.data[0];
+          const formatted = this.formatFmNearbyResult(target);
+          if (!formatted) return { message: '該門市目前無友善食光庫存' };
+          return {
+            brand: 'FamilyMart',
+            foodInfo: formatted.foodInfo
+          };
+        }),
+        catchError(() => of({ error: '查詢失敗' }))
+      );
+    }
+    return of({ error: '不支援的品牌' });
+  }
 
-        return forkJoin(requests).pipe(
-          map(arrays => arrays.flat().filter((x: any) => x !== null))
-        );
-      })
-    );
+  // ============================================================
+  // 拼音校正與模糊比對工具
+  // ============================================================
+  private pinyinCache = new Map<string, string>();
+  convertToPinyin(text: string): string {
+    if (!text) return '';
+    if (this.pinyinCache.has(text)) return this.pinyinCache.get(text)!;
+    try {
+      const result = pinyin(text, { toneType: 'none' }) as string;
+      const pinyinResult = result.replace(/\s+/g, ' ').trim();
+      this.pinyinCache.set(text, pinyinResult);
+      return pinyinResult;
+    } catch (error) {
+      return text;
+    }
+  }
+
+  matchesSearchTerm(text: string, pinyinText: string, searchTerm: string): boolean {
+    if (!searchTerm) return true;
+    const lowerSearchTerm = searchTerm.toLowerCase().trim();
+    const lowerText = text.toLowerCase();
+    const lowerPinyin = pinyinText.toLowerCase();
+
+    if (lowerText.includes(lowerSearchTerm)) return true;
+    if (lowerPinyin.includes(lowerSearchTerm)) return true;
+
+    const searchTermPinyin = this.convertToPinyin(searchTerm).toLowerCase();
+    if (searchTermPinyin && lowerPinyin.includes(searchTermPinyin)) return true;
+
+    const pinyinNoSpace = lowerPinyin.replace(/\s+/g, '');
+    const searchNoSpace = lowerSearchTerm.replace(/\s+/g, '');
+    if (pinyinNoSpace.includes(searchNoSpace)) return true;
+
+    return false;
   }
 
   // ============================================================
@@ -225,35 +226,58 @@ export class ChatbotSearchService {
             const locFm: Location = { Latitude: lat, Longitude: lng };
 
             return forkJoin({
-              seven: this.sevenService.getNearByStoreList(loc711).pipe(catchError(() => of(null))),
+              sevenList: this.sevenService.getNearByStoreList(loc711).pipe(catchError(() => of(null))),
               fm: this.fmService.getNearByStoreList(locFm).pipe(catchError(() => of(null)))
-            });
+            }).pipe(
+              switchMap(({ sevenList, fm }) => {
+                const fmStores: any[] = [];
+                if (fm?.code === 1 && fm.data) {
+                  fm.data.slice(0, maxStores).forEach((s: any) => {
+                    const formatted = this.formatFmNearbyResult(s);
+                    if (formatted) fmStores.push(formatted);
+                  });
+                }
+
+                const sevenRequests: Observable<any>[] = [];
+                if (sevenList?.element?.StoreStockItemList) {
+                  const toQuery = sevenList.element.StoreStockItemList
+                    .filter((s: any) => s.RemainingQty > 0)
+                    .slice(0, maxStores);
+                  
+                  toQuery.forEach((s: any) => {
+                    sevenRequests.push(
+                      this.sevenService.getItemsByStoreNo(s.StoreNo, { Latitude: lat, Longitude: lng }).pipe(
+                        map(detailRes => {
+                          const cats = detailRes?.element?.StoreStockItem?.CategoryStockItems || [];
+                          return {
+                            storeName: `7-11${s.StoreName}門市`,
+                            distance: s.Distance,
+                            label: '7-11',
+                            foodInfo: this.formatCategories(cats)
+                          };
+                        }),
+                        catchError(() => of(null))
+                      )
+                    );
+                  });
+                }
+
+                if (sevenRequests.length === 0) {
+                  return of(fmStores);
+                }
+
+                return forkJoin(sevenRequests).pipe(
+                  map((sevenStores) => {
+                    const validSeven = sevenStores.filter(s => s !== null && s.foodInfo && s.foodInfo.length > 0);
+                    const stores = [...validSeven, ...fmStores];
+                    stores.sort((a, b) => (a.distance || 0) - (b.distance || 0));
+                    return stores;
+                  })
+                );
+              })
+            );
           })
         );
-      }),
-      map(result => {
-        const stores: any[] = [];
-        if (result.seven?.element?.StoreStockItemList) {
-          result.seven.element.StoreStockItemList
-            .filter((s: any) => s.RemainingQty > 0)
-            .slice(0, maxStores)
-            .forEach((s: any) => {
-              stores.push({
-                storeName: `7-11${s.StoreName}門市`,
-                distance: s.Distance,
-                label: '7-11',
-                foodInfo: this.formatCategories(s.CategoryStockItems || [])
-              });
-            });
-        }
-        if (result.fm?.code === 1 && result.fm.data) {
-          result.fm.data.slice(0, maxStores).forEach((s: any) => {
-            const formatted = this.formatFmNearbyResult(s);
-            if (formatted) stores.push(formatted);
-          });
-        }
-        stores.sort((a, b) => (a.distance || 0) - (b.distance || 0));
-        return stores;
       }),
       catchError(() => of([]))
     );
@@ -290,13 +314,22 @@ export class ChatbotSearchService {
     if (!Array.isArray(info) || info.length === 0) return null;
     const foodInfo = info
       .filter((cat: any) => (cat.qty || 0) > 0)
-      .map((cat: any) => ({
-        category: cat.name || '其他',
-        remainingQty: cat.qty || 0,
-        items: (cat.items || []).map((item: any) =>
-          typeof item === 'string' ? item : (item.title || item.name || ''))
-      }))
-      .filter((c: any) => c.items.length > 0);
+      .map((cat: any) => {
+        let itemsList = (cat.categories || []).reduce((acc: string[], subcat: any) => {
+          return acc.concat((subcat.products || []).map((p: any) => p.name || ''));
+        }, []);
+
+        // API 經常在某些分類（如蔬果）只給 qty 但不給明細陣列，我們必須給個預設名稱否則會被過濾
+        if (itemsList.length === 0) {
+          itemsList = [`相關品項共 ${cat.qty} 個 (門市未提供明細)`];
+        }
+
+        return {
+          category: cat.name || '其他',
+          remainingQty: cat.qty || 0,
+          items: itemsList
+        };
+      });
     if (foodInfo.length === 0) return null;
     return {
       storeName: store.name || '全家',

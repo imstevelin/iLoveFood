@@ -1,10 +1,9 @@
+<div class="chatbot-mobile-backdrop" [class.show]="isOpen"></div>
 <div class="chatbot-fab" *ngIf="!isOpen && chatEnabled" (click)="toggleChat()">
-  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="white" viewBox="0 0 24 24">
-    <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z"/>
-  </svg>
+  <span style="font-size: 28px; line-height: 1;">💬</span>
 </div>
 
-<div class="chatbot-container" [class.open]="isOpen" *ngIf="isOpen">
+<div class="chatbot-container" [class.open]="isOpen">
     <div class="chatbot-header" (click)="toggleChat()">
         <span class="chatbot-title">✨ 友善小精靈</span>
         <button class="toggle-btn" (click)="toggleChat($event)">
@@ -12,24 +11,36 @@
         </button>
     </div>
 
-    <div #chatBody class="chatbot-body">
+    <div #chatBody class="chatbot-body" (scroll)="onChatScroll()">
         <div *ngFor="let msg of messages" [ngClass]="msg.sender">
             <span *ngIf="msg.sender === 'user'" class="text-gray-700">{{ msg.text }}</span>
             <div *ngIf="msg.sender === 'bot' && !msg.isLoading" class="bot-message">
-                <span *ngIf="!isStoreMessage(msg.text)">{{ msg.text }}</span>
-                <div *ngIf="isStoreMessage(msg.text)"><span [innerHTML]="formatStoreMessage(msg.text)"></span></div>
+                <span [innerHTML]="msg.safeHtml || msg.text"></span>
             </div>
             <span *ngIf="msg.sender === 'bot' && msg.isLoading" class="bot-message loading-text">
                 {{ msg.text }}
             </span>
         </div>
+        <!-- Suggested Replies -->
+        <div class="chatbot-presets" *ngIf="suggestedReplies.length > 0">
+            <button *ngFor="let reply of suggestedReplies" class="preset-btn" (click)="sendPreset(reply)">
+                {{ reply }}
+            </button>
+        </div>
     </div>
+
+    <!-- Scroll Bottom Button -->
+    <button *ngIf="showScrollBottom" class="scroll-bottom-btn" (click)="scrollToBottom()">
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 24 24">
+        <path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41z"/>
+      </svg>
+    </button>
 
     <div class="chatbot-footer">
         <input type="text"
             [(ngModel)]="userInput"
             [disabled]="messages[messages.length - 1].isLoading || false"
-            (keyup.enter)="handleEnter($event)" [placeholder]="messages[messages.length - 1].isLoading || false ? '搜尋中，請稍後...' : '請輸入訊息'"
+            (keydown.enter)="handleEnter($event)" [placeholder]="messages[messages.length - 1].isLoading || false ? '請稍後...' : '請輸入訊息'"
         >
         <button (click)="sendMessage()">
           <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 24 24">

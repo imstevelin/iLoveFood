@@ -22,11 +22,11 @@ export class FamilyMartRequestService {
       return this.requestService.get(url);
     }
 
-    getNearByStoreList(location: Location): Observable<any> {
+    getNearByStoreList(location: Location, oldPKeys: string[] = []): Observable<any> {
       const url = this.baseUrl + environment.familyMartUrl.endpoint.mapProductInfo
       const body = {
         "ProjectCode": "202106302",
-        "OldPKeys": [],
+        "OldPKeys": oldPKeys,
         "PostInfo": "",
         "Latitude": location.Latitude,
         "Longitude": location.Longitude

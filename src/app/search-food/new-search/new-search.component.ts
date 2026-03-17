@@ -483,6 +483,15 @@ export class NewSearchComponent implements OnInit {
     }
   }
 
+  // 監聽全站滑動事件，若選單為開啟狀態則自動收起
+  @HostListener('window:touchmove')
+  onWindowTouchMove() {
+    if (this.showMenu || this.showLabSection) {
+      this.showMenu = false;
+      this.showLabSection = false;
+    }
+  }
+
   onInput(event: Event): void {
     const input = (event.target as HTMLInputElement).value;
     this.searchTerm = input;
@@ -2203,6 +2212,11 @@ export class NewSearchComponent implements OnInit {
   // 監聽滾動事件，觸發無限滾動（使用 requestAnimationFrame 節流）
   @HostListener('window:scroll', [])
   onWindowScroll(): void {
+    if (this.showMenu || this.showLabSection) {
+      this.showMenu = false;
+      this.showLabSection = false;
+    }
+    
     if (this.scrollTicking) return;
     this.scrollTicking = true;
     requestAnimationFrame(() => {
