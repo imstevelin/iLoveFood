@@ -188,9 +188,31 @@ export class ChatbotComponent implements OnInit, OnDestroy {
           // 將 assistant 的 tool_calls 加入紀錄
           this.conversationHistory.push(message);
 
+          // 計算動態讀取文字 (根據 Tool 組合精確判斷)
+          const toolCalls = message.tool_calls;
+          const inventoryCalls = toolCalls.filter((tc: any) => tc.function.name === 'query_store_inventory');
+          const hasStoreSearch = toolCalls.some((tc: any) => tc.function.name === 'search_stores_by_keyword');
+          const hasNearbySearch = toolCalls.some((tc: any) => tc.function.name === 'get_nearby_stores_inventory');
+          
+          let loadingMsg = '正在為您處理中...';
+          
+          if (hasNearbySearch) {
+            loadingMsg = '正在掃描您周邊的所有門市...';
+          } else if (inventoryCalls.length > 0) {
+            const brands = Array.from(new Set(inventoryCalls.map((tc: any) => JSON.parse(tc.function.arguments).brand)));
+            if (brands.length > 1) {
+              loadingMsg = '正在同步查詢各大品牌門市庫存...';
+            } else {
+              loadingMsg = `正在查詢 ${brands[0]} 門市庫存...`;
+            }
+          } else if (hasStoreSearch) {
+            const firstSearch = toolCalls.find((tc: any) => tc.function.name === 'search_stores_by_keyword');
+            const keyword = JSON.parse(firstSearch.function.arguments || '{}').keyword || '';
+            loadingMsg = keyword ? `正在搜尋「${keyword}」相關門市...` : '正在搜尋門市...';
+          }
+
           // 更新讀取狀態
-          this.messages = this.messages.filter(msg => !msg.isLoading);
-          this.putMessage('正在為您查詢資料...', 'bot', true);
+          this.putMessage(loadingMsg, 'bot', true);
 
           // 解析並執行 tools
           this.handleToolCalls(message.tool_calls);
@@ -276,11 +298,26 @@ export class ChatbotComponent implements OnInit, OnDestroy {
 
   putMessage(message: string, sender: string, isLoading?: boolean) {
     if (sender === 'bot') {
+      // 1. 徹底移除 LLM 可能輸出的所有 XML 標籤（如 <thinking>, <response_format> 等）
+      message = message.replace(/<[^>]*>/g, '').trim();
+
+      // 優化：如果是讀取狀態且最後一筆也是讀取中，直接更新文字，不進入 300ms 延遲
+      if (isLoading) {
+        const lastMsg = this.messages[this.messages.length - 1];
+        if (lastMsg && lastMsg.isLoading) {
+          lastMsg.text = message;
+          setTimeout(() => this.scrollToBottom(), 50);
+          return;
+        }
+      }
+
       let mainText = message;
       this.suggestedReplies = [];
 
-      if (mainText.includes('---PRESETS---')) {
-        const parts = mainText.split('---PRESETS---');
+      // 支援大小寫不敏感的分隔符
+      const presetDelimiter = /---PRESETS---/i;
+      if (presetDelimiter.test(mainText)) {
+        const parts = mainText.split(presetDelimiter);
         mainText = parts[0].trim();
         const presetPart = parts[1] ? parts[1].trim() : '';
         
@@ -288,6 +325,8 @@ export class ChatbotComponent implements OnInit, OnDestroy {
           .map(line => line.trim())
           .filter(line => /^\d+\./.test(line))
           .map(line => line.replace(/^\d+\.\s*/, '').replace(/^-/, '').trim())
+          // 額外清理可能殘留的 Markdown 括號 []
+          .map(line => line.replace(/\[|\]/g, ''))
           .filter(line => line.length > 0);
       }
 

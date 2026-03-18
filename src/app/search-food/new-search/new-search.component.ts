@@ -41,8 +41,8 @@ export class NewSearchComponent implements OnInit {
   storesDataReady: boolean = false; // 商店 JSON 資料是否已載入
   showAboutCard: boolean = false; // 關於卡片是否顯示
 
-  // 搜尋模式: 'location' = 定位搜尋, 'store' = 門市搜尋, 'product' = 商品搜尋
-  searchMode: 'location' | 'store' | 'product' = 'location';
+  // 搜尋模式: 'location' = 定位搜尋, 'store' = 門市搜尋, 'product' = 商品搜尋, 'route' = 導航路線搜尋
+  searchMode: 'location' | 'store' | 'product' | 'route' = 'location';
   isLocationSearchMode: boolean = true; // 是否使用定位搜尋
 
   // === 效能優化 ===
@@ -1066,14 +1066,21 @@ export class NewSearchComponent implements OnInit {
         let skipStep = false;
         if (isDriving) {
           const text = (step.instructions || '') + ' ' + (step.html_instructions || '');
-          // 檢查是否包含封閉型道路關鍵字
-          if (text.includes('國道') || text.includes('快速道路') || text.includes('快速公路') || text.includes('高架')) {
+          // 檢查是否包含封閉型道路關鍵字（國道、快速道路、高架、交流道等）
+          const highSpeedKeywords = [
+            '國道', '快速道路', '快速公路', '高架', '交流道', 
+            '國1', '國2', '國3', '國4', '國5', '國6', '國8', '國10',
+            '環道', '台61', '台62', '台64', '台66', '台68', '台72', '台74', '台76', '台78', '台82', '台84', '台86',
+            '建國高架', '市民大道', '環東'
+          ];
+          
+          if (highSpeedKeywords.some(key => text.includes(key))) {
             skipStep = true;
           }
         }
 
         if (skipStep) {
-          // 捨棄此封閉路段，不進行周邊超商取樣
+          // 偵測到高架路段，跳過取樣，避免要求使用者下交流道去超商
           continue;
         }
 
@@ -1109,7 +1116,7 @@ export class NewSearchComponent implements OnInit {
       }
     }
 
-    this.searchMode = 'route' as any;
+    this.searchMode = 'route';
     this.isLocationSearchMode = false;
     this.totalStoresShowList = [];
     this.allNearbyStores = [];
@@ -1132,17 +1139,25 @@ export class NewSearchComponent implements OnInit {
     });
 
     const fmRequests = sampledPoints.map(p => {
+      // 這裡無需傳遞 OldPKeys，只要傳遞經緯度，MapProductInfo 就會自動返回該座標半徑內的門市
       return this.familyMartService.getNearByStoreList({
         Latitude: p.lat, Longitude: p.lng
-      }).pipe(
-        timeout(8000), catchError(() => of(null))
+      }, []).pipe(
+        timeout(8000),
+        catchError((err) => {
+          console.error('[RouteSearch] FM api request err:', err);
+          return of(null);
+        })
       );
     });
 
+    console.log(`[RouteSearch] Sent ${sevenRequests.length} 7-11 reqs and ${fmRequests.length} FM reqs`);
+
     forkJoin({
-      sevenResults: forkJoin(sevenRequests),
-      fmResults: forkJoin(fmRequests)
+      sevenResults: forkJoin(sevenRequests.length > 0 ? sevenRequests : [of([])]),
+      fmResults: forkJoin(fmRequests.length > 0 ? fmRequests : [of([])])
     }).subscribe(({ sevenResults, fmResults }) => {
+      console.log(`[RouteSearch] forkJoin completes. sevenLen=${sevenResults.length}, fmLen=${fmResults.length}`);
       const allStores: any[] = [];
 
       // 7-11 解析
@@ -1156,10 +1171,7 @@ export class NewSearchComponent implements OnInit {
 
           // 計算該店距離這條「路線」的最佳最短距離 (選用路徑上最近的點代表)
           // 但簡化起見，算距離起點的距離排序
-          const dist = getDistance(
-            { latitude: this.searchCenterLat, longitude: this.searchCenterLng },
-            { latitude: parseFloat(store.Y), longitude: parseFloat(store.X) }
-          );
+          const dist = this.calc711DistFromUser(storeNo);
 
           allStores.push({
             ...store,
@@ -1181,26 +1193,42 @@ export class NewSearchComponent implements OnInit {
           if (this.fmQueriedPKeys.has(pkey)) return;
           this.fmQueriedPKeys.add(pkey);
 
-          const dist = getDistance(
-            { latitude: this.searchCenterLat, longitude: this.searchCenterLng },
-            { latitude: store.latitude, longitude: store.longitude }
-          );
+          // 計算總庫存量，若為 0 則過濾掉
+          let totalQty = 0;
+          if (store.info && Array.isArray(store.info)) {
+            store.info.forEach((cat: any) => totalQty += (cat.qty || 0));
+          }
+          if (totalQty === 0) return;
+
+          const lat = parseFloat(store.latitude);
+          const lng = parseFloat(store.longitude);
+
+          const dist = !isNaN(lat) && !isNaN(lng)
+            ? getDistance(
+                { latitude: this.searchCenterLat, longitude: this.searchCenterLng },
+                { latitude: lat, longitude: lng }
+              )
+            : (store.distance || 0);
 
           allStores.push({
             ...store,
             storeName: store.name,
             label: '全家',
             distance: dist,
+            remainingQty: totalQty,
             showDistance: true
           });
         });
       });
 
-      allStores.sort((a, b) => a.distance - b.distance);
+      // 最終排序與顯示
+      allStores.sort((a, b) => (a.distance || 0) - (b.distance || 0));
+      console.log(`[RouteSearch] Total valid stores found: ${allStores.length}`);
+      
       allStores.forEach(s => this.precomputeCategoryQty(s));
 
       this.allNearbyStores = allStores;
-      this.totalStoresShowList = allStores.slice(0, 20); // 先顯示前 20 筆
+      this.totalStoresShowList = allStores.slice(0, 20); 
       this.hasMoreStores = allStores.length > 20;
       this.storeDataService.setStores(this.allNearbyStores);
       this.storeDataService.setIsUserLocationSearch(false);
@@ -2061,7 +2089,14 @@ export class NewSearchComponent implements OnInit {
       return;
     }
 
-    // 超出 API 範圍：從全部門市 JSON 逐批載入
+    // 超出 API 範圍：
+    // 若為路線搜尋模式，不應從 JSON 載入全台灣門市，因為那是無關的
+    if (this.searchMode === 'route') {
+      this.hasMoreStores = false;
+      this.isLoadingMore = false;
+      return;
+    }
+
     this.loadMoreStoresFromJSON();
   }
 
@@ -2229,7 +2264,7 @@ export class NewSearchComponent implements OnInit {
       if (scrollPosition >= documentHeight - 200) {
         if (this.searchMode === 'product') {
           this.loadMoreProductResults();
-        } else if (this.searchMode === 'store' || this.searchMode === 'location') {
+        } else if (this.searchMode === 'store' || this.searchMode === 'location' || this.searchMode === 'route') {
           this.loadMoreStores();
         }
       }

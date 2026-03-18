@@ -31,7 +31,8 @@
     bottom: 1.5rem;
     right: 1.5rem;
     width: 22rem;
-    max-width: 90vw;
+    height: 38rem;
+    max-height: 85vh;
     background: rgba(255, 255, 255, 0.92);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
@@ -42,6 +43,7 @@
     flex-direction: column;
     overflow: hidden;
     z-index: 1000;
+    resize: vertical;
     
     /* Animation base */
     opacity: 0;
@@ -60,21 +62,18 @@
     visibility: visible;
     pointer-events: auto;
     transform: translateY(0) scale(1);
-
-    resize: vertical;
-    height: 28rem;
-    max-height: 80vh;
 }
 
 .chatbot-header {
-    background: var(--accent, #5B7FFF);
-    color: #FFFFFF;
+    background: #ffffff;
+    color: #333333;
     padding: 14px 16px;
     cursor: pointer;
     display: flex;
     justify-content: space-between;
     align-items: center;
     border-radius: 20px 20px 0 0;
+    border-bottom: 1px solid rgba(226, 232, 240, 0.5);
 }
 
 .chatbot-title {
@@ -83,9 +82,9 @@
 }
 
 .toggle-btn {
-    background: rgba(255, 255, 255, 0.2);
+    background: rgba(0, 0, 0, 0.05);
     border: none;
-    color: white;
+    color: #666666;
     width: 28px;
     height: 28px;
     border-radius: 50%;
@@ -97,7 +96,7 @@
     transition: background 0.2s;
 
     &:hover {
-        background: rgba(255, 255, 255, 0.35);
+        background: rgba(0, 0, 0, 0.1);
     }
 }
 
@@ -339,10 +338,11 @@
     .chatbot-mobile-backdrop {
         display: none;
         position: fixed;
+        /* Use inset 0 and high height to ensure it covers the layout viewport even if zoomed/pushed */
         top: 0;
         left: 0;
-        right: 0;
-        bottom: 0;
+        width: 100vw;
+        height: 200vh; /* Covers more than just the current viewport to handle rubber-banding */
         background: #ffffff;
         z-index: 998; /* Lower than container (1000) */
         opacity: 0;
