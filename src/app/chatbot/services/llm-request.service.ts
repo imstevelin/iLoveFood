@@ -88,9 +88,9 @@ export class LlmRequestService {
 3. 容錯處理：若工具回傳空結果，請友善地建議使用者更換關鍵字或檢查拼寫。
 
 範例對話：
-使用者：「美權門市還有什麼吃的？」
+使用者：「權美門市還有什麼吃的？」
 你的執行邏輯：
-Step 1: 呼叫 search_stores_by_keyword(keyword='美權')
+Step 1: 呼叫 search_stores_by_keyword(keyword='權美')
 Step 2: 假設獲取 StoreID: 15555x1, Brand: 7-11
 Step 3: 呼叫 query_store_inventory(brand='7-11', store_id='15555x1', ...)
 Step 4: 整合庫存結果回答使用者。
