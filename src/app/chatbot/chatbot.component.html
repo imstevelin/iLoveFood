@@ -6,8 +6,7 @@
 
 <div class="chatbot-container" [class.open]="isOpen"
      appMotion [animate]="isOpen ? { y: 0, opacity: 1, scale: 1 } : { y: '50px', opacity: 0, scale: 0.95 }"
-     [transition]="{ type: 'spring', stiffness: 300, damping: 25 }"
-     [style.pointer-events]="isOpen ? 'auto' : 'none'">
+     [transition]="{ type: 'spring', stiffness: 300, damping: 25 }">
     <div class="chatbot-header" (click)="toggleChat()">
         <span class="chatbot-title">✨ 友善小精靈</span>
         <button class="toggle-btn" (click)="toggleChat($event)" (touchstart)="0">

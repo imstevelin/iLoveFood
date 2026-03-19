@@ -252,6 +252,13 @@ svg.transition-transform {
   50% { opacity: 0.5; }
 }
 
+.category-chip {
+  transition: transform var(--transition-snappy),
+    background var(--transition-snappy),
+    border-color var(--transition-snappy),
+    box-shadow var(--transition-snappy);
+}
+
 /* ===== Premium CSS Spinner ===== */
 /* Ultra-premium glassmorphic fading tail spinner */
 .premium-spinner {
@@ -309,7 +316,6 @@ svg.transition-transform {
   transition: transform var(--transition-spring),
     box-shadow var(--transition-spring),
     opacity var(--transition-spring);
-  will-change: transform, opacity;
 
   &:hover {
     transform: translateY(-2px);
@@ -502,6 +508,11 @@ svg.transition-transform {
 
 /* ===== Category Grid — Spring Chip Interactions ===== */
 .category-chip {
+  position: relative;
+  overflow: hidden;
+  user-select: none;
+  -webkit-user-select: none;
+  z-index: 100; /* 護城河 z-index 極度提高，確保高於所有擴展開後的內容層與相鄰元素 */
   border: 1px solid rgba(226, 232, 240, 0.4);
   border-radius: 12px;
   background: rgba(255, 255, 255, 0.45);
@@ -513,7 +524,45 @@ svg.transition-transform {
     background var(--transition-snappy),
     border-color var(--transition-snappy),
     box-shadow var(--transition-snappy);
-  will-change: transform;
+  -webkit-tap-highlight-color: transparent;
+
+  > * {
+    position: relative;
+    /* 移除 z-index: 1 避免建立新的層疊上下文導致手機行為異常 */
+    pointer-events: none !important; /* 子元素全面防彈，避免攔截 Tap */
+  }
+
+  /* 核心點擊表面：絕對位於最上方的透明層 */
+  .category-chip-overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 100; /* 確保絕對在所有子元素 (包含 badge) 之上 */
+    pointer-events: auto !important;
+    background: transparent;
+  }
+
+  &::before {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 0%;
+    background: rgba(60, 130, 255, 0.2); /* 調整為更淡的藍色，保持優雅質感 */
+    z-index: 0;
+    pointer-events: none !important;
+    transition: height 0.4s ease-out; /* 結束後平滑且迅速地退回 */
+  }
+
+  &.is-loading::before {
+    height: 85%;
+    transition: height 1s cubic-bezier(0.1, 0.7, 0.1, 1); /* 加快上升速度，讓等待感不那麼拖沓 */
+  }
+
+  &.loading-complete::before {
+    height: 100%;
+    transition: height 0.15s ease-in; /* 動態加速：一取得資料便立刻疾速填滿到 100% 傳達「完成」 */
+  }
 
   &:hover {
     background: rgba(255, 255, 255, 0.78);
@@ -545,16 +594,32 @@ svg.transition-transform {
   color: #c2410c;
   padding: 2px 8px;
   border-radius: 20px;
+  /* 強制不攔截點擊與文字選取 */
+  pointer-events: none !important;
+  user-select: none !important;
+  -webkit-user-select: none !important;
   /* Subtle pop */
   transition: transform var(--transition-snappy);
 }
 
 /* ===== Category Expand Animation ===== */
-/* Governed by Angular Animations (@expandCollapse) on the element itself */
-/* We just ensure overflow is hidden during the height transition */
+/* Pure CSS grid-based expand/collapse — no Angular animation overhead */
 .category-expand-wrapper {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 300ms cubic-bezier(0.2, 0, 0, 1),
+              margin-top 300ms cubic-bezier(0.2, 0, 0, 1);
+  margin-top: 0;
+
+  &.expanded {
+    grid-template-rows: 1fr;
+    margin-top: 12px;
+  }
+}
+
+.category-expand-inner {
   overflow: hidden;
-  margin-top: 12px;
+  min-height: 0;
 }
 
 /* ===== Scroll Hint ===== */
@@ -723,4 +788,32 @@ a[href*="google.com/maps"] {
     height: 38px;
     border-radius: 10px;
   }
+
+  /* === Mobile Performance Optimizations === */
+  .store-glass-card {
+    /* Remove hover effects on mobile (no hover) */
+    transition: none;
+
+    &:hover {
+      transform: none;
+      box-shadow: 0 4px 24px rgba(0, 0, 0, 0.05);
+    }
+  }
+
+  /* Simplify card entrance animation to opacity-only on mobile */
+  .card-animate-in {
+    animation: cardFadeIn 300ms ease-out both;
+  }
+
+  .category-chip {
+    /* Simplify transitions on mobile */
+    transition: transform 150ms ease-out,
+      background 150ms ease-out,
+      border-color 150ms ease-out;
+  }
+}
+
+@keyframes cardFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }

@@ -34,16 +34,6 @@ import { trigger, style, animate, transition } from '@angular/animations';
   templateUrl: './new-search.component.html',
   styleUrls: ['./new-search.component.scss'],
   animations: [
-    trigger('expandCollapse', [
-      transition(':enter', [
-        style({ height: '0', opacity: 0, overflow: 'hidden' }),
-        animate('350ms cubic-bezier(0.25, 0.8, 0.25, 1)', style({ height: '*', opacity: 1 }))
-      ]),
-      transition(':leave', [
-        style({ height: '*', opacity: 1, overflow: 'hidden' }),
-        animate('300ms cubic-bezier(0.25, 0.8, 0.25, 1)', style({ height: '0', opacity: 0 }))
-      ])
-    ]),
     trigger('textCrossfade', [
       transition(':enter', [
         style({ opacity: 0 }),
@@ -60,6 +50,33 @@ export class NewSearchComponent implements OnInit {
   showFavorites: boolean = false; // 收藏面板是否展開（向下相容）
   showMenu: boolean = false;     // 漢堡選單是否展開
   showLabSection: boolean = false; // 實驗室子選單
+
+  // === 效能優化：分類點擊載入追蹤 ===
+  setCategoryLoading(store: any, category: any, isLoading: boolean) {
+    if (isLoading) {
+      store.loadingCategoryName = category.Name;
+      store.loadingCompleteCategoryName = null;
+    } else {
+      if (store.loadingCategoryName === category.Name) {
+        store.loadingCategoryName = null;
+        store.loadingCompleteCategoryName = category.Name;
+        // 加速填滿到 100% 後，200毫秒後撤除 class 以啟動退回動畫
+        setTimeout(() => {
+          if (store.loadingCompleteCategoryName === category.Name) {
+             store.loadingCompleteCategoryName = null;
+          }
+        }, 200);
+      }
+    }
+  }
+
+  isCategoryLoading(store: any, category: any): boolean {
+    return store.loadingCategoryName === category.Name;
+  }
+
+  isCategoryLoadingComplete(store: any, category: any): boolean {
+    return store.loadingCompleteCategoryName === category.Name;
+  }
   chatEnabled: boolean = true;    // 聊天室按鈕開關 (系統預設為開啟)
   storesDataReady: boolean = false; // 商店 JSON 資料是否已載入
   showAboutCard: boolean = false; // 關於卡片是否顯示
@@ -404,6 +421,16 @@ export class NewSearchComponent implements OnInit {
     if (store.selectedCategory === category) {
       store.selectedCategory = undefined;
     } else {
+      // 在 Angular change detection 啟動 `<app-display>` 前，
+      // 先同步強制設定預設為載入中（除非已經載入完畢），避免 CSS grid 的 `expanded` 狀態提早一瞬間觸發而產生閃爍/卡頓展開
+      const catId = category.ID || category.name;
+      if (!store._categoryLoadingState) {
+        store._categoryLoadingState = {};
+      }
+      if (store._categoryLoadingState[catId] !== 'complete') {
+        store._categoryLoadingState[catId] = 'loading';
+      }
+
       store.selectedCategory = category;
     }
   }

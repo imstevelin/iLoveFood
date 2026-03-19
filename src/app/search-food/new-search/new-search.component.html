@@ -329,22 +329,28 @@
               </svg>
             </button>
           </div>
-          <div class="grid grid-cols-4 gap-2 mt-2">
+          <div class="grid grid-cols-4 gap-2 mt-2 relative z-50">
             <ng-container *ngFor="let category of foodCategories | slice:0:10; trackBy: trackByCategory">
               <div *ngIf="getSubCategoryTotalQty(store, category) > 0" class="category-chip"
                 [class.selected]="store.selectedCategory === category"
+                [class.is-loading]="store.selectedCategory === category && isCategoryLoading(store, category)"
+                [class.loading-complete]="store.selectedCategory === category && isCategoryLoadingComplete(store, category)"
                 (click)="toggleSubCategoryDetails(store, category)">
                 <img [src]="category.ImageUrl" [alt]="category.Name"
                   class="w-8 h-8 sm:w-12 sm:h-12 mx-auto mb-1 object-cover" />
                 <span class="block text-xs font-medium leading-tight mb-1">{{ category.Name }}</span>
                 <span class="category-qty-badge">{{ getSubCategoryTotalQty(store, category) }}</span>
+                <!-- 點擊層：確保在所有內容之上，解決手機點擊穿透或遭攔截問題 -->
+                <div class="category-chip-overlay"></div>
               </div>
             </ng-container>
           </div>
-          <!-- Category details with expand animation -->
-          <div *ngIf="store.selectedCategory" class="category-expand-wrapper" @expandCollapse>
-            <app-display [store]="store" [category]="store.selectedCategory"
-              [foodDetails]="foodDetails711"></app-display>
+          <!-- Category details with CSS grid expand transition -->
+          <div class="category-expand-wrapper" [class.expanded]="store.selectedCategory && !isCategoryLoading(store, store.selectedCategory)">
+            <div class="category-expand-inner">
+              <app-display *ngIf="store.selectedCategory" [store]="store" [category]="store.selectedCategory"
+                [foodDetails]="foodDetails711" (loadingChange)="setCategoryLoading(store, store.selectedCategory, $event)"></app-display>
+            </div>
           </div>
         </ng-container>
 
@@ -384,21 +390,26 @@
               </svg>
             </button>
           </div>
-          <div class="grid grid-cols-4 gap-2 mt-2">
+          <div class="grid grid-cols-4 gap-2 mt-2 relative z-50">
             <div *ngFor="let category of store.info | slice:0:10; trackBy: trackByCategory" class="category-chip"
               [class.selected]="store.selectedCategory === category" (click)="toggleSubCategoryDetails(store, category)"
-              [class.pointer-events-none]="getFSubCategoryQty(store, category) === 0">
+              [class.pointer-events-none]="getFSubCategoryQty(store, category) === 0"
+              [class.is-loading]="store.selectedCategory === category && isCategoryLoading(store, category)"
+              [class.loading-complete]="store.selectedCategory === category && isCategoryLoadingComplete(store, category)">
               <img [src]="getFUrl(category)" [alt]="getFCatName(category)"
                 class="w-8 h-8 sm:w-12 sm:h-12 mx-auto mb-1 object-cover"
                 [ngStyle]="{'opacity': getFSubCategoryQty(store, category) === 0 ? 0.3 : 1}" />
               <span class="block text-xs font-medium leading-tight mb-1">{{ getFCatName(category) }}</span>
               <span class="category-qty-badge">{{ getFSubCategoryQty(store, category) }}</span>
+              <div class="category-chip-overlay"></div>
             </div>
           </div>
-          <!-- Category details with expand animation -->
-          <div *ngIf="store.selectedCategory" class="category-expand-wrapper" @expandCollapse>
-            <app-display [store]="store" [category]="store.selectedCategory"
-              [foodDetails]="foodDetailsFamilyMart"></app-display>
+          <!-- Category details with CSS grid expand transition -->
+          <div class="category-expand-wrapper" [class.expanded]="store.selectedCategory && !isCategoryLoading(store, store.selectedCategory)">
+            <div class="category-expand-inner">
+              <app-display *ngIf="store.selectedCategory" [store]="store" [category]="store.selectedCategory"
+                [foodDetails]="foodDetailsFamilyMart" (loadingChange)="setCategoryLoading(store, store.selectedCategory, $event)"></app-display>
+            </div>
           </div>
         </ng-container>
       </div>

@@ -21,9 +21,6 @@ export class MotionDirective implements OnInit, OnChanges, OnDestroy {
       Object.assign(this.el.nativeElement.style, this.initial);
     }
     
-    // Hint browser for GPU acceleration
-    this.el.nativeElement.style.willChange = 'transform, opacity';
-    
     // If we have an animation, start it.
     // We'll use the 'initial' values as the starting point for the animation if provided.
     if (this.animate) {
@@ -62,15 +59,19 @@ export class MotionDirective implements OnInit, OnChanges, OnDestroy {
         }
       }
 
+      // Hint browser for GPU acceleration only during animation
+      this.el.nativeElement.style.willChange = 'transform, opacity';
+
       this.controls = animate(this.el.nativeElement, target, {
         ...options,
         onComplete: () => {
+          // Release GPU layer reservation after animation completes
+          this.el.nativeElement.style.willChange = 'auto';
+          
           if (target.opacity === 0) {
             this.el.nativeElement.style.visibility = 'hidden';
             this.el.nativeElement.style.pointerEvents = 'none';
           }
-          // Cleanup initial scale/transform if they were meant to be transient
-          // but usually keeping the target state is desired.
         }
       });
     });

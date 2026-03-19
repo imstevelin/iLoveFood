@@ -90,6 +90,17 @@ html {
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.1);
 }
 
+/* Mobile: remove hover effects */
+@media (max-width: 640px) {
+  .glass-card {
+    transition: none;
+  }
+  .glass-card:hover {
+    transform: none;
+    box-shadow: var(--glass-shadow);
+  }
+}
+
 /* Fade-in-up animation — Apple deceleration curve */
 @keyframes fadeInUp {
   from {

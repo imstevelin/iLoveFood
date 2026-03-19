@@ -314,6 +314,14 @@
         right: 1rem;
     }
 
+    .chatbot-container {
+        /* 在手機版，未開啟時徹底隱藏並禁用所有點擊/選取，避免蓋在背景上 */
+        pointer-events: none !important;
+        visibility: hidden !important;
+        user-select: none !important;
+        opacity: 0;
+    }
+
     .chatbot-container.open {
         position: fixed;
         top: var(--vvTop, 0) !important;
@@ -327,8 +335,9 @@
         border-radius: 0;
         border: none;
         opacity: 1;
-        visibility: visible;
-        pointer-events: auto;
+        visibility: visible !important;
+        pointer-events: auto !important; /* 開啟時允許可點擊與選取 */
+        user-select: auto !important;
         transform: translateY(0) scale(1);
         transition: opacity 0.35s cubic-bezier(0.25, 0.8, 0.25, 1), 
                     transform 0.35s cubic-bezier(0.25, 0.8, 0.25, 1), 

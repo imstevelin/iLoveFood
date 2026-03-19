@@ -1,4 +1,4 @@
-import { Component, Input, OnChanges, SimpleChanges, OnInit, ElementRef, ViewChild } from '@angular/core';
+import { Component, Input, OnChanges, SimpleChanges, OnInit, ElementRef, ViewChild, Output, EventEmitter } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
 
 import { Item, CategoryStockItem, FoodDetail711  } from '../../model/seven-eleven.model';
@@ -20,6 +20,8 @@ export class DisplayComponent implements OnChanges, OnInit {
   @Input() store!: any;
   @Input() category!: any;
   @Input() foodDetails!: any[];
+
+  @Output() loadingChange = new EventEmitter<boolean>();
 
   subCategories: any[] = [];
   subCategoriesName: string = '';
@@ -114,6 +116,8 @@ export class DisplayComponent implements OnChanges, OnInit {
         });
         // 全家：資料已就緒，立即預算食物詳情
         this.precomputeFoodDetails();
+        this.isLoading = false;
+        setTimeout(() => this.loadingChange.emit(false));
       }
     }
   }
@@ -121,6 +125,7 @@ export class DisplayComponent implements OnChanges, OnInit {
   loadItemsBySubCategory() {
     if (this.store) {
       this.isLoading = true;
+      setTimeout(() => this.loadingChange.emit(true));
       this.sevenElevenRequestService.getItemsByStoreNo(this.store.StoreNo).subscribe(response => {
         if (response.isSuccess && response.element.StoreStockItem) {
           let categoryStockItems: CategoryStockItem[] = response.element.StoreStockItem.CategoryStockItems;
@@ -172,9 +177,11 @@ export class DisplayComponent implements OnChanges, OnInit {
           this.precomputeFoodDetails();
         }
         this.isLoading = false;
+        setTimeout(() => this.loadingChange.emit(false));
       }, error => {
         console.error('Error loading items:', error);
         this.isLoading = false;
+        setTimeout(() => this.loadingChange.emit(false));
       });
     }
   }

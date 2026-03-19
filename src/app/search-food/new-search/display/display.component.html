@@ -1,10 +1,7 @@
-<div *ngIf="subCategories.length > 0" class="transition-all duration-300 ease-in-out min-h-[200px]">
+<div *ngIf="subCategories.length > 0" class="transition-all duration-300 ease-in-out">
   <!-- 7-11顯示區塊 -->
   <ng-container *ngIf="category.Name">
-    <div *ngIf="isLoading" class="flex flex-col items-center justify-center p-12">
-      <mat-progress-spinner mode="indeterminate" diameter="40"></mat-progress-spinner>
-      <p class="mt-4 text-primary-default animate-pulse">載入商品資訊中...</p>
-    </div>
+    <!-- 原本的載入動畫與文字已被完全移除，轉為依賴外層的類別按鈕水位填色動畫 -->
     
     <div [hidden]="isLoading">
       <ng-container *ngFor="let subCategory of subCategories">
@@ -20,7 +17,7 @@
           <!-- 7-11顯示的子分類商品內容區塊 -->
           <ul class="product-cards-grid">
             <li *ngFor="let item of itemsBySubCategory[subCategory.Name]; let i = index"
-                appMotion [initial]="{ opacity: 0, y: 30 }" [animate]="{ opacity: 1, y: 0 }" [transition]="{ type: 'spring', stiffness: 400, damping: 30, delay: i * 0.05 + 0.1 }">
+                class="product-item-animate">
               <div class="product-card">
                 <!-- 高斯模糊背景圖層 -->
                 <div class="product-card-bg"
@@ -37,17 +34,9 @@
 
                   <div class="flex-1 min-w-0 block">
                     <!-- 商品名稱與標籤 (為右上角標籤預留 padding-right 空間) -->
-                    <h3 class="text-xs sm:text-[14px] font-semibold text-gray-800 leading-tight" style="margin: 0 0 4px 0 !important; padding: 0 54px 0 0 !important;">
+                    <h3 class="font-semibold text-gray-800" style="font-size: 13px; line-height: 1.15; margin: 0 0 4px 0 !important; padding: 0 54px 0 0 !important;">
                       {{ item.ItemName }}
                     </h3>
-
-                    <!-- 商品標籤 -->
-                    <div style="display: block; margin: 0 0 4px 0 !important;" *ngIf="foodDetailCache[item.ItemName]?.new === 'True' || foodDetailCache[item.ItemName]?.special_sale === 'True'">
-                      <span *ngIf="foodDetailCache[item.ItemName]?.new === 'True'"
-                           class="inline-block bg-red-100 text-red-800 text-[10px] font-semibold px-2 py-0.5 rounded-full mr-1">新品</span>
-                      <span *ngIf="foodDetailCache[item.ItemName]?.special_sale === 'True'"
-                           class="inline-block bg-yellow-100 text-yellow-800 text-[10px] font-semibold px-2 py-0.5 rounded-full mr-1">特價中</span>
-                    </div>
 
                     <!-- 商品細節 -->
                     <ng-container *ngIf="foodDetailCache[item.ItemName] && foodDetailCache[item.ItemName]?.image !== 'assets/no-image.jpeg'">
@@ -57,7 +46,7 @@
                         <span class="text-red-600">→ {{ foodDetailCache[item.ItemName]?.discountedPrice | round:-1 }}</span>
                       </div>
                       <p class="text-gray-500" style="font-size: 11px; line-height: 1.35; margin: 0 0 2px 0 !important; padding: 0 !important; white-space: normal;">描述: {{ foodDetailCache[item.ItemName]?.content | emptyInfo}}</p>
-                      <p class="text-gray-400" style="font-size: 10px; line-height: 1.2; margin: 0 !important; padding: 0 !important;">熱量: {{ foodDetailCache[item.ItemName]?.kcal | emptyInfo}}</p>
+                      <p class="text-gray-400" style="font-size: 11px; line-height: 1.25; margin: 0 !important; padding: 0 !important;">熱量: {{ foodDetailCache[item.ItemName]?.kcal | emptyInfo}}</p>
                     </ng-container>
 
                     <!-- 商品沒資訊的話 -->
@@ -65,9 +54,17 @@
                       暫無詳細資訊
                     </p>
 
-                    <!-- 數量標籤 (絕對定位到右下角) -->
-                    <div class="quantity-badge">
-                      數量: {{ item.RemainingQty }}
+                    <!-- 狀態標籤 (右上角垂直堆疊) -->
+                    <div class="badges-container">
+                      <div class="status-badge badge-quantity">
+                        數量: {{ item.RemainingQty }}
+                      </div>
+                      <div *ngIf="foodDetailCache[item.ItemName]?.new === 'True'" class="status-badge badge-new">
+                        新品
+                      </div>
+                      <div *ngIf="foodDetailCache[item.ItemName]?.special_sale === 'True'" class="status-badge badge-sale">
+                        特價中
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -93,7 +90,7 @@
         <!-- 全家顯示的子分類商品內容區塊 -->
         <ul class="product-cards-grid">
           <li *ngFor="let item of itemsBySubCategory[subCategory.name]; let i = index"
-              appMotion [initial]="{ opacity: 0, y: 30 }" [animate]="{ opacity: 1, y: 0 }" [transition]="{ type: 'spring', stiffness: 400, damping: 30, delay: i * 0.05 + 0.1 }">
+              class="product-item-animate">
             <div class="product-card">
               <!-- 高斯模糊背景圖層 -->
               <div class="product-card-bg"
@@ -110,7 +107,7 @@
 
                 <div class="flex-1 min-w-0 block">
                   <!-- 商品名稱 (為右上角標籤預留 padding-right 空間) -->
-                  <h3 class="text-xs sm:text-[14px] font-semibold text-gray-800 leading-tight" style="margin: 0 0 4px 0 !important; padding: 0 54px 0 0 !important;">
+                  <h3 class="font-semibold text-gray-800" style="font-size: 13px; line-height: 1.15; margin: 0 0 4px 0 !important; padding: 0 54px 0 0 !important;">
                     {{ item.ItemName }}
                   </h3>
 
@@ -124,9 +121,11 @@
                     暫無詳細資訊
                   </p>
 
-                  <!-- 數量標籤 (絕對定位到右下角) -->
-                  <div class="quantity-badge">
-                    數量: {{ item.RemainingQty }}
+                  <!-- 狀態標籤 (右上角垂直堆疊) -->
+                  <div class="badges-container">
+                    <div class="status-badge badge-quantity">
+                      數量: {{ item.RemainingQty }}
+                    </div>
                   </div>
                 </div>
               </div>
