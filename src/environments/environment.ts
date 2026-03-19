@@ -24,7 +24,7 @@ export const environment = {
       getStoreDetail: 'Search/FrontendStoreItemStock/GetStoreDetail'
     },
     params: {
-      mid_v: 'W0_DiF4DlgU5OeQoRswrRcaaNHMWOL7K3ra3381ocZUv-rdOWy-ZuIItG6T-7pjiccl0C5h41-cHaupfvgcXKJKifEvNt9NiU94M_ZVp42Ig7JEn15la5iV0H3-8dZfASc7Mgke95qb9LYu3ghJ5Sam6D0LAnYK9Lb0DZohVkl1N5OTvWXvPb4VqEek'
+      mid_v: 'W0_DiF4DlgU5OeQoRswrRcaaNHMWOL7K3ra3381ocZUv-rdOWy6ZuY8tGK3-7pjiccl0C5h41-cHaupfvgcXKJKifEvNt9NiU94M_ZVp42Ig7JEn15la5iV0H3-8dZfASc7Mgke95qb9LYu3ghJ5Sam6D0LAnYK9Lb0DZmdYlySE6-OIMYpDXs16Onc'
     }
   },
   firebaseConfig: {
