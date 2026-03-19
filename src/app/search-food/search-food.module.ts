@@ -23,6 +23,8 @@ import { EmptyInfoPipe } from '../pipes/empty-info.pipe';
 import { DisplayComponent } from './new-search/display/display.component';
 import { NewSearchComponent } from './new-search/new-search.component';
 import { SiderComponent } from '../components/sider/sider.component';
+import { MotionDirective } from '../directives/motion.directive';
+import { GestureDirective } from '../directives/gesture.directive';
 
 @NgModule({
   declarations: [
@@ -48,6 +50,8 @@ import { SiderComponent } from '../components/sider/sider.component';
     MatMenuModule,
     MatToolbarModule,
     MatDividerModule,
+    MotionDirective,
+    GestureDirective
   ]
 })
 export class SearchFoodModule { }

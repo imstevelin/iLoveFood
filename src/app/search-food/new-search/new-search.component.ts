@@ -27,17 +27,40 @@ import { getDistance } from 'geolib';
 import { AngularFirestore } from '@angular/fire/compat/firestore';
 import { pinyin } from 'pinyin-pro';
 
+import { trigger, style, animate, transition } from '@angular/animations';
+
 @Component({
   selector: 'app-new-search',
   templateUrl: './new-search.component.html',
   styleUrls: ['./new-search.component.scss'],
+  animations: [
+    trigger('expandCollapse', [
+      transition(':enter', [
+        style({ height: '0', opacity: 0, overflow: 'hidden' }),
+        animate('350ms cubic-bezier(0.25, 0.8, 0.25, 1)', style({ height: '*', opacity: 1 }))
+      ]),
+      transition(':leave', [
+        style({ height: '*', opacity: 1, overflow: 'hidden' }),
+        animate('300ms cubic-bezier(0.25, 0.8, 0.25, 1)', style({ height: '0', opacity: 0 }))
+      ])
+    ]),
+    trigger('textCrossfade', [
+      transition(':enter', [
+        style({ opacity: 0 }),
+        animate('400ms ease-out', style({ opacity: 1 }))
+      ]),
+      transition(':leave', [
+        animate('400ms ease-out', style({ opacity: 0 }))
+      ])
+    ])
+  ]
 })
 export class NewSearchComponent implements OnInit {
   user: any = null;
   showFavorites: boolean = false; // 收藏面板是否展開（向下相容）
   showMenu: boolean = false;     // 漢堡選單是否展開
   showLabSection: boolean = false; // 實驗室子選單
-  chatEnabled: boolean = false;   // 聊天室按鈕開關
+  chatEnabled: boolean = true;    // 聊天室按鈕開關 (系統預設為開啟)
   storesDataReady: boolean = false; // 商店 JSON 資料是否已載入
   showAboutCard: boolean = false; // 關於卡片是否顯示
 
@@ -256,8 +279,7 @@ export class NewSearchComponent implements OnInit {
       (res) => {
         if (res && res.element) {
           this.foodCategories = res.element;
-          this.loadingService.hide();
-          // 自動觸發「使用目前位置」搜尋
+          // 移除 this.loadingService.hide(); 以避免初次載入時動畫圓圈閃爍
           this.onUseCurrentLocation();
         } else {
           console.error('Failed to fetch food categories');
@@ -396,6 +418,10 @@ export class NewSearchComponent implements OnInit {
 
   trackByDropdownItem(index: number, item: any): string {
     return (item.type || '') + ':' + (item.name || index.toString());
+  }
+
+  trackByMsg(index: number, msg: string): string {
+    return msg;
   }
 
   // mat-autocomplete 顯示函式：防止 [object Object]
@@ -817,7 +843,7 @@ export class NewSearchComponent implements OnInit {
           if (storeGen !== this.storeSearchGeneration) return;
           if (res) {
             this.searchCombineAndTransformStoresExpanded(storeLatitude, storeLongitude);
-            this.loadingService.hide();
+            // 移除此處的 loadingService.hide()，否則會在擴展搜尋 API 跑完前，提早引發圓圈閃爍或顯示空狀態
           } else {
             this.loadingService.hide();
           }
@@ -837,6 +863,17 @@ export class NewSearchComponent implements OnInit {
 
     dialogRef.afterClosed().subscribe((selectedMode: 'DRIVING' | 'BICYCLING') => {
       if (!selectedMode) return;
+      
+      // FIX: 立即清空舊的商店卡片，讓 Loading Overlay 能瞬間跳出來，消除卡頓感
+      this.totalStoresShowList = [];
+      this.allNearbyStores = [];
+      this.hasMoreStores = false;
+      this.searchMode = 'route';
+      
+      // 廢棄任何還在背景跑的舊搜尋 (避免互相干擾)
+      this.storeSearchGeneration++;
+      this.productSearchGeneration++;
+
       this.loadingService.show("正在解析 Google Maps 路線...");
       
       try {
@@ -2061,8 +2098,17 @@ export class NewSearchComponent implements OnInit {
           this.storeDataService.setIsUserLocationSearch(true);
         }
 
-        this.loadingService.hide();
-        this.checkAndAutoLoadMore();
+        // 預防閃爍終極解法：若搜不到任何門市，代表系統必須進入無限下拉 (JSON 擴充) 搜尋。
+        // 此時絕對不允許執行 hide()，否則 loading$ = false 會在 AsyncPipe 刷新時造成圓圈閃爍。
+        if (allStores.length === 0) {
+          // 直接更新文字，保持 loading$ 為 true，無縫接軌到背景擴充搜尋
+          this.loadingService.show("正在擴展搜尋範圍...");
+          this.checkAndAutoLoadMore();
+        } else {
+          // 若有找到門市 (即使不足 5 間)，代表這批資料足以讓主要 loading 畫面退場，讓卡片顯示
+          this.loadingService.hide();
+          this.checkAndAutoLoadMore();
+        }
       },
       (error) => {
         console.error('Error fetching store data:', error);
@@ -2126,6 +2172,7 @@ export class NewSearchComponent implements OnInit {
       console.log('[擴展搜尋] 7-11 和全家門市都已搜完');
       this.hasMoreStores = false;
       this.isLoadingMore = false;
+      this.loadingService.hide(); // 終止全域 loading
       return;
     }
     console.log(`[擴展搜尋] 載入更多: 7-11=${sevenBatch.length}間, 全家=${fmBatch.length}間`);
@@ -2228,6 +2275,7 @@ export class NewSearchComponent implements OnInit {
       this.storeDataService.setStores(this.allNearbyStores);
 
       this.isLoadingMore = false;
+      this.loadingService.hide(); // 確保背景 JSON 任務完成時，全域 loading 正式結束
       this.hasMoreStores = !(this.searchExhausted711 && this.searchExhaustedFm);
       
       const newDisplayed = this.totalStoresShowList.length - prevLength;

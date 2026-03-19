@@ -7,75 +7,67 @@
     </div>
     
     <div [hidden]="isLoading">
-      <h2 class="text-2xl font-bold mb-4 text-primary-default">{{ category.Name }}</h2>
       <ng-container *ngFor="let subCategory of subCategories">
         <div *ngIf="itemsBySubCategory[subCategory.Name] && itemsBySubCategory[subCategory.Name].length > 0"
-             class="sub-category-item bg-white border border-gray-100 p-6 mb-8 rounded-lg shadow-lg"
+             class="sub-category-item bg-white border border-gray-100 px-3 py-4 sm:p-5 mb-8 rounded-2xl shadow-none"
         >
           <div class="mb-4">
-            <h3 class="text-2xl font-bold text-primary-default text-primary-light">
+            <h3 class="text-2xl font-bold text-black">
               {{ subCategory.Name }}
             </h3>
           </div>
 
           <!-- 7-11顯示的子分類商品內容區塊 -->
-          <ul class="space-y-6 sm:space-y-4">
-            <li *ngFor="let item of itemsBySubCategory[subCategory.Name]">
+          <ul class="product-cards-grid">
+            <li *ngFor="let item of itemsBySubCategory[subCategory.Name]; let i = index"
+                appMotion [initial]="{ opacity: 0, y: 30 }" [animate]="{ opacity: 1, y: 0 }" [transition]="{ type: 'spring', stiffness: 400, damping: 30, delay: i * 0.05 + 0.1 }">
               <div class="product-card">
                 <!-- 高斯模糊背景圖層 -->
                 <div class="product-card-bg"
-                  [style.background-image]="'url(' + (foodDetailCache[item.ItemName]?.image || 'assets/此商品暫無圖片.png') + ')'">
+                  [style.background-image]="'url(' + (foodDetailCache[item.ItemName]?.image || 'assets/no-image.jpeg') + ')'">
                 </div>
                 <!-- 內容層 -->
                 <div class="product-card-content">
                   <!-- 真正的商品圖片 (不放大) -->
-                  <div class="product-img-wrapper" (click)="openImageDialog(foodDetailCache[item.ItemName]?.image || 'assets/此商品暫無圖片.png')">
-                    <img [src]="foodDetailCache[item.ItemName]?.image || 'assets/此商品暫無圖片.png'"
+                  <div class="product-img-wrapper" (click)="openImageDialog(foodDetailCache[item.ItemName]?.image || 'assets/no-image.jpeg')">
+                    <img [src]="foodDetailCache[item.ItemName]?.image || 'assets/no-image.jpeg'"
                       [alt]="foodDetailCache[item.ItemName]?.name || item.ItemName"
                       class="product-img-normal">
                   </div>
 
-                  <div class="flex-1">
-                    <!-- 商品名稱與標籤 -->
-                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-2">
-                      <h3 class="text-sm sm:text-lg font-semibold text-gray-700">
-                        {{ item.ItemName }}
-                      </h3>
-                      <div class="text-center inline-block bg-green-100 text-green-800 text-xs sm:text-sm font-semibold px-4 py-2 rounded-full">
-                        剩餘數量: {{ item.RemainingQty }}
-                      </div>
-                    </div>
+                  <div class="flex-1 min-w-0 block">
+                    <!-- 商品名稱與標籤 (為右上角標籤預留 padding-right 空間) -->
+                    <h3 class="text-xs sm:text-[14px] font-semibold text-gray-800 leading-tight" style="margin: 0 0 4px 0 !important; padding: 0 54px 0 0 !important;">
+                      {{ item.ItemName }}
+                    </h3>
 
                     <!-- 商品標籤 -->
-                    <div class="flex space-x-2 mb-2">
-                      <div *ngIf="foodDetailCache[item.ItemName]?.new === 'True'"
-                           class="inline-block bg-red-100 text-red-800 text-xs font-semibold px-3 py-1 rounded-full">
-                        新品
-                      </div>
-                      <div *ngIf="foodDetailCache[item.ItemName]?.special_sale === 'True'"
-                           class="inline-block bg-yellow-100 text-yellow-800 text-xs font-semibold px-3 py-1 rounded-full">
-                        特價中
-                      </div>
+                    <div style="display: block; margin: 0 0 4px 0 !important;" *ngIf="foodDetailCache[item.ItemName]?.new === 'True' || foodDetailCache[item.ItemName]?.special_sale === 'True'">
+                      <span *ngIf="foodDetailCache[item.ItemName]?.new === 'True'"
+                           class="inline-block bg-red-100 text-red-800 text-[10px] font-semibold px-2 py-0.5 rounded-full mr-1">新品</span>
+                      <span *ngIf="foodDetailCache[item.ItemName]?.special_sale === 'True'"
+                           class="inline-block bg-yellow-100 text-yellow-800 text-[10px] font-semibold px-2 py-0.5 rounded-full mr-1">特價中</span>
                     </div>
 
-                    <!-- 商品描述 -->
-                    <div *ngIf="foodDetailCache[item.ItemName]?.image !== 'assets/此商品暫無圖片.png'">
-                      <div class="text-sm sm:text-base font-semibold text-gray-800 mb-2">
-                        <span class="text-gray-800">價格(NT$): </span>
-                        <span class="line-through text-gray-500">{{ foodDetailCache[item.ItemName]?.originalPrice }}</span>
-                        <span class="text-red-600 mx-2">→</span>
-                        <span class="text-red-600">
-                          {{ foodDetailCache[item.ItemName]?.discountedPrice | round:-1 }}
-                        </span>
+                    <!-- 商品細節 -->
+                    <ng-container *ngIf="foodDetailCache[item.ItemName] && foodDetailCache[item.ItemName]?.image !== 'assets/no-image.jpeg'">
+                      <div class="font-semibold text-gray-800" style="font-size: 11px; margin: 0 0 2px 0 !important; padding: 0 !important;">
+                        <span class="text-gray-800">NT$ </span>
+                        <span class="line-through text-gray-400 font-normal pr-1">{{ foodDetailCache[item.ItemName]?.originalPrice }}</span>
+                        <span class="text-red-600">→ {{ foodDetailCache[item.ItemName]?.discountedPrice | round:-1 }}</span>
                       </div>
-                      <p class="text-xs sm:text-sm text-gray-500 mb-1">商品描述: {{ foodDetailCache[item.ItemName]?.content | emptyInfo}}</p>
-                      <p class="text-xs sm:text-sm text-gray-500 mb-1">卡路里(kcal): {{ foodDetailCache[item.ItemName]?.kcal | emptyInfo}}</p>
-                    </div>
+                      <p class="text-gray-500" style="font-size: 11px; line-height: 1.35; margin: 0 0 2px 0 !important; padding: 0 !important; white-space: normal;">描述: {{ foodDetailCache[item.ItemName]?.content | emptyInfo}}</p>
+                      <p class="text-gray-400" style="font-size: 10px; line-height: 1.2; margin: 0 !important; padding: 0 !important;">熱量: {{ foodDetailCache[item.ItemName]?.kcal | emptyInfo}}</p>
+                    </ng-container>
+
                     <!-- 商品沒資訊的話 -->
-                    <div *ngIf="!foodDetailCache[item.ItemName] || foodDetailCache[item.ItemName]?.image === 'assets/此商品暫無圖片.png'">
-                      <div class="text-sm sm:text-base font-semibold text-gray-800 mb-2">
-                        <p class="text-xs sm:text-sm text-gray-500 mb-1">商品描述: 暫無此商品資訊</p>
-                      </div>
+                    <p *ngIf="!foodDetailCache[item.ItemName] || foodDetailCache[item.ItemName]?.image === 'assets/no-image.jpeg'" class="text-gray-400" style="font-size: 11px; margin: 0 !important; padding: 0 !important;">
+                      暫無詳細資訊
+                    </p>
+
+                    <!-- 數量標籤 (絕對定位到右下角) -->
+                    <div class="quantity-badge">
+                      數量: {{ item.RemainingQty }}
                     </div>
                   </div>
                 </div>
@@ -89,52 +81,52 @@
 
   <!-- 全家顯示區塊 -->
   <ng-container *ngIf="category.name">
-    <h2 class="text-2xl font-bold mb-4 text-primary-default">{{ category.name }}</h2>
     <ng-container *ngFor="let subCategory of subCategories">
       <div *ngIf="itemsBySubCategory[subCategory.name] && itemsBySubCategory[subCategory.name].length > 0"
-           class="sub-category-item bg-white border border-gray-100 p-6 mb-8 rounded-lg shadow-lg">
+           class="sub-category-item bg-white border border-gray-100 px-3 py-4 sm:p-5 mb-8 rounded-2xl shadow-none">
         <div class="mb-4">
-          <h3 class="text-2xl font-bold text-primary-default">
+          <h3 class="text-2xl font-bold text-black">
             {{ subCategory.name }}
           </h3>
         </div>
 
         <!-- 全家顯示的子分類商品內容區塊 -->
-        <ul class="space-y-6 sm:space-y-4">
-          <li *ngFor="let item of itemsBySubCategory[subCategory.name]">
+        <ul class="product-cards-grid">
+          <li *ngFor="let item of itemsBySubCategory[subCategory.name]; let i = index"
+              appMotion [initial]="{ opacity: 0, y: 30 }" [animate]="{ opacity: 1, y: 0 }" [transition]="{ type: 'spring', stiffness: 400, damping: 30, delay: i * 0.05 + 0.1 }">
             <div class="product-card">
               <!-- 高斯模糊背景圖層 -->
               <div class="product-card-bg"
-                [style.background-image]="'url(' + (foodDetailCache[item.ItemName]?.picture_url || 'assets/此商品暫無圖片.png') + ')'">
+                [style.background-image]="'url(' + (foodDetailCache[item.ItemName]?.picture_url || 'assets/no-image.jpeg') + ')'">
               </div>
               <!-- 內容層 -->
               <div class="product-card-content">
                 <!-- 真正的商品圖片 (不放大) -->
-                <div class="product-img-wrapper" (click)="openImageDialog(foodDetailCache[item.ItemName]?.picture_url || 'assets/此商品暫無圖片.png')">
-                  <img [src]="foodDetailCache[item.ItemName]?.picture_url || 'assets/此商品暫無圖片.png'"
+                <div class="product-img-wrapper" (click)="openImageDialog(foodDetailCache[item.ItemName]?.picture_url || 'assets/no-image.jpeg')">
+                  <img [src]="foodDetailCache[item.ItemName]?.picture_url || 'assets/no-image.jpeg'"
                     [alt]="foodDetailCache[item.ItemName]?.title || item.ItemName"
                     class="product-img-normal">
                 </div>
 
-                <div class="flex-1">
-                  <!-- 商品名稱與標籤 -->
-                  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-2">
-                    <h3 class="text-sm sm:text-lg font-semibold text-gray-700">
-                      {{ item.ItemName }}
-                    </h3>
-                    <div class="text-center bg-green-100 text-green-800 text-xs sm:text-sm font-semibold px-4 py-2 rounded-full">
-                      剩餘數量: {{ item.RemainingQty }}
-                    </div>
-                  </div>
+                <div class="flex-1 min-w-0 block">
+                  <!-- 商品名稱 (為右上角標籤預留 padding-right 空間) -->
+                  <h3 class="text-xs sm:text-[14px] font-semibold text-gray-800 leading-tight" style="margin: 0 0 4px 0 !important; padding: 0 54px 0 0 !important;">
+                    {{ item.ItemName }}
+                  </h3>
+
                   <!-- 商品描述 -->
-                  <div *ngIf="foodDetailCache[item.ItemName]?.picture_url !== 'assets/此商品暫無圖片.png'">
-                    <p class="text-xs sm:text-sm text-gray-500 mb-1">商品描述: {{ foodDetailCache[item.ItemName]?.Description | emptyInfo}}</p>
-                  </div>
+                  <ng-container *ngIf="foodDetailCache[item.ItemName] && foodDetailCache[item.ItemName]?.picture_url !== 'assets/no-image.jpeg'">
+                    <p class="text-gray-500" style="font-size: 11px; line-height: 1.35; margin: 0 0 2px 0 !important; padding: 0 !important; white-space: normal;">描述: {{ foodDetailCache[item.ItemName]?.Description | emptyInfo}}</p>
+                  </ng-container>
+
                   <!-- 商品沒資訊的話 -->
-                  <div *ngIf="!foodDetailCache[item.ItemName] || foodDetailCache[item.ItemName]?.picture_url === 'assets/此商品暫無圖片.png'">
-                    <div class="text-sm sm:text-base font-semibold text-gray-800 mb-2">
-                      <p class="text-xs sm:text-sm text-gray-500 mb-1">商品描述: 暫無此商品資訊</p>
-                    </div>
+                  <p *ngIf="!foodDetailCache[item.ItemName] || foodDetailCache[item.ItemName]?.picture_url === 'assets/no-image.jpeg'" class="text-gray-400" style="font-size: 11px; margin: 0 !important; padding: 0 !important;">
+                    暫無詳細資訊
+                  </p>
+
+                  <!-- 數量標籤 (絕對定位到右下角) -->
+                  <div class="quantity-badge">
+                    數量: {{ item.RemainingQty }}
                   </div>
                 </div>
               </div>

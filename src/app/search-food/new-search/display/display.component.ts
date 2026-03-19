@@ -9,6 +9,7 @@ import { ImageDialogComponent } from '../image-dialog/image-dialog.component';
 import { SevenElevenRequestService } from '../services/seven-eleven-request.service';
 
 import Fuse from 'fuse.js';
+import { HapticService } from 'src/app/services/haptic.service';
 
 @Component({
   selector: 'app-display',
@@ -33,6 +34,7 @@ export class DisplayComponent implements OnChanges, OnInit {
   constructor(
     private sevenElevenRequestService: SevenElevenRequestService,
     private dialog: MatDialog,
+    private haptic: HapticService
   ) {}
 
   ngOnInit() {}
@@ -207,7 +209,7 @@ export class DisplayComponent implements OnChanges, OnInit {
     const foodDetail = result.length > 0 ? { ...result[0].item } : {
       category: '',
       content: '',
-      image: 'assets/此商品暫無圖片.png',
+      image: 'assets/no-image.jpeg',
       kcal: '',
       name: '',
       new: 'False',
@@ -233,7 +235,7 @@ export class DisplayComponent implements OnChanges, OnInit {
     {
       "category": "",
       "title": "",
-      "picture_url": "assets/此商品暫無圖片.png",
+      "picture_url": "assets/no-image.jpeg",
       "Protein (g)": '',
       "Carb (g)": '',
       "Calories (kcal)": '',
@@ -253,9 +255,13 @@ export class DisplayComponent implements OnChanges, OnInit {
   }
 
   openImageDialog(imageUrl: string): void {
+    this.haptic.light();
     this.dialog.open(ImageDialogComponent, {
       data: { image: imageUrl },
-      panelClass: 'custom-dialog'
+      panelClass: 'white-image-dialog',
+      width: '90vw', /* 強制要求視窗展開至 90% 寬度，避免因圖片本身解析度小而自動縮在中間 */
+      maxWidth: '500px', /* 在電腦版上則限制最大 500px 避免過度放大 */
+      maxHeight: '85vh'
     });
   }
 }

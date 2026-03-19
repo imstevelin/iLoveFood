@@ -236,27 +236,61 @@ svg.transition-transform {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 40px;
-  gap: 12px;
+  padding: 60px 40px;
+  gap: 16px;
 }
 
 .loading-text {
   font-size: 14px;
-  font-weight: 500;
+  font-weight: 600;
   color: var(--text-secondary);
   animation: breathe 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
 @keyframes breathe {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
 
-  0%,
-  100% {
-    opacity: 1;
-  }
+/* ===== Premium CSS Spinner ===== */
+/* Ultra-premium glassmorphic fading tail spinner */
+.premium-spinner {
+  border-radius: 50%;
+  padding: 3px; /* controls ring thickness */
+  background: conic-gradient(
+    from 0deg at 50% 50%,
+    rgba(91, 127, 255, 0) 0deg,
+    rgba(91, 127, 255, 0.2) 180deg,
+    var(--accent) 360deg
+  );
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #fff calc(100% - 3px + 0.5px));
+  mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #fff calc(100% - 3px + 0.5px));
+  animation: premiumSpin 1.0s cubic-bezier(0.5, 0.1, 0.5, 0.9) infinite;
+  will-change: transform;
+}
 
-  50% {
-    opacity: 0.4;
-  }
+.spinner-sm {
+  width: 20px;
+  height: 20px;
+  padding: 2.5px;
+}
+
+.spinner-md {
+  width: 28px;
+  height: 28px;
+  padding: 3px;
+}
+
+.spinner-lg {
+  width: 44px;
+  height: 44px;
+  padding: 4px;
+  margin-bottom: 8px;
+}
+
+@keyframes premiumSpin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
 
 /* ===== Store Card — Spring-powered interactions ===== */
@@ -487,12 +521,6 @@ svg.transition-transform {
     transform: scale(1.04);
   }
 
-  /* Instant haptic press */
-  &:active {
-    transform: scale(0.92);
-    transition-duration: 60ms;
-  }
-
   /* Selected state — gentle spring scale */
   &.selected {
     background: var(--accent-light);
@@ -500,6 +528,12 @@ svg.transition-transform {
     transform: scale(1.02);
     box-shadow: 0 0 0 2px rgba(91, 127, 255, 0.08),
       0 4px 16px rgba(91, 127, 255, 0.1);
+  }
+
+  /* Instant haptic press — placed after .selected to ensure it overrides the scale */
+  &:active {
+    transform: scale(0.92);
+    transition-duration: 60ms;
   }
 }
 
@@ -516,25 +550,11 @@ svg.transition-transform {
 }
 
 /* ===== Category Expand Animation ===== */
-/* Interruptible spring expand — replaces hard keyframe animation */
+/* Governed by Angular Animations (@expandCollapse) on the element itself */
+/* We just ensure overflow is hidden during the height transition */
 .category-expand-wrapper {
   overflow: hidden;
   margin-top: 12px;
-  animation: springExpandIn var(--duration-expand) var(--spring) both;
-}
-
-@keyframes springExpandIn {
-  0% {
-    opacity: 0;
-    max-height: 0;
-    transform: translateY(-12px) scaleY(0.95);
-  }
-
-  100% {
-    opacity: 1;
-    max-height: 3000px;
-    transform: translateY(0) scaleY(1);
-  }
 }
 
 /* ===== Scroll Hint ===== */

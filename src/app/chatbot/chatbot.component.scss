@@ -11,17 +11,19 @@
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    box-shadow: 0 4px 20px rgba(91, 127, 255, 0.35);
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    z-index: 1000;
-
+    transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), 
+                box-shadow 0.2s, 
+                opacity 0.3s;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+    
     &:hover {
-        transform: scale(1.08);
+        transform: scale(1.05);
         box-shadow: 0 6px 28px rgba(91, 127, 255, 0.45);
     }
 
     &:active {
-        transform: scale(0.95);
+        transform: scale(0.9) !important;
+        transition-duration: 60ms;
     }
 }
 
@@ -51,9 +53,6 @@
     pointer-events: none;
     transform: translateY(30px) scale(0.95);
     transform-origin: bottom right;
-    transition: opacity 0.35s cubic-bezier(0.25, 0.8, 0.25, 1), 
-                transform 0.35s cubic-bezier(0.25, 0.8, 0.25, 1), 
-                visibility 0.35s ease;
 }
 
 .chatbot-container.open {
@@ -93,10 +92,15 @@
     align-items: center;
     justify-content: center;
     font-size: 14px;
-    transition: background 0.2s;
+    transition: background 0.2s, transform 0.2s;
 
     &:hover {
         background: rgba(0, 0, 0, 0.1);
+    }
+
+    &:active {
+        transform: scale(0.85) !important;
+        transition-duration: 60ms;
     }
 }
 

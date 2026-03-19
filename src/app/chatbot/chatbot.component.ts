@@ -10,13 +10,16 @@ import { forkJoin, of, Observable } from 'rxjs';
 import { map, catchError } from 'rxjs/operators';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { marked } from 'marked';
+import { MotionDirective } from '../directives/motion.directive';
+import { GestureDirective } from '../directives/gesture.directive';
+import { HapticService } from '../services/haptic.service';
 
 @Component({
   selector: 'app-chatbot',
   templateUrl: './chatbot.component.html',
   styleUrls: ['./chatbot.component.scss'],
   standalone: true,
-  imports: [FormsModule, CommonModule, SearchFoodModule],
+  imports: [FormsModule, CommonModule, SearchFoodModule, MotionDirective, GestureDirective],
 })
 export class ChatbotComponent implements OnInit, OnDestroy {
   @ViewChild('chatBody') chatBody!: ElementRef;
@@ -37,7 +40,8 @@ export class ChatbotComponent implements OnInit, OnDestroy {
     private authService: AuthService,
     private searchService: ChatbotSearchService,
     private llmService: LlmRequestService,
-    private sanitizer: DomSanitizer
+    private sanitizer: DomSanitizer,
+    private haptic: HapticService
   ) { }
 
   ngOnInit() {
@@ -95,15 +99,25 @@ export class ChatbotComponent implements OnInit, OnDestroy {
         document.documentElement.style.setProperty('--vvH', `${vv.height}px`);
 
         // Compensate scroll inside chat container when keyboard opens (height shrinks)
+        // AND call scrollToBottom for better mobile UX
         if (this.lastVvH > 0 && vv.height < this.lastVvH) {
             const delta = this.lastVvH - vv.height;
             if (this.chatBody && this.chatBody.nativeElement) {
                this.chatBody.nativeElement.scrollTop += delta;
             }
+            // Keyboard popped up -> Scroll to bottom after a short delay
+            setTimeout(() => this.scrollToBottom(), 300);
         }
         this.lastVvH = vv.height;
     });
   };
+
+  onInputFocus() {
+    if (window.innerWidth < 768) {
+      // Give browser time to start keyboard animation
+      setTimeout(() => this.scrollToBottom(), 300);
+    }
+  }
 
   private setInitialPresets() {
     const allPresets = [
@@ -117,21 +131,28 @@ export class ChatbotComponent implements OnInit, OnDestroy {
 
   toggleChat(event?: Event) {
     if (event) event.stopPropagation();
-    this.isOpen = !this.isOpen;
-    if (this.isOpen) {
-      if (window.innerWidth < 768) {
-        // Start from a clean slate to prevent weird offset behaviors
-        window.scrollTo(0, 0);
-        document.body.style.overflow = 'hidden';
-      }
+    this.haptic.light();
+
+    if (!this.isOpen) {
+      // 延後開啟：為了展示按鈕被「按下」後的縮放回饋，增加 120ms 延遲
       setTimeout(() => {
-        if (window.innerWidth < 768 && window.visualViewport) {
-           this.lastVvH = window.visualViewport.height;
-           this.onVisualViewportChange(); // Force initial calculation
+        this.isOpen = true;
+        if (window.innerWidth < 768) {
+          // 在手機版上隱藏捲軸，確保全螢幕體驗
+          window.scrollTo(0, 0);
+          document.body.style.overflow = 'hidden';
         }
-        this.scrollToBottom();
-      }, 100);
+        setTimeout(() => {
+          if (window.innerWidth < 768 && window.visualViewport) {
+             this.lastVvH = window.visualViewport.height;
+             this.onVisualViewportChange(); // Force initial calculation
+          }
+          this.scrollToBottom();
+        }, 100);
+      }, 120);
     } else {
+      // 關閉則是立即執行，保持俐落感
+      this.isOpen = false;
       if (window.innerWidth < 768) {
         document.body.style.overflow = '';
       }
@@ -158,6 +179,7 @@ export class ChatbotComponent implements OnInit, OnDestroy {
     this.userInput = '';
     this.suggestedReplies = [];
     this.putMessage(input, 'user');
+    this.haptic.medium();
 
     if (this.messages.some(msg => msg.isLoading)) {
       this.putMessage('我還在處理上一個問題，請稍等！', 'bot', false);

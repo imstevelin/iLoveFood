@@ -1,5 +1,8 @@
 <!-- 友善超人 — Glassmorphism Login Dialog -->
-<div class="login-wrapper">
+<div class="login-wrapper"
+     appMotion [initial]="{ scale: 0.9, opacity: 0 }" 
+     [animate]="{ scale: 1, opacity: 1 }" 
+     [transition]="{ type: 'spring', stiffness: 300, damping: 25 }">
   <!-- Header -->
   <div class="flex justify-between items-center mb-6">
     <div class="flex items-center gap-3">

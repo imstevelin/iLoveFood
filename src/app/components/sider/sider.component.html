@@ -9,10 +9,13 @@
 </mat-toolbar>
 
 <!-- 側邊欄遮罩 -->
-<div class="sidebar-overlay" [class.active]="sidebarOpen" (click)="closeSidebar()"></div>
+<div class="sidebar-overlay" [style.pointer-events]="sidebarOpen ? 'auto' : 'none'" (click)="closeSidebar()"
+     appMotion [animate]="sidebarOpen ? { opacity: 1 } : { opacity: 0 }" [transition]="{ duration: 0.3 }"></div>
 
 <!-- 側邊欄 -->
-<div class="sidebar" [class.open]="sidebarOpen">
+<div class="sidebar"
+     appMotion [animate]="sidebarOpen ? { x: 0 } : { x: '-100%' }" [transition]="{ type: 'spring', stiffness: 400, damping: 30 }"
+     appGesture (onDrag)="onSidebarDrag($event)">
   <!-- 側邊欄標題 -->
   <div class="sidebar-header">
     <h3>{{user ? "友善超人 Friendly Wallet" : "登入後可收藏店家"}}</h3>

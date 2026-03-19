@@ -31,6 +31,8 @@ import { AngularFireDatabaseModule } from '@angular/fire/compat/database';
 
 import { environment } from 'src/environments/environment';
 import { ChatbotComponent } from './chatbot/chatbot.component';
+import { MotionDirective } from './directives/motion.directive';
+import { GestureDirective } from './directives/gesture.directive';
 
 @NgModule({
   declarations: [AppComponent, MessageDialogComponent, LoginPageComponent],
@@ -53,7 +55,9 @@ import { ChatbotComponent } from './chatbot/chatbot.component';
     MatDividerModule,
     MatCardModule,
     MatMenuModule,
-    ChatbotComponent
+    ChatbotComponent,
+    MotionDirective,
+    GestureDirective
   ],
   providers: [
     provideHttpClient(withInterceptorsFromDi()),

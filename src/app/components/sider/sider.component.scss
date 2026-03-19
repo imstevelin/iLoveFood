@@ -24,31 +24,21 @@
   background-color: rgba(0, 0, 0, 0.5);
   z-index: 9998;
   opacity: 0;
-  visibility: hidden;
-  transition: all 0.3s ease;
-  
-  &.active {
-    opacity: 1;
-    visibility: visible;
-  }
 }
 
 /* 側邊欄 */
 .sidebar {
   position: fixed;
   top: 0;
-  left: -35%;
+  left: 0;
+  transform: translateX(-100%);
   width: 35%;
   height: 100vh;
   background-color: white;
   box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
   z-index: 9999;
-  transition: left 0.3s ease;
   overflow-y: auto;
-  
-  &.open {
-    left: 0;
-  }
+  will-change: transform;
 }
 
 /* 側邊欄標題 */
@@ -369,13 +359,11 @@
 @media (max-width: 768px) {
   .sidebar {
     width: 280px;
-    left: -280px;
   }
 }
 
 @media (max-width: 480px) {
   .sidebar {
     width: 100%;
-    left: -100%;
   }
 }

@@ -1,38 +1,72 @@
 .dialog-container {
   position: relative;
-  padding: 20px;
   display: flex;
   justify-content: center;
   align-items: center;
-  background: transparent;
+  background: #ffffff; /* 配合商品圖片留白，強制為純白 */
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  margin: 0;
+  padding: 0;
 }
 
 .dialog-image {
-  max-width: 100%; /* 讓圖片填滿 Dialog */
-  max-height: 100%;
-  border-radius: 8px;
+  width: 100%;
+  height: 100%;
+  max-height: 85vh; /* 給予明確最大高度限制，防止超出螢幕 */
+  object-fit: contain; /* 改回 contain，保留完整圖片，利用容器白底達成無縫邊界感 */
+  border-radius: 0;
+  box-shadow: none;
+  background: #ffffff;
+  display: block;
 }
 
-.close-button {
+/* Modern Dark Glassmorphism Close Button */
+.modern-close-btn {
   position: absolute;
-  top: 10px;
-  right: 10px;
-  background: #F4EFE6; /* primary.light */
-  color: #A18249; /* primary.default */
-  border: none;
-  cursor: pointer;
-  font-size: 18px;
+  top: 1.5rem;
+  right: 1.5rem;
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
-  width: 32px;
-  height: 32px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(30, 41, 59, 0.8); /* Slate-800 equivalent, dark background */
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  color: white;
+  cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-  transition: background 0.3s ease, transform 0.2s ease;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.25);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 100;
+  padding: 0;
+
+  svg {
+    stroke: #ffffff;
+    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.5));
+    transition: transform 0.3s ease;
+  }
+
+  &:hover {
+    background: rgba(15, 23, 42, 0.95); /* Even darker on hover */
+    transform: rotate(90deg) scale(1.1);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+  }
+
+  &:active {
+    transform: rotate(90deg) scale(0.95);
+  }
 }
 
-.close-button:hover {
-  background: #EDE3D4; /* primary.light 的深一點變化 */
-  transform: scale(1.1);
+/* 針對行動裝置優化按鈕位置 */
+@media screen and (max-width: 768px) {
+  .modern-close-btn {
+    top: 1rem;
+    right: 1rem;
+    width: 38px;
+    height: 38px;
+  }
 }

@@ -10,6 +10,7 @@ import { GeolocationService } from 'src/app/services/geolocation.service';
 import { StoreDataService } from 'src/app/services/stores-data.service';
 import { switchMap, from, of, catchError, forkJoin } from 'rxjs';
 import { getDistance } from 'geolib';
+import { HapticService } from 'src/app/services/haptic.service';
 
 @Component({
   selector: 'app-sider',
@@ -48,7 +49,8 @@ export class SiderComponent {
     private sevenElevenService: SevenElevenRequestService,
     private familyMartService: FamilyMartRequestService,
     private geolocationService: GeolocationService,
-    private storeDataService: StoreDataService
+    private storeDataService: StoreDataService,
+    private haptic: HapticService
   ) { 
     // 監聽商店資料狀態
     this.storeDataService.stores$.subscribe(stores => {
@@ -59,11 +61,21 @@ export class SiderComponent {
   // 切換側邊欄
   toggleSidebar() {
     this.sidebarOpen = !this.sidebarOpen;
+    this.haptic.medium();
   }
 
   // 關閉側邊欄
   closeSidebar() {
-    this.sidebarOpen = false;
+    if (this.sidebarOpen) {
+      this.sidebarOpen = false;
+      this.haptic.light();
+    }
+  }
+
+  onSidebarDrag(state: any) {
+    if (state.swipe[0] === -1 || (state.last && state.movement[0] < -50)) {
+      this.closeSidebar();
+    }
   }
 
   loginOrlogout() {

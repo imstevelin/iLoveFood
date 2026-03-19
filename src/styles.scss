@@ -178,6 +178,20 @@ html {
   -webkit-backdrop-filter: blur(8px) !important;
 }
 
+/* 純白背景商品圖片視窗 */
+.white-image-dialog .mat-mdc-dialog-container {
+  background: transparent !important;
+
+  .mdc-dialog__surface,
+  .mat-mdc-dialog-surface {
+    background: #ffffff !important;
+    border-radius: 24px !important;
+    overflow: hidden !important;
+    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.16) !important;
+    padding: 0 !important;
+  }
+}
+
 /* ===== Accessibility: Reduce Motion ===== */
 @media (prefers-reduced-motion: reduce) {
 
