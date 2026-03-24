@@ -53,16 +53,17 @@ export class NewSearchComponent implements OnInit {
 
   // === 效能優化：分類點擊載入追蹤 ===
   setCategoryLoading(store: any, category: any, isLoading: boolean) {
+    const catId = category.ID || category.name || category.Name;
     if (isLoading) {
-      store.loadingCategoryName = category.Name;
+      store.loadingCategoryName = catId;
       store.loadingCompleteCategoryName = null;
     } else {
-      if (store.loadingCategoryName === category.Name) {
+      if (store.loadingCategoryName === catId) {
         store.loadingCategoryName = null;
-        store.loadingCompleteCategoryName = category.Name;
+        store.loadingCompleteCategoryName = catId;
         // 加速填滿到 100% 後，200毫秒後撤除 class 以啟動退回動畫
         setTimeout(() => {
-          if (store.loadingCompleteCategoryName === category.Name) {
+          if (store.loadingCompleteCategoryName === catId) {
              store.loadingCompleteCategoryName = null;
           }
         }, 200);
@@ -71,11 +72,13 @@ export class NewSearchComponent implements OnInit {
   }
 
   isCategoryLoading(store: any, category: any): boolean {
-    return store.loadingCategoryName === category.Name;
+    const catId = category.ID || category.name || category.Name;
+    return store.loadingCategoryName === catId;
   }
 
   isCategoryLoadingComplete(store: any, category: any): boolean {
-    return store.loadingCompleteCategoryName === category.Name;
+    const catId = category.ID || category.name || category.Name;
+    return store.loadingCompleteCategoryName === catId;
   }
   chatEnabled: boolean = true;    // 聊天室按鈕開關 (系統預設為開啟)
   storesDataReady: boolean = false; // 商店 JSON 資料是否已載入
