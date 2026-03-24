@@ -1,24 +1,81 @@
 .mode-btn {
-  padding-top: 1rem;
-  padding-bottom: 1rem;
-  border-radius: 1rem;
-  border-width: 2px;
-  border-color: transparent;
-  background-color: rgba(255, 255, 255, 0.6);
-  transition-property: all;
-  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-  transition-duration: 300ms;
+  border-radius: 1.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  background-color: rgba(255, 255, 255, 0.45);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  transition: all 0.4s var(--spring-gentle);
   height: auto;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.02),
+              0 0 0 1px rgba(0, 0, 0, 0.02);
   
   &:hover {
-    background-color: rgba(255, 255, 255, 0.9);
-    border-color: rgb(233, 213, 255);
-    transform: scale(1.03);
-    box-shadow: 0 12px 24px rgba(168, 85, 247, 0.1);
+    background-color: rgba(255, 255, 255, 0.85);
+    border-color: rgba(59, 130, 246, 0.3);
+    transform: translateY(-2px);
+    box-shadow: 0 12px 24px rgba(59, 130, 246, 0.08);
+
+    .text-4xl {
+       transform: scale(1.1);
+    }
   }
   
   &:active {
-    transform: scale(0.97);
+    background-color: rgba(255, 255, 255, 0.95);
+    transform: translateY(0) scale(0.96);
+    transition-duration: 0.1s;
+  }
+
+  .text-4xl {
+    transition: transform 0.4s var(--spring);
+  }
+}
+
+/* ===== Dark Mode Overrides ===== */
+:host-context([data-theme="dark"]) {
+  .mode-btn {
+    background-color: rgba(38, 38, 38, 0.6);
+    border-color: var(--border-subtle);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2),
+                0 0 0 1px rgba(255, 255, 255, 0.03);
+
+    /* Fix: override Angular Material mat-button black text */
+    color: #e4e4e7 !important;
+
+    span {
+      color: #e4e4e7 !important;
+    }
+
+    .mat-mdc-button-persistent-ripple,
+    .mdc-button__label {
+      color: #e4e4e7 !important;
+    }
+
+    &:hover {
+      background-color: rgba(50, 50, 50, 0.85);
+      border-color: rgba(123, 159, 255, 0.3);
+      box-shadow: 0 12px 24px rgba(123, 159, 255, 0.1);
+    }
+
+    &:active {
+      background-color: rgba(55, 55, 55, 0.95);
+    }
+  }
+
+  /* Fix title/description/cancel text */
+  h2 {
+    color: #e4e4e7 !important;
+  }
+
+  p {
+    color: #a1a1aa !important;
+  }
+
+  .dialog-cancel-btn {
+    color: #a1a1aa !important;
+
+    &:hover {
+      color: #e4e4e7 !important;
+    }
   }
 }

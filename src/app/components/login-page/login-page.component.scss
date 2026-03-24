@@ -113,3 +113,36 @@
     transform: translateX(-2px);
   }
 }
+
+/* ===== Dark Mode Overrides ===== */
+:host-context([data-theme="dark"]) {
+
+  .close-btn {
+    background: rgba(60, 60, 60, 0.6);
+
+    &:hover {
+      background: rgba(75, 75, 75, 0.8);
+    }
+  }
+
+  .input-field {
+    background: rgba(38, 38, 38, 0.85);
+    border-color: var(--border-subtle);
+    color: var(--text-primary);
+
+    &::placeholder {
+      color: #71717a;
+    }
+
+    &:focus {
+      border-color: rgba(123, 159, 255, 0.6);
+      box-shadow: 0 0 0 4px rgba(123, 159, 255, 0.15),
+        inset 0 2px 4px rgba(0, 0, 0, 0.1);
+      background: rgba(45, 45, 45, 0.95);
+    }
+  }
+
+  .login-icon-badge {
+    border-color: rgba(123, 159, 255, 0.25);
+  }
+}

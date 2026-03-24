@@ -425,3 +425,113 @@
         transform: translateY(-1px);
     }
 }
+
+/* ===== Dark Mode Overrides ===== */
+:host-context([data-theme="dark"]) {
+
+  .chatbot-container {
+    background: rgba(24, 24, 24, 0.97);
+    border-color: var(--border-default);
+    box-shadow: 0 8px 40px rgba(0, 0, 0, 0.4);
+  }
+
+  .chatbot-header {
+    background: #1e1e1e;
+    color: var(--text-primary);
+    border-bottom-color: var(--border-default);
+  }
+
+  .chatbot-title {
+    color: var(--text-primary);
+  }
+
+  .toggle-btn {
+    background: rgba(255, 255, 255, 0.08);
+    color: #a1a1aa;
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.15);
+    }
+  }
+
+  .chatbot-body .user > span {
+    background: rgba(91, 127, 255, 0.2);
+    color: var(--text-primary);
+  }
+
+  .chatbot-body .bot > .bot-message,
+  .chatbot-body .bot > span {
+    background: rgba(50, 50, 50, 0.65);
+    color: var(--text-primary);
+  }
+
+  ::ng-deep .bot-message hr {
+    border-top-color: var(--border-default);
+  }
+
+  ::ng-deep .bot-message th {
+    background: rgba(91, 127, 255, 0.15);
+    border-color: var(--border-default);
+  }
+
+  ::ng-deep .bot-message td {
+    border-color: var(--border-default);
+    color: #d4d4d8;
+  }
+
+  ::ng-deep .bot-message tr:nth-child(even) {
+    background: rgba(38, 38, 38, 0.5);
+  }
+
+  .chatbot-footer {
+    border-top-color: var(--border-default);
+  }
+
+  .chatbot-footer input {
+    background: rgba(38, 38, 38, 0.65);
+    border-color: var(--border-subtle);
+    color: var(--text-primary);
+
+    &::placeholder {
+      color: #71717a;
+    }
+
+    &:focus {
+      border-color: var(--accent);
+    }
+  }
+
+  .scroll-bottom-btn {
+    background: rgba(38, 38, 38, 0.92);
+    border-color: var(--border-default);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+
+    &:hover {
+      background: #3f3f46;
+    }
+  }
+
+  .preset-btn {
+    background: rgba(38, 38, 38, 0.8);
+    border-color: var(--accent);
+    color: var(--accent);
+
+    &:hover {
+      background: var(--accent);
+      color: #ffffff;
+    }
+  }
+
+  .chatbot-mobile-backdrop {
+    background: #121212;
+  }
+
+  .chatbot-fab {
+    background: #3f3f46;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+
+    &:hover {
+      box-shadow: 0 6px 28px rgba(0, 0, 0, 0.45);
+    }
+  }
+}

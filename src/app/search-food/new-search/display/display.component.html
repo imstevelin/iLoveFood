@@ -6,10 +6,10 @@
     <div [hidden]="isLoading">
       <ng-container *ngFor="let subCategory of subCategories">
         <div *ngIf="itemsBySubCategory[subCategory.Name] && itemsBySubCategory[subCategory.Name].length > 0"
-             class="sub-category-item bg-white border border-gray-100 px-3 py-4 sm:p-5 mb-8 rounded-2xl shadow-none"
+             class="sub-category-item bg-white dark:bg-zinc-800 border border-gray-100 dark:border-zinc-700 px-3 py-4 sm:p-5 mb-8 rounded-2xl shadow-none"
         >
           <div class="mb-4">
-            <h3 class="text-2xl font-bold text-black">
+            <h3 class="text-2xl font-bold text-black dark:text-slate-100">
               {{ subCategory.Name }}
             </h3>
           </div>
@@ -34,23 +34,23 @@
 
                   <div class="flex-1 min-w-0 block">
                     <!-- 商品名稱與標籤 (為右上角標籤預留 padding-right 空間) -->
-                    <h3 class="font-semibold text-gray-800" style="font-size: 13px; line-height: 1.15; margin: 0 0 4px 0 !important; padding: 0 54px 0 0 !important;">
+                    <h3 class="font-semibold text-gray-800 dark:text-slate-200" style="font-size: 13px; line-height: 1.15; margin: 0 0 4px 0 !important; padding: 0 54px 0 0 !important;">
                       {{ item.ItemName }}
                     </h3>
 
                     <!-- 商品細節 -->
                     <ng-container *ngIf="foodDetailCache[item.ItemName] && foodDetailCache[item.ItemName]?.image !== 'assets/no-image.jpeg'">
-                      <div class="font-semibold text-gray-800" style="font-size: 11px; margin: 0 0 2px 0 !important; padding: 0 !important;">
-                        <span class="text-gray-800">NT$ </span>
-                        <span class="line-through text-gray-400 font-normal pr-1">{{ foodDetailCache[item.ItemName]?.originalPrice }}</span>
-                        <span class="text-red-600">→ {{ foodDetailCache[item.ItemName]?.discountedPrice | round:-1 }}</span>
+                      <div class="font-semibold text-gray-800 dark:text-slate-200" style="font-size: 11px; margin: 0 0 2px 0 !important; padding: 0 !important;">
+                        <span class="text-gray-800 dark:text-slate-300">NT$ </span>
+                        <span class="line-through text-gray-400 dark:text-slate-500 font-normal pr-1">{{ foodDetailCache[item.ItemName]?.originalPrice }}</span>
+                        <span class="text-red-600 dark:text-red-400">→ {{ foodDetailCache[item.ItemName]?.discountedPrice | round:-1 }}</span>
                       </div>
-                      <p class="text-gray-500" style="font-size: 11px; line-height: 1.35; margin: 0 0 2px 0 !important; padding: 0 !important; white-space: normal;">描述: {{ foodDetailCache[item.ItemName]?.content | emptyInfo}}</p>
-                      <p class="text-gray-400" style="font-size: 11px; line-height: 1.25; margin: 0 !important; padding: 0 !important;">熱量: {{ foodDetailCache[item.ItemName]?.kcal | emptyInfo}}</p>
+                      <p class="text-gray-500 dark:text-slate-400" style="font-size: 11px; line-height: 1.35; margin: 0 0 2px 0 !important; padding: 0 !important; white-space: normal;">描述: {{ foodDetailCache[item.ItemName]?.content | emptyInfo}}</p>
+                      <p class="text-gray-400 dark:text-slate-500" style="font-size: 11px; line-height: 1.25; margin: 0 !important; padding: 0 !important;">熱量: {{ foodDetailCache[item.ItemName]?.kcal | emptyInfo}}</p>
                     </ng-container>
 
                     <!-- 商品沒資訊的話 -->
-                    <p *ngIf="!foodDetailCache[item.ItemName] || foodDetailCache[item.ItemName]?.image === 'assets/no-image.jpeg'" class="text-gray-400" style="font-size: 11px; margin: 0 !important; padding: 0 !important;">
+                    <p *ngIf="!foodDetailCache[item.ItemName] || foodDetailCache[item.ItemName]?.image === 'assets/no-image.jpeg'" class="text-gray-400 dark:text-slate-500" style="font-size: 11px; margin: 0 !important; padding: 0 !important;">
                       暫無詳細資訊
                     </p>
 
@@ -80,9 +80,9 @@
   <ng-container *ngIf="category.name">
     <ng-container *ngFor="let subCategory of subCategories">
       <div *ngIf="itemsBySubCategory[subCategory.name] && itemsBySubCategory[subCategory.name].length > 0"
-           class="sub-category-item bg-white border border-gray-100 px-3 py-4 sm:p-5 mb-8 rounded-2xl shadow-none">
+           class="sub-category-item bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 px-3 py-4 sm:p-5 mb-8 rounded-2xl shadow-none">
         <div class="mb-4">
-          <h3 class="text-2xl font-bold text-black">
+          <h3 class="text-2xl font-bold text-black dark:text-slate-100">
             {{ subCategory.name }}
           </h3>
         </div>
@@ -107,17 +107,17 @@
 
                 <div class="flex-1 min-w-0 block">
                   <!-- 商品名稱 (為右上角標籤預留 padding-right 空間) -->
-                  <h3 class="font-semibold text-gray-800" style="font-size: 13px; line-height: 1.15; margin: 0 0 4px 0 !important; padding: 0 54px 0 0 !important;">
+                  <h3 class="font-semibold text-gray-800 dark:text-slate-200" style="font-size: 13px; line-height: 1.15; margin: 0 0 4px 0 !important; padding: 0 54px 0 0 !important;">
                     {{ item.ItemName }}
                   </h3>
 
                   <!-- 商品描述 -->
                   <ng-container *ngIf="foodDetailCache[item.ItemName] && foodDetailCache[item.ItemName]?.picture_url !== 'assets/no-image.jpeg'">
-                    <p class="text-gray-500" style="font-size: 11px; line-height: 1.35; margin: 0 0 2px 0 !important; padding: 0 !important; white-space: normal;">描述: {{ foodDetailCache[item.ItemName]?.Description | emptyInfo}}</p>
+                    <p class="text-gray-500 dark:text-slate-400" style="font-size: 11px; line-height: 1.35; margin: 0 0 2px 0 !important; padding: 0 !important; white-space: normal;">描述: {{ foodDetailCache[item.ItemName]?.Description | emptyInfo}}</p>
                   </ng-container>
 
                   <!-- 商品沒資訊的話 -->
-                  <p *ngIf="!foodDetailCache[item.ItemName] || foodDetailCache[item.ItemName]?.picture_url === 'assets/no-image.jpeg'" class="text-gray-400" style="font-size: 11px; margin: 0 !important; padding: 0 !important;">
+                  <p *ngIf="!foodDetailCache[item.ItemName] || foodDetailCache[item.ItemName]?.picture_url === 'assets/no-image.jpeg'" class="text-gray-400 dark:text-slate-500" style="font-size: 11px; margin: 0 !important; padding: 0 !important;">
                     暫無詳細資訊
                   </p>
 

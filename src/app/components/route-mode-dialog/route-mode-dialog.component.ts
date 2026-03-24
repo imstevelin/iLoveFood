@@ -22,7 +22,7 @@ export class RouteModeDialogComponent {
   ) {}
 
   onCancel(): void {
-    this.dialogRef.close();
+    this.dialogRef.close('CANCEL');
   }
 
   selectMode(mode: 'DRIVING' | 'BICYCLING'): void {

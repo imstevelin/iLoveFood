@@ -367,3 +367,89 @@
     width: 100%;
   }
 }
+
+/* ===== Dark Mode Overrides ===== */
+:host-context([data-theme="dark"]) {
+  .sidebar {
+    background-color: #1e1e1e;
+    box-shadow: 2px 0 10px rgba(0, 0, 0, 0.4);
+  }
+
+  .sidebar-header {
+    background-color: #171717;
+
+    h3 {
+      color: #34d399;
+    }
+  }
+
+  .sidebar-overlay {
+    background-color: rgba(0, 0, 0, 0.6);
+  }
+
+  .store-item {
+    &:hover {
+      background-color: rgba(50, 50, 50, 0.5);
+    }
+
+    .store-name {
+      color: #a1a1aa;
+    }
+  }
+
+  .login-section {
+    border-top-color: var(--border-default);
+
+    .login-btn {
+      background-color: var(--accent);
+    }
+  }
+
+  .search-section {
+    border-bottom-color: var(--border-default);
+  }
+
+  .search-input-wrapper {
+    border-color: var(--border-subtle);
+
+    &:focus-within {
+      border-color: var(--accent);
+    }
+
+    &:has(.search-input:disabled) {
+      background-color: rgba(24, 24, 24, 0.5);
+      border-color: var(--border-default);
+    }
+  }
+
+  .search-input {
+    color: var(--text-primary);
+
+    &:disabled {
+      background-color: rgba(24, 24, 24, 0.5);
+      color: #71717a;
+    }
+  }
+
+  .result-item {
+    &:hover {
+      background-color: rgba(50, 50, 50, 0.5);
+    }
+
+    .food-name {
+      color: #e4e4e7;
+    }
+
+    .store-name {
+      color: #a1a1aa;
+    }
+  }
+
+  .no-results {
+    color: #71717a;
+  }
+
+  .searching {
+    color: #a1a1aa;
+  }
+}

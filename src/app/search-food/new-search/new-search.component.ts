@@ -81,6 +81,9 @@ export class NewSearchComponent implements OnInit {
     return store.loadingCompleteCategoryName === catId;
   }
   chatEnabled: boolean = true;    // 聊天室按鈕開關 (系統預設為開啟)
+  darkModeEnabled: boolean = true; // 跟隨裝置深淺色主題 (預設為開啟)
+  private darkModeMediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+  get isDarkSystemTheme(): boolean { return this.darkModeMediaQuery.matches; }
   storesDataReady: boolean = false; // 商店 JSON 資料是否已載入
   showAboutCard: boolean = false; // 關於卡片是否顯示
 
@@ -249,6 +252,18 @@ export class NewSearchComponent implements OnInit {
     if (savedChat) {
       this.chatEnabled = JSON.parse(savedChat);
     }
+
+    // 從 localStorage 讀取深色模式開關
+    const savedDarkMode = localStorage.getItem('darkModeEnabled');
+    if (savedDarkMode !== null) {
+      this.darkModeEnabled = JSON.parse(savedDarkMode);
+    }
+    this.applyTheme();
+
+    // 監聽裝置主題變更
+    this.darkModeMediaQuery.addEventListener('change', () => {
+      this.applyTheme();
+    });
 
     // 訂閱 getUser 方法來獲取用戶資料
     this.authService.getUser().subscribe(user => {
@@ -498,6 +513,33 @@ export class NewSearchComponent implements OnInit {
     localStorage.setItem('chatEnabled', JSON.stringify(this.chatEnabled));
     // 通知同頁面的 chatbot 組件
     window.dispatchEvent(new CustomEvent('chatEnabledChanged', { detail: this.chatEnabled }));
+  }
+
+  // 深色模式開關
+  onToggleDarkMode(event: any): void {
+    this.darkModeEnabled = event.target.checked;
+    localStorage.setItem('darkModeEnabled', JSON.stringify(this.darkModeEnabled));
+    this.applyTheme();
+  }
+
+  // 套用主題：根據 darkModeEnabled 和 prefers-color-scheme 設定 data-theme
+  applyTheme(): void {
+    const prefersDark = this.darkModeMediaQuery.matches;
+    const shouldBeDark = this.darkModeEnabled && prefersDark;
+    const htmlEl = document.documentElement;
+    htmlEl.setAttribute('data-theme', shouldBeDark ? 'dark' : 'light');
+    // Tailwind 的 dark: 使用 class 策略
+    if (shouldBeDark) {
+      htmlEl.classList.add('dark');
+    } else {
+      htmlEl.classList.remove('dark');
+    }
+
+    // 更新 meta theme-color
+    const metaThemeColor = document.querySelector('meta[name="theme-color"]');
+    if (metaThemeColor) {
+      metaThemeColor.setAttribute('content', shouldBeDark ? '#121212' : '#34C759');
+    }
   }
 
   // 登入/登出
@@ -889,11 +931,15 @@ export class NewSearchComponent implements OnInit {
     const dialogRef = this.dialog.open(RouteModeDialogComponent, {
       width: '400px',
       panelClass: 'glass-dialog',
-      data: { originalUrl }
+      data: { originalUrl },
+      autoFocus: false
     });
 
-    dialogRef.afterClosed().subscribe((selectedMode: 'DRIVING' | 'BICYCLING') => {
-      if (!selectedMode) return;
+    dialogRef.afterClosed().subscribe((selectedMode: 'DRIVING' | 'BICYCLING' | 'CANCEL') => {
+      if (!selectedMode || selectedMode === 'CANCEL') {
+        this.goHome();
+        return;
+      }
       
       // FIX: 立即清空舊的商店卡片，讓 Loading Overlay 能瞬間跳出來，消除卡頓感
       this.totalStoresShowList = [];
@@ -1114,7 +1160,8 @@ export class NewSearchComponent implements OnInit {
       panelClass: 'glass-dialog',
       data: {
         title: '路線解析失敗',
-        message: '由於 Google 的安全限制，短網址 (maps.app.goo.gl) 解析失敗。請嘗試在電腦版 Google Maps 複製「完整網址」(包含 /dir/ 起終點)，再次貼上搜尋框。'
+        message: '解析失敗，請貼上正確的導航路線連結。',
+        type: 'error'
       }
     });
   }

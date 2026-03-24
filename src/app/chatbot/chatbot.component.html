@@ -17,7 +17,7 @@
     <div #chatBody class="chatbot-body" (scroll)="onChatScroll()">
         <div *ngFor="let msg of messages; let i = index" [ngClass]="msg.sender"
              appMotion [initial]="{ opacity: 0, y: 15, scale: 0.95 }" [animate]="{ opacity: 1, y: 0, scale: 1 }" [transition]="{ type: 'spring', stiffness: 500, damping: 30, delay: 0.02 }">
-            <span *ngIf="msg.sender === 'user'" class="text-gray-700">{{ msg.text }}</span>
+            <span *ngIf="msg.sender === 'user'" class="text-gray-700 dark:text-slate-200">{{ msg.text }}</span>
             <div *ngIf="msg.sender === 'bot' && !msg.isLoading" class="bot-message">
                 <span [innerHTML]="msg.safeHtml || msg.text"></span>
             </div>

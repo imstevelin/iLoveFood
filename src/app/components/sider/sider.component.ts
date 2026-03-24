@@ -90,7 +90,8 @@ export class SiderComponent {
         data: {
           title: "登出成功",
           message: `已順利登出`,
-          imgPath: "assets/S__222224406.jpg"
+          imgPath: "assets/S__222224406.jpg",
+          type: 'success'
         }
       });
       dialogRef.afterClosed().subscribe((result) => {

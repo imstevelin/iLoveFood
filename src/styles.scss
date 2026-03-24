@@ -25,6 +25,12 @@
   --bg-gradient-mid: #f1f5f9;
   --bg-gradient-end: #eef2ff;
 
+  /* Shared surface & border tokens */
+  --surface: #ffffff;
+  --surface-dim: rgba(248, 250, 252, 0.8);
+  --border-default: rgba(226, 232, 240, 0.5);
+  --border-subtle: rgba(203, 213, 225, 0.4);
+
   /* ===== Apple-Style Animation Tokens ===== */
 
   /* Spring easing — simulates iOS UISpringAnimation (damping ~0.8, response ~0.4s)
@@ -57,12 +63,34 @@
   --transition-gentle: var(--duration-slow) var(--spring-gentle);
 }
 
+/* ===== Dark Theme Variables ===== */
+[data-theme="dark"] {
+  --glass-bg: rgba(38, 38, 38, 0.65);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  --accent: #7B9FFF;
+  --accent-hover: #6B8FEE;
+  --accent-light: rgba(91, 127, 255, 0.15);
+  --success: #34D399;
+  --success-light: rgba(16, 185, 129, 0.15);
+  --text-primary: #e4e4e7;
+  --text-secondary: #a1a1aa;
+  --bg-gradient-start: #121212;
+  --bg-gradient-mid: #171717;
+  --bg-gradient-end: #1a1a1a;
+  --surface: #1e1e1e;
+  --surface-dim: rgba(38, 38, 38, 0.8);
+  --border-default: rgba(82, 82, 82, 0.5);
+  --border-subtle: rgba(63, 63, 70, 0.4);
+}
+
 html,
 body {
   height: 100%;
   margin: 0;
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  background: linear-gradient(160deg, var(--bg-gradient-start) 0%, var(--bg-gradient-mid) 40%, var(--bg-gradient-end) 100%);
+  background-color: var(--bg-gradient-start);
+  background-image: linear-gradient(160deg, var(--bg-gradient-start) 0%, var(--bg-gradient-mid) 40%, var(--bg-gradient-end) 100%);
   background-attachment: fixed;
   color: var(--text-primary);
   -webkit-font-smoothing: antialiased;
@@ -88,6 +116,10 @@ html {
 .glass-card:hover {
   transform: translateY(-2px);
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.1);
+}
+
+[data-theme="dark"] .glass-card:hover {
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
 }
 
 /* Mobile: remove hover effects */
@@ -132,6 +164,13 @@ html {
   animation: dropdownIn var(--duration-normal) var(--spring) both !important;
 }
 
+[data-theme="dark"] .mat-mdc-autocomplete-panel {
+  background: rgba(38, 38, 38, 0.95) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.4),
+    0 0 0 1px rgba(255, 255, 255, 0.05) !important;
+}
+
 @keyframes dropdownIn {
   from {
     opacity: 0;
@@ -153,6 +192,18 @@ html {
 
 .mat-mdc-option:hover {
   background: rgba(91, 127, 255, 0.06) !important;
+}
+
+[data-theme="dark"] .mat-mdc-option {
+  color: #e4e4e7 !important;
+}
+
+[data-theme="dark"] .mat-mdc-option .mdc-list-item__primary-text {
+  color: #e4e4e7 !important;
+}
+
+[data-theme="dark"] .mat-mdc-option:hover {
+  background: rgba(91, 127, 255, 0.15) !important;
 }
 
 .mat-mdc-option:active {
@@ -182,11 +233,25 @@ html {
   }
 }
 
+[data-theme="dark"] .glass-dialog .mat-mdc-dialog-container {
+  .mdc-dialog__surface,
+  .mat-mdc-dialog-surface {
+    background: rgba(38, 38, 38, 0.92) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.5),
+      0 0 0 1px rgba(255, 255, 255, 0.08) inset !important;
+  }
+}
+
 /* 登入視窗顯示時，整個頁面套上薄薄的模糊效果 */
 .cdk-overlay-backdrop-showing {
   background: rgba(0, 0, 0, 0.2) !important;
   backdrop-filter: blur(8px) !important;
   -webkit-backdrop-filter: blur(8px) !important;
+}
+
+[data-theme="dark"] .cdk-overlay-backdrop-showing {
+  background: rgba(0, 0, 0, 0.5) !important;
 }
 
 /* 純白背景商品圖片視窗 */
@@ -200,6 +265,14 @@ html {
     overflow: hidden !important;
     box-shadow: 0 24px 64px rgba(0, 0, 0, 0.16) !important;
     padding: 0 !important;
+  }
+}
+
+[data-theme="dark"] .white-image-dialog .mat-mdc-dialog-container {
+  .mdc-dialog__surface,
+  .mat-mdc-dialog-surface {
+    background: var(--surface) !important;
+    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.5) !important;
   }
 }
 

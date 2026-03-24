@@ -295,3 +295,88 @@ mat-progress-spinner {
   from { opacity: 0; }
   to { opacity: 1; }
 }
+
+/* ===== Dark Mode Overrides ===== */
+:host-context([data-theme="dark"]) {
+
+  /* Sub-category cards — dark background instead of white */
+  .sub-category-item {
+    background: #2a2a2a !important;
+    border-color: rgba(82, 82, 82, 0.4) !important;
+
+    /* Fix #1: Sub-category title text — override Tailwind's text-black */
+    h3 {
+      color: #e4e4e7 !important;
+    }
+  }
+
+  .product-card {
+    background: rgba(65, 65, 65, 0.7);
+    border-color: rgba(255, 255, 255, 0.15) !important;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
+
+    &:hover {
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+      border-color: rgba(123, 159, 255, 0.6) !important;
+    }
+
+    /* Fix #1: Product card title & text — override Tailwind text-gray-800 etc. */
+    h3 {
+      color: #e4e4e7 !important;
+    }
+
+    .font-semibold {
+      color: #e4e4e7 !important;
+    }
+
+    span {
+      color: #d4d4d8;
+    }
+
+    p {
+      color: #a1a1aa !important;
+    }
+  }
+
+  /* Make Gaussian blur background more visible in dark mode */
+  .product-card-bg {
+    opacity: 0.65;
+    filter: blur(20px) brightness(0.9) saturate(1.5);
+  }
+
+  .product-card-content {
+    background: rgba(50, 50, 50, 0.8);
+  }
+
+  /* Product image background should be white */
+  .product-img-wrapper {
+    background: #ffffff;
+    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.05),
+                0 2px 8px rgba(0, 0, 0, 0.2);
+
+    &:hover {
+      box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.08),
+                  0 4px 16px rgba(0, 0, 0, 0.3);
+    }
+  }
+
+  .badge-quantity {
+    background: rgba(22, 101, 52, 0.25);
+    color: #86efac;
+    border-color: rgba(34, 197, 94, 0.25);
+  }
+
+  .badge-new {
+    background: rgba(153, 27, 27, 0.25);
+    color: #fca5a5;
+    border-color: rgba(239, 68, 68, 0.25);
+  }
+
+  .badge-sale {
+    background: rgba(133, 77, 14, 0.25);
+    color: #fde68a;
+    border-color: rgba(245, 158, 11, 0.25);
+  }
+}
+
+

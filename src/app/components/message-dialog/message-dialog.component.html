@@ -1,21 +1,74 @@
-<div appMotion [initial]="{ scale: 0.8, opacity: 0 }" [animate]="{ scale: 1, opacity: 1 }" [transition]="{ type: 'spring', stiffness: 350, damping: 25 }">
-<h1 mat-dialog-title class="text-xl font-semibold text-primary-default mb-4">
-  {{ title }}
-</h1>
-<div class="flex items-center bg-primary-white justify-center mb-6 h-24">
-  <div class="flex w-4/5 items-center justify-start">
-    <img *ngIf="imgPath" [src]="imgPath" alt="無搜尋結果" class="w-24 h-24 sm:w-16 sm:h-16 md:w-24 md:h-24">
-    <h5 class="text-primary-default sm:text-xl font-bold ml-2 py-1 px-3 border-2 border-primary-default rounded-full bg-primary-light inline-block">
-      <div class="text-primary-default lg:text-md sm:text-xl">
-        {{ message }}
-      </div>
-    </h5>
+<div class="p-6 md:p-8 flex flex-col items-center justify-center text-center relative max-w-[400px]">
+  
+  <!-- Icon / Image Container -->
+  <div class="mb-6 flex flex-col items-center w-full">
+    <div class="min-w-[100px] min-h-[100px] p-2 rounded-full flex items-center justify-center animate-fade-in-up shadow-sm border"
+         [ngClass]="{
+           'bg-emerald-50 border-emerald-100 dark:bg-emerald-900/30 dark:border-emerald-800': type === 'success',
+           'bg-rose-50 border-rose-100 dark:bg-rose-900/30 dark:border-rose-800': type === 'error',
+           'bg-amber-50 border-amber-100 dark:bg-amber-900/30 dark:border-amber-800': type === 'warning',
+           'bg-slate-50 border-slate-100 dark:bg-slate-800/50 dark:border-slate-700': type === 'info'
+         }">
+      
+      <!-- Custom Image -->
+      <img *ngIf="imgPath" [src]="imgPath" alt="提示圖示" class="max-w-[70px] max-h-[70px] object-contain">
+      
+      <!-- Default Semantic Icons (Only if no imgPath) -->
+      <ng-container *ngIf="!imgPath">
+        <!-- Success Icon -->
+        <svg *ngIf="type === 'success'" xmlns="http://www.w3.org/2000/svg" width="48" height="48" fill="none" stroke="#10b981" stroke-width="2.5" viewBox="0 0 24 24">
+          <polyline points="20 6 9 17 4 12"></polyline>
+        </svg>
+
+        <!-- Error Icon (Route Failure etc) -->
+        <svg *ngIf="type === 'error'" xmlns="http://www.w3.org/2000/svg" width="48" height="48" fill="none" stroke="#f43f5e" stroke-width="2.5" viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="15" y1="9" x2="9" y2="15"></line>
+          <line x1="9" y1="9" x2="15" y2="15"></line>
+        </svg>
+
+        <!-- Warning Icon -->
+        <svg *ngIf="type === 'warning'" xmlns="http://www.w3.org/2000/svg" width="48" height="48" fill="none" stroke="#f59e0b" stroke-width="2.5" viewBox="0 0 24 24">
+          <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+          <line x1="12" y1="9" x2="12" y2="13"></line>
+          <line x1="12" y1="17" x2="12.01" y2="17"></line>
+        </svg>
+
+        <!-- Info Icon (Default) -->
+        <svg *ngIf="type === 'info'" xmlns="http://www.w3.org/2000/svg" width="48" height="48" fill="none" stroke="#64748b" stroke-width="2.5" viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="12" y1="16" x2="12" y2="12"></line>
+          <line x1="12" y1="8" x2="12.01" y2="8"></line>
+        </svg>
+      </ng-container>
+    </div>
   </div>
-</div>
-<div class="flex items-center bg-primary-white justify-center py-3">
-  <button (click)="close()" class="px-2 py-2 text-white bg-success rounded-full hover:bg-primary-default focus:outline-none focus:ring-2 focus:ring-primary-light">
-    {{ closeMessage }}
-  </button>
-</div>
+
+  <!-- Content -->
+  <div class="w-full space-y-2 mb-8 px-2">
+    <h2 mat-dialog-title class="text-xl font-bold text-slate-800 dark:text-slate-100 m-0 leading-tight">
+      {{ title }}
+    </h2>
+    <div class="text-[15px] text-slate-500 dark:text-slate-300 font-medium leading-relaxed break-words">
+      {{ message }}
+    </div>
+  </div>
+
+  <!-- Actions -->
+  <div class="w-full flex justify-center">
+    <!-- Explicit text color to avoid theme overrides -->
+    <button (click)="close()" 
+            class="dialog-button px-10 py-3 rounded-2xl font-bold text-sm 
+                   hover:opacity-90 active:scale-95 transition-all duration-200 
+                   shadow-lg focus:outline-none"
+            [ngClass]="{
+              'btn-success': type === 'success',
+              'btn-error': type === 'error',
+              'btn-warning': type === 'warning',
+              'btn-info': type === 'info'
+            }">
+      {{ closeMessage }}
+    </button>
+  </div>
 </div>
 

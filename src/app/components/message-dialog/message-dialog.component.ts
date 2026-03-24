@@ -12,6 +12,7 @@ export class MessageDialogComponent implements OnInit {
   message: string;
   imgPath: string;
   closeMessage: string;
+  type: 'success' | 'error' | 'warning' | 'info';
 
   constructor(
     public dialogRef: MatDialogRef<MessageDialogComponent>,
@@ -22,6 +23,7 @@ export class MessageDialogComponent implements OnInit {
     this.message = data.message || '請稍後再試';
     this.imgPath = data.imgPath || '';
     this.closeMessage = data.closeMessage || '關閉';
+    this.type = data.type || 'info';
   }
 
   close(): void {
