@@ -113,9 +113,10 @@ export class NewSearchComponent implements OnInit {
   productSearchStores: any[] = []; // 商品搜尋結果的門市列表（所有已找到的）
   productSearchIsCategory: boolean = false; // 是否為種類搜尋
 
-  // 無限滾動相關
-  allNearbyStores: any[] = []; // 所有附近門市（尚未顯示的）
-  storesPerPage: number = 10; // 每次加載門市數量
+  // 無限滾動相關 (嚴格分頁與記憶體緩衝池)
+  allNearbyStores: any[] = []; // 所有附近門市（已存入記憶體的緩衝池，不一定全顯）
+  storesPerPage: number = 5;   // 每次加載門市數量嚴格限制 5 間
+  private targetDisplayCount: number = 0; // 目標顯示的總數量，避免 API 空載時多塞門市
   isLoadingMore: boolean = false; // 是否正在加載更多
   hasMoreStores: boolean = false; // 是否還有更多門市
 
@@ -130,7 +131,7 @@ export class NewSearchComponent implements OnInit {
   private allFmStoresSortedByDist: any[] = [];      // 全部全家門市按距離排序
   private productSearch711BatchIdx: number = 0;     // 7-11 目前批次索引
   private productSearchFmBatchIdx: number = 0;      // 全家目前批次索引
-  private productSearchBatchSize: number = 30;      // 每批查詢門市數
+  private productSearchBatchSize: number = 15;      // 防封鎖：每批 API 查詢量改為 15 間
   private productSearchDisplayed: number = 0;       // 已顯示的門市計數
   private isSearchingMore: boolean = false;          // 是否正在擴搜
   private searchExhausted711: boolean = false;       // 7-11 是否已搜完
@@ -143,7 +144,7 @@ export class NewSearchComponent implements OnInit {
   private productSearchGeneration: number = 0;       // 搜尋世代計數器，用於作廢舊搜尋的 setTimeout
   private storeSearchGeneration: number = 0;         // 店名搜尋世代計數器
   locationDenied: boolean = false;                   // 使用者拒絕定位
-  private minInitialStores: number = 10;             // 首次載入最少店數
+  private minInitialStores: number = 5;             // 初始要求：嚴格 5 間
 
   // 拼音轉換快取：避免重複轉換相同的文字
   private pinyinCache = new Map<string, string>();
@@ -1295,8 +1296,9 @@ export class NewSearchComponent implements OnInit {
       allStores.forEach(s => this.precomputeCategoryQty(s));
 
       this.allNearbyStores = allStores;
-      this.totalStoresShowList = allStores.slice(0, 20); 
-      this.hasMoreStores = allStores.length > 20;
+      this.targetDisplayCount = this.minInitialStores;
+      this.totalStoresShowList = this.allNearbyStores.slice(0, this.targetDisplayCount); 
+      this.hasMoreStores = this.allNearbyStores.length > this.targetDisplayCount;
       this.storeDataService.setStores(this.allNearbyStores);
       this.storeDataService.setIsUserLocationSearch(false);
       
@@ -1331,6 +1333,7 @@ export class NewSearchComponent implements OnInit {
     this.hasMoreStores = true;
     this.productSearchPaused = false;
     this.productSearchRunning = true;
+    this.targetDisplayCount = this.minInitialStores;
     this.productSearchGeneration++;  // 遞增世代，作廢舊搜尋的 setTimeout
 
     // 清除舊的計時器
@@ -1698,7 +1701,7 @@ export class NewSearchComponent implements OnInit {
 
   // 結束單次商品搜尋批次，處理 UI 更新與自動加載下一批
   private finishProductSearchBatch(currentGen: number, isInitial: boolean, newMatches: any[]): void {
-    // 加入已有結果並排序
+    // 加入已有結果緩衝池並排序
     this.productSearchStores = [...this.productSearchStores, ...newMatches];
     this.productSearchStores.sort((a, b) => a.distance - b.distance);
 
@@ -1711,42 +1714,38 @@ export class NewSearchComponent implements OnInit {
     const allExhausted = this.searchExhausted711 && this.searchExhaustedFm;
     this.hasMoreStores = !allExhausted;
 
+    // 不論是 isInitial 還是 scroll load，統一從緩衝池中切割至目標數量
+    this.totalStoresShowList = this.productSearchStores.slice(0, this.targetDisplayCount);
+    this.productSearchDisplayed = this.totalStoresShowList.length;
+
+    this.storeDataService.setStores(this.productSearchStores);
     if (isInitial) {
-      // 首次搜尋：立即顯示目前找到的結果
-      this.totalStoresShowList = this.productSearchStores.slice(0, Math.max(this.productSearchDisplayed, this.productSearchStores.length));
-      this.productSearchDisplayed = this.totalStoresShowList.length;
-
-      this.storeDataService.setStores(this.productSearchStores);
       this.storeDataService.setIsUserLocationSearch(true);
-      this.loadingService.hide();
+    }
 
-      // 只在結果不到 minInitialStores 時自動繼續搜尋，否則等待使用者滾動
-      if (!allExhausted && !this.productSearchPaused && currentGen === this.productSearchGeneration
-          && this.productSearchStores.length < this.minInitialStores) {
+    // 遞迴防呆：如果目前顯示的門市數量未達目標（例如只找到 2 間），且資料庫還沒搜完、未強制暫停，自動發送下一批
+    if (this.totalStoresShowList.length < this.targetDisplayCount && !allExhausted && !this.productSearchPaused) {
+      if (isInitial) {
         setTimeout(() => {
           if (this.productSearchGeneration === currentGen) {
             this.fetchProductSearchBatch(true);
           }
         }, 200);
-      } else if (allExhausted) {
+      } else {
+        this.isLoadingMore = true;
+        this.fetchProductSearchBatch(false);
+      }
+    } else {
+      // 數量達標（或全台灣庫存已抽乾），切斷連線，進入休眠
+      this.isLoadingMore = false;
+      this.loadingService.hide();
+
+      if (allExhausted) {
         this.productSearchRunning = false;
         this.productSearchPaused = false;
         if (this.productSearchTimer) {
           clearTimeout(this.productSearchTimer);
         }
-      }
-    } else {
-      // 滾動加載：追加顯示
-      const prevDisplayed = this.productSearchDisplayed;
-      this.showMoreProductResults();
-      const newDisplayed = this.productSearchDisplayed - prevDisplayed;
-
-      // 無限滾動防卡死機制：
-      // 如果這次批次查完後，因為沒有匹配商店導致畫面上沒有增加任何新卡片
-      // 且資料庫還沒搜完，我們必須自動觸發下一批，否則使用者將無法繼續觸發拉取
-      if (newDisplayed === 0 && !allExhausted && currentGen === this.productSearchGeneration) {
-        this.isLoadingMore = true;
-        this.fetchProductSearchBatch(false);
       }
     }
   }
@@ -1799,29 +1798,35 @@ export class NewSearchComponent implements OnInit {
 
   // 顯示更多商品搜尋結果（無限滾動用）
   private showMoreProductResults(): void {
-    const nextEnd = this.productSearchDisplayed + this.storesPerPage;
-    this.totalStoresShowList = this.productSearchStores.slice(0, nextEnd);
+    this.totalStoresShowList = this.productSearchStores.slice(0, this.targetDisplayCount);
     this.productSearchDisplayed = this.totalStoresShowList.length;
     this.isLoadingMore = false;
   }
 
   // 商品搜尋的無限滾動觸發
   private loadMoreProductResults(): void {
-    if (this.isLoadingMore || this.isSearchingMore) return;
+    if (this.isLoadingMore || this.isSearchingMore || !this.hasMoreStores) return;
     this.isLoadingMore = true;
 
-    // 如果已有但未顯示的結果足夠，直接顯示
-    if (this.productSearchDisplayed < this.productSearchStores.length) {
+    // 將目標顯示數量往上加 5
+    this.targetDisplayCount += this.storesPerPage;
+
+    if (this.productSearchStores.length >= this.targetDisplayCount) {
+      // 緩衝池數量充足：直接切割顯示並休眠 API
       this.showMoreProductResults();
       return;
-    }
-
-    // 否則需要繼續搜尋下一批
-    if (!this.searchExhausted711 || !this.searchExhaustedFm) {
-      this.fetchProductSearchBatch(false);
     } else {
-      this.hasMoreStores = false;
-      this.isLoadingMore = false;
+      // 緩衝池不足：先把池裡剩下的全推上畫面
+      this.totalStoresShowList = this.productSearchStores.slice(0, this.productSearchStores.length);
+      this.productSearchDisplayed = this.totalStoresShowList.length;
+
+      // 如果還有門市可以搜尋，就繼續查下一批
+      if (!this.searchExhausted711 || !this.searchExhaustedFm) {
+        this.fetchProductSearchBatch(false);
+      } else {
+        this.hasMoreStores = false;
+        this.isLoadingMore = false;
+      }
     }
   }
 
@@ -2111,17 +2116,18 @@ export class NewSearchComponent implements OnInit {
         // 預算分類數量快取
         allStores.forEach(s => this.precomputeCategoryQty(s));
 
-        // 儲存 API 回傳的門市
+        // 儲存 API 回傳的門市至記憶體緩衝池
         this.allNearbyStores = allStores;
 
         // 準備全部門市列表（用於超出 API 範圍的擴展搜尋）
         this.prepareAllStoresByDistance();
 
-        // 顯示所有 API 回傳的門市（通常 ~20 間，足夠填滿頁面）
-        this.totalStoresShowList = allStores;
+        // 從緩衝池中取出精準數量的門市顯示
+        this.targetDisplayCount = this.minInitialStores;
+        this.totalStoresShowList = this.allNearbyStores.slice(0, this.targetDisplayCount);
         this.hasMoreStores = true; // 還有更多門市可以從 JSON 載入
 
-        this.storeDataService.setStores(allStores);
+        this.storeDataService.setStores(this.allNearbyStores);
         if (storeLatitude && storeLongitude) {
           this.storeDataService.setIsUserLocationSearch(false);
         } else {
@@ -2147,33 +2153,33 @@ export class NewSearchComponent implements OnInit {
     );
   }
 
-  // 載入更多門市（無限滾動 — 支援超出 API 範圍）
+  // 載入更多門市（無限滾動 — 嚴格防封鎖緩衝池機制）
   loadMoreStores(): void {
     if (this.isLoadingMore || !this.hasMoreStores) return;
     this.isLoadingMore = true;
 
-    const currentLength = this.totalStoresShowList.length;
+    // 將目標顯示數量往上加 5
+    this.targetDisplayCount += this.storesPerPage;
 
-    // 優先從已載入的 allNearbyStores 中取（API 回傳的範圍）
-    if (currentLength < this.allNearbyStores.length) {
-      const nextBatch = this.allNearbyStores.slice(currentLength, currentLength + this.storesPerPage);
-      this.totalStoresShowList = [...this.totalStoresShowList, ...nextBatch];
-      this.hasMoreStores = true;
-      this.isLoadingMore = false;
-      // 檢查是否達到最少數量
-      this.ensureMinimumStores();
-      return;
-    }
-
-    // 超出 API 範圍：
-    // 若為路線搜尋模式，不應從 JSON 載入全台灣門市，因為那是無關的
-    if (this.searchMode === 'route') {
-      this.hasMoreStores = false;
+    if (this.allNearbyStores.length >= this.targetDisplayCount) {
+      // 緩衝池內數量充足：直接切割，絕對禁止觸發新 API
+      this.totalStoresShowList = this.allNearbyStores.slice(0, this.targetDisplayCount);
       this.isLoadingMore = false;
       return;
-    }
+    } else {
+      // 緩衝池不足：先把池中剩下所有的全推至畫面
+      this.totalStoresShowList = this.allNearbyStores.slice(0, this.allNearbyStores.length);
 
-    this.loadMoreStoresFromJSON();
+      // 若為路線搜尋模式，不應從 JSON 載入全台灣門市
+      if (this.searchMode === 'route') {
+        this.hasMoreStores = false;
+        this.isLoadingMore = false;
+        return;
+      }
+
+      // 保持 isLoadingMore = true 狀態，繼續向 API 索要剩下不足的份額
+      this.loadMoreStoresFromJSON();
+    }
   }
 
   // 從全部門市 JSON 載入超出 API 範圍的門市
@@ -2293,31 +2299,26 @@ export class NewSearchComponent implements OnInit {
         });
       });
 
-      // 按距離排序後加入
+      // 按距離排序後加入緩衝池
       newStores.sort((a, b) => a.distance - b.distance);
       newStores.forEach(s => this.precomputeCategoryQty(s));
       this.allNearbyStores = [...this.allNearbyStores, ...newStores];
 
-      // 顯示下一頁
-      const prevLength = this.totalStoresShowList.length;
-      const nextEnd = prevLength + this.storesPerPage;
-      this.totalStoresShowList = this.allNearbyStores.slice(0, nextEnd);
+      // 嘗試達到目標顯示數量
+      this.totalStoresShowList = this.allNearbyStores.slice(0, this.targetDisplayCount);
       this.storeDataService.setStores(this.allNearbyStores);
 
-      this.isLoadingMore = false;
-      this.loadingService.hide(); // 確保背景 JSON 任務完成時，全域 loading 正式結束
       this.hasMoreStores = !(this.searchExhausted711 && this.searchExhaustedFm);
-      
-      const newDisplayed = this.totalStoresShowList.length - prevLength;
 
-      // 無限滾動防卡死機制：
-      // 如果載入後畫面上沒有增加任何新結果（例如這區域的全家都關閉了），而且還沒搜完
-      // 就必須自動查下一批，否則捲軸不會生長，無法再次觸發滾動事件
-      if (newDisplayed === 0 && this.hasMoreStores) {
-        this.isLoadingMore = true;
-        this.loadMoreStoresFromJSON();
+      // 遞迴防呆：如果這批 API 查完後，畫面上還是沒有補齊這 5 間目標數量，
+      // 而且資料庫還有（全台灣還沒搜完），就自動接續查下一批，確保使用者一定能看到 5 間再暫停
+      if (this.totalStoresShowList.length < this.targetDisplayCount && this.hasMoreStores) {
+        this.isLoadingMore = true; // 狀態保持
+        this.loadMoreStoresFromJSON(); // 當前 API 不足，立即從中斷點接續發送下一批 API
       } else {
-        this.ensureMinimumStores(); // 僅處理小於 minInitialStores 的初始情況
+        // 目標達成，安穩休眠 API
+        this.isLoadingMore = false;
+        this.loadingService.hide(); // 確保背景 JSON 任務完成時，全域 loading 正式結束
       }
     });
   }
