@@ -59,7 +59,7 @@ export class SevenElevenRequestService {
     if (!this.isRefreshing) {
       this.isRefreshing = true;
       this.refreshTokenSubject.next(null);
-      this.loadingService.show("正在獲取7-11查詢憑證...");
+      this.loadingService.show("取得超商憑證...");
 
       return this.fetchNewMidV().pipe(
         switchMap(newMidV => {

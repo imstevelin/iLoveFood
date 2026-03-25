@@ -841,6 +841,7 @@ export class NewSearchComponent implements OnInit {
 
     // 如果選中的是「導航路線」，執行路線解析
     if (selectedValue && selectedValue.type === 'route') {
+      this.stopProductSearch();
       this.handleRouteSelection(selectedValue.originalUrl);
       return;
     }
@@ -852,6 +853,7 @@ export class NewSearchComponent implements OnInit {
     }
 
     // 以下為門市搜尋模式（原有邏輯）
+    this.stopProductSearch();
     this.searchMode = 'store';
     this.isLocationSearchMode = false;
     this.storeSearchGeneration++;
@@ -1892,6 +1894,21 @@ export class NewSearchComponent implements OnInit {
     }
   }
 
+  // 強制終止並作廢目前進行中的商品/種類搜尋
+  private stopProductSearch(): void {
+    if (this.productSearchRunning || this.isSearchingMore || this.isLoadingMore) {
+      this.productSearchGeneration++; // 作廢進行中的 fetchProductSearchBatch 回呼
+      this.productSearchRunning = false;
+      this.productSearchPaused = false;
+      this.isSearchingMore = false;
+      this.isLoadingMore = false;
+    }
+    if (this.productSearchTimer) {
+      clearTimeout(this.productSearchTimer);
+      this.productSearchTimer = null;
+    }
+  }
+
   onUseCurrentLocation(): void {
     // 變更搜尋模式
     this.searchMode = 'location';
@@ -1901,6 +1918,9 @@ export class NewSearchComponent implements OnInit {
     this.totalStoresShowList = [];
     this.allNearbyStores = [];
     this.hasMoreStores = false;
+
+    // 強制停止並作廢仍在進行的商品搜尋
+    this.stopProductSearch();
 
     // 重置漸進式搜尋狀態
     this.all711StoresSortedByDist = [];

@@ -22918,5 +22918,445 @@
         "Calories": "",
         "Fat": "",
         "Description": "熱量51大卡，本包裝含1份"
+    },
+    {
+        "category": "壽司手卷飯糰",
+        "title": "香料咖哩烤雞飯卷",
+        "picture_url": "https://foodsafety.family.com.tw/product_img/003004.1390548.jpg",
+        "Protein": "",
+        "Carb": "",
+        "Calories": "",
+        "Fat": "",
+        "Description": "熱量209大卡，本包裝含1份"
+    },
+    {
+        "category": "壽司手卷飯糰",
+        "title": "煙燻培根飯糰",
+        "picture_url": "https://foodsafety.family.com.tw/product_img/003004.1395639.jpg",
+        "Protein": "",
+        "Carb": "",
+        "Calories": "",
+        "Fat": "",
+        "Description": "熱量159大卡，本包裝含1份"
+    },
+    {
+        "category": "壽司手卷飯糰",
+        "title": "銀鮭美乃滋脆卷",
+        "picture_url": "https://foodsafety.family.com.tw/product_img/003004.1406571.jpg",
+        "Protein": "",
+        "Carb": "",
+        "Calories": "",
+        "Fat": "",
+        "Description": "熱量163大卡，本包裝含1份"
+    },
+    {
+        "category": "主餐麵食",
+        "title": "燻火腿貓耳朵麵",
+        "picture_url": "https://foodsafety.family.com.tw/product_img/003004.1369505.jpg",
+        "Protein": "",
+        "Carb": "",
+        "Calories": "",
+        "Fat": "",
+        "Description": "熱量518大卡，本包裝含1份"
+    },
+    {
+        "category": "主餐麵食",
+        "title": "鐵板豆腐燴蛋蓋飯",
+        "picture_url": "https://foodsafety.family.com.tw/product_img/003004.1395134.jpg",
+        "Protein": "",
+        "Carb": "",
+        "Calories": "",
+        "Fat": "",
+        "Description": "熱量555大卡，本包裝含1份"
+    },
+    {
+        "category": "主餐麵食",
+        "title": "蒜香奶油蝦蝦義大利麵",
+        "picture_url": "https://foodsafety.family.com.tw/product_img/003004.1400498.jpg",
+        "Protein": "",
+        "Carb": "",
+        "Calories": "",
+        "Fat": "",
+        "Description": "熱量501大卡，本包裝含1份"
+    },
+    {
+        "category": "三明治漢堡",
+        "title": "黃金魚堡",
+        "picture_url": "https://foodsafety.family.com.tw/product_img/003004.1408741.jpg",
+        "Protein": "",
+        "Carb": "",
+        "Calories": "",
+        "Fat": "",
+        "Description": "熱量309大卡，本包裝含1份"
+    },
+    {
+        "category": "生鮮蔬果沙拉",
+        "title": "紅心芭樂(截切)",
+        "picture_url": "https://foodsafety.family.com.tw/product_img/003004.0819824.jpg",
+        "Protein": "",
+        "Carb": "",
+        "Calories": "",
+        "Fat": "",
+        "Description": "本產品「營養標示」非強制標示項目"
+    },
+    {
+        "category": "生鮮蔬果沙拉",
+        "title": "祕魯麝香葡萄繽紛杯(冷藏原果)",
+        "picture_url": "https://foodsafety.family.com.tw/product_img/003004.1077651.jpg",
+        "Protein": "",
+        "Carb": "",
+        "Calories": "",
+        "Fat": "",
+        "Description": "本產品「營養標示」非強制標示項目"
+    },
+    {
+        "category": "生鮮蔬果沙拉",
+        "title": "履歷金鑽鳳梨(截切)",
+        "picture_url": "https://foodsafety.family.com.tw/product_img/003004.1310633.jpg",
+        "Protein": "",
+        "Carb": "",
+        "Calories": "",
+        "Fat": "",
+        "Description": "本產品「營養標示」非強制標示項目"
+    },
+    {
+        "category": "生鮮蔬果沙拉",
+        "title": "日式和風醬",
+        "picture_url": "https://foodsafety.family.com.tw/product_img/003004.1331592.jpg",
+        "Protein": "",
+        "Carb": "",
+        "Calories": "",
+        "Fat": "",
+        "Description": "熱量48.08大卡，本包裝含1份"
+    },
+    {
+        "category": "生鮮蔬果沙拉",
+        "title": "有機A菜(小農)",
+        "picture_url": "https://foodsafety.family.com.tw/product_img/003004.1350281.jpg",
+        "Protein": "",
+        "Carb": "",
+        "Calories": "",
+        "Fat": "",
+        "Description": "本產品「營養標示」非強制標示項目"
+    },
+    {
+        "category": "生鮮蔬果沙拉",
+        "title": "美國糖蜂蘋果單入裝(冷藏原果)",
+        "picture_url": "https://foodsafety.family.com.tw/product_img/003004.1397572.jpg",
+        "Protein": "",
+        "Carb": "",
+        "Calories": "",
+        "Fat": "",
+        "Description": "本產品「營養標示」非強制標示項目"
+    },
+    {
+        "category": "生鮮蔬果沙拉",
+        "title": "黃金地瓜菜菜捲",
+        "picture_url": "https://foodsafety.family.com.tw/product_img/003004.1409010.jpg",
+        "Protein": "",
+        "Carb": "",
+        "Calories": "",
+        "Fat": "",
+        "Description": "熱量267大卡，本包裝含1份"
+    },
+    {
+        "category": "小菜、滷味、湯品",
+        "title": "蛤蜊燉雞腿湯",
+        "picture_url": "https://foodsafety.family.com.tw/product_img/003004.1321177.jpg",
+        "Protein": "",
+        "Carb": "",
+        "Calories": "",
+        "Fat": "",
+        "Description": "熱量135大卡，本包裝含1份"
+    },
+    {
+        "category": "小菜、滷味、湯品",
+        "title": "日式漢堡排",
+        "picture_url": "https://foodsafety.family.com.tw/product_img/003004.1331415.jpg",
+        "Protein": "",
+        "Carb": "",
+        "Calories": "",
+        "Fat": "",
+        "Description": "熱量248大卡，本包裝含1份"
+    },
+    {
+        "category": "小菜、滷味、湯品",
+        "title": "鹹酥雞",
+        "picture_url": "https://foodsafety.family.com.tw/product_img/003004.1353720.jpg",
+        "Protein": "",
+        "Carb": "",
+        "Calories": "",
+        "Fat": "",
+        "Description": "熱量270大卡，本包裝含1份"
+    },
+    {
+        "category": "小菜、滷味、湯品",
+        "title": "柚香水蘿蔔80g",
+        "picture_url": "https://foodsafety.family.com.tw/product_img/003004.1383135.jpg",
+        "Protein": "",
+        "Carb": "",
+        "Calories": "",
+        "Fat": "",
+        "Description": "熱量57.7大卡，本包裝含1份"
+    },
+    {
+        "category": "小菜、滷味、湯品",
+        "title": "麻辣雞心",
+        "picture_url": "https://foodsafety.family.com.tw/product_img/003004.1397540.jpg",
+        "Protein": "",
+        "Carb": "",
+        "Calories": "",
+        "Fat": "",
+        "Description": "熱量148大卡，本包裝含1份"
+    },
+    {
+        "category": "蛋糕甜品",
+        "title": "抹茶QQ蛋糕捲",
+        "picture_url": "https://foodsafety.family.com.tw/product_img/003004.1409151.jpg",
+        "Protein": "",
+        "Carb": "",
+        "Calories": "",
+        "Fat": "",
+        "Description": "熱量220大卡，本包裝含1份"
+    },
+    {
+        "category": "蛋糕甜品",
+        "title": "提拉米蘇巴斯克",
+        "picture_url": "https://foodsafety.family.com.tw/product_img/003004.1409165.jpg",
+        "Protein": "",
+        "Carb": "",
+        "Calories": "",
+        "Fat": "",
+        "Description": "熱量199大卡，本包裝含1份"
+    },
+    {
+        "category": "蛋糕甜品",
+        "title": "一顆布丁捲蛋糕",
+        "picture_url": "https://foodsafety.family.com.tw/product_img/003004.1409179.jpg",
+        "Protein": "",
+        "Carb": "",
+        "Calories": "",
+        "Fat": "",
+        "Description": "熱量162大卡，本包裝含1份"
+    },
+    {
+        "category": "蛋糕甜品",
+        "title": "巧克力雙餡Q皮雪燒",
+        "picture_url": "https://foodsafety.family.com.tw/product_img/003004.1409183.jpg",
+        "Protein": "",
+        "Carb": "",
+        "Calories": "",
+        "Fat": "",
+        "Description": "熱量280.2大卡，本包裝含1份"
+    },
+    {
+        "category": "蛋糕甜品",
+        "title": "酒香提拉米蘇泡芙",
+        "picture_url": "https://foodsafety.family.com.tw/product_img/003004.1409197.jpg",
+        "Protein": "",
+        "Carb": "",
+        "Calories": "",
+        "Fat": "",
+        "Description": "熱量167大卡，本包裝含1份"
+    },
+    {
+        "category": "蛋糕甜品",
+        "title": "青檸紅茶馬卡龍",
+        "picture_url": "https://foodsafety.family.com.tw/product_img/003004.1409206.jpg",
+        "Protein": "",
+        "Carb": "",
+        "Calories": "",
+        "Fat": "",
+        "Description": "熱量102大卡，本包裝含1份"
+    },
+    {
+        "category": "麵包",
+        "title": "藍莓乳酪貝果",
+        "picture_url": "https://foodsafety.family.com.tw/product_img/003004.1406549.jpg",
+        "Protein": "",
+        "Carb": "",
+        "Calories": "",
+        "Fat": "",
+        "Description": "熱量234大卡，本包裝含1份"
+    },
+    {
+        "category": "麵包",
+        "title": "一配莫札瑞拉起司火腿貝果",
+        "picture_url": "https://foodsafety.family.com.tw/product_img/003004.1406553.jpg",
+        "Protein": "",
+        "Carb": "",
+        "Calories": "",
+        "Fat": "",
+        "Description": "熱量252大卡，本包裝含1份"
+    },
+    {
+        "category": "麵包",
+        "title": "牛角麵包",
+        "picture_url": "https://foodsafety.family.com.tw/product_img/003004.1406567.jpg",
+        "Protein": "",
+        "Carb": "",
+        "Calories": "",
+        "Fat": "",
+        "Description": "熱量344大卡，本包裝含1份"
+    },
+    {
+        "category": "冰品",
+        "title": "芒椰葡萄柚脆皮雪糕",
+        "picture_url": "https://foodsafety.family.com.tw/product_img/003004.1394956.jpg",
+        "Protein": "",
+        "Carb": "",
+        "Calories": "",
+        "Fat": "",
+        "Description": "熱量232.8大卡，本包裝含1份"
+    },
+    {
+        "category": "冷凍食品",
+        "title": "欣手藝-港式酒香臘腸飯",
+        "picture_url": "https://foodsafety.family.com.tw/product_img/003004.1072706.jpg",
+        "Protein": "",
+        "Carb": "",
+        "Calories": "",
+        "Fat": "",
+        "Description": "熱量448大卡，本包裝含1份"
+    },
+    {
+        "category": "冷凍食品",
+        "title": "欣手藝-古早味金瓜炊粉",
+        "picture_url": "https://foodsafety.family.com.tw/product_img/003004.1072756.jpg",
+        "Protein": "",
+        "Carb": "",
+        "Calories": "",
+        "Fat": "",
+        "Description": "熱量246大卡，本包裝含1份"
+    },
+    {
+        "category": "一般飲料",
+        "title": "FMC桑椹火龍果茶",
+        "picture_url": "https://foodsafety.family.com.tw/product_img/003004.1397431.jpg",
+        "Protein": "",
+        "Carb": "",
+        "Calories": "",
+        "Fat": "",
+        "Description": "熱量166.8大卡，本包裝含1份"
+    },
+    {
+        "category": "一般飲料",
+        "title": "FMC橘拿鐵",
+        "picture_url": "https://foodsafety.family.com.tw/product_img/003004.1397459.jpg",
+        "Protein": "",
+        "Carb": "",
+        "Calories": "",
+        "Fat": "",
+        "Description": "熱量117.9大卡，本包裝含1份"
+    },
+    {
+        "category": "一般飲料",
+        "title": "義大利聖沛黎洛天然氣泡礦泉水",
+        "picture_url": "https://foodsafety.family.com.tw/product_img/003004.3410025.jpg",
+        "Protein": "",
+        "Carb": "",
+        "Calories": "",
+        "Fat": "",
+        "Description": "本產品「營養標示」非強制標示項目"
+    },
+    {
+        "category": "點心零食",
+        "title": "特趣增量版焦糖夾心巧克力",
+        "picture_url": "https://foodsafety.family.com.tw/product_img/003004.1275823.jpg",
+        "Protein": "",
+        "Carb": "",
+        "Calories": "",
+        "Fat": "",
+        "Description": "熱量358大卡，本包裝含1份"
+    },
+    {
+        "category": "點心零食",
+        "title": "巧菲斯牛奶夾心酥9入分享盒",
+        "picture_url": "https://foodsafety.family.com.tw/product_img/003004.1331906.jpg",
+        "Protein": "",
+        "Carb": "",
+        "Calories": "",
+        "Fat": "",
+        "Description": "熱量138大卡，本包裝含9份"
+    },
+    {
+        "category": "點心零食",
+        "title": "甘樂糖果福袋",
+        "picture_url": "https://foodsafety.family.com.tw/product_img/003004.1331942.jpg",
+        "Protein": "",
+        "Carb": "",
+        "Calories": "",
+        "Fat": "",
+        "Description": "熱量192大卡，本包裝含1份"
+    },
+    {
+        "category": "點心零食",
+        "title": "乖乖莓好Q軟糖",
+        "picture_url": "https://foodsafety.family.com.tw/product_img/003004.1338112.jpg",
+        "Protein": "",
+        "Carb": "",
+        "Calories": "",
+        "Fat": "",
+        "Description": "熱量138.7大卡，本包裝含1份"
+    },
+    {
+        "category": "點心零食",
+        "title": "魔芋素毛肚(香菜麻醬味)",
+        "picture_url": "https://foodsafety.family.com.tw/product_img/003004.1372419.jpg",
+        "Protein": "",
+        "Carb": "",
+        "Calories": "",
+        "Fat": "",
+        "Description": "熱量19.2大卡，本包裝含5份"
+    },
+    {
+        "category": "加工食品",
+        "title": "筍丁素肉燥",
+        "picture_url": "https://foodsafety.family.com.tw/product_img/003004.0351129.jpg",
+        "Protein": "",
+        "Carb": "",
+        "Calories": "",
+        "Fat": "",
+        "Description": "熱量207大卡，本包裝含1份"
+    },
+    {
+        "category": "加工食品",
+        "title": "中焙３號茶包式咖啡",
+        "picture_url": "https://foodsafety.family.com.tw/product_img/003004.1395461.jpg",
+        "Protein": "",
+        "Carb": "",
+        "Calories": "",
+        "Fat": "",
+        "Description": "本產品「營養標示」非強制標示項目"
+    },
+    {
+        "category": "加工食品",
+        "title": "深焙１號茶包式咖啡",
+        "picture_url": "https://foodsafety.family.com.tw/product_img/003004.1395584.jpg",
+        "Protein": "",
+        "Carb": "",
+        "Calories": "",
+        "Fat": "",
+        "Description": "本產品「營養標示」非強制標示項目"
+    },
+    {
+        "category": "加工食品",
+        "title": "淺焙６號茶包式咖啡",
+        "picture_url": "https://foodsafety.family.com.tw/product_img/003004.1395611.jpg",
+        "Protein": "",
+        "Carb": "",
+        "Calories": "",
+        "Fat": "",
+        "Description": "本產品「營養標示」非強制標示項目"
+    },
+    {
+        "category": "加工食品",
+        "title": "多穀燕麥纖餅　—　莓果花園　",
+        "picture_url": "https://foodsafety.family.com.tw/product_img/003004.1417942.jpg",
+        "Protein": "",
+        "Carb": "",
+        "Calories": "",
+        "Fat": "",
+        "Description": "熱量52大卡，本包裝含4份"
     }
 ]

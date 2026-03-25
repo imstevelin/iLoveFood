@@ -253,18 +253,30 @@ export class DisplayComponent implements OnChanges, OnInit {
 
     let foodDetail: any = null;
 
+    // 建立一個去除了(外包裝文字)、[外包裝文字] 等前綴或後綴的乾淨名稱
+    const cleanItemName = item.ItemName.replace(/[\(\[【（].*?[\)\]】）]/g, '').trim();
+
     // 1. O(1) 字典精確匹配 (效能最快)
+    // 首先嘗試原始名稱
     if (this.exactDict711.has(item.ItemName)) {
       foodDetail = { ...this.exactDict711.get(item.ItemName) };
     } 
+    // 若原始名稱無命中，嘗試乾淨名稱
+    else if (cleanItemName && this.exactDict711.has(cleanItemName)) {
+      foodDetail = { ...this.exactDict711.get(cleanItemName) };
+    }
     // 2. O(N) 模糊搜尋 (作為備案)
     else {
-      const result = this.fuse711 ? this.fuse711.search(item.ItemName) : [];
+      let result = this.fuse711 ? this.fuse711.search(item.ItemName) : [];
+      // 若原名稱模糊搜尋失敗，再試一次乾淨名稱
+      if (result.length === 0 && cleanItemName && this.fuse711) {
+        result = this.fuse711.search(cleanItemName);
+      }
+      
       if (result.length > 0) {
         foodDetail = { ...result[0].item };
       }
     }
-
     if (!foodDetail) {
       foodDetail = {
         category: '',
@@ -292,10 +304,17 @@ export class DisplayComponent implements OnChanges, OnInit {
 
     let foodDetail: any = null;
 
+    const cleanItemName = item.ItemName.replace(/[\(\[【（].*?[\)\]】）]/g, '').trim();
+
     if (this.exactDictFamilyMart.has(item.ItemName)) {
       foodDetail = { ...this.exactDictFamilyMart.get(item.ItemName) };
+    } else if (cleanItemName && this.exactDictFamilyMart.has(cleanItemName)) {
+      foodDetail = { ...this.exactDictFamilyMart.get(cleanItemName) };
     } else {
-      const result = this.fuseFamilyMart ? this.fuseFamilyMart.search(item.ItemName) : [];
+      let result = this.fuseFamilyMart ? this.fuseFamilyMart.search(item.ItemName) : [];
+      if (result.length === 0 && cleanItemName && this.fuseFamilyMart) {
+        result = this.fuseFamilyMart.search(cleanItemName);
+      }
       if (result.length > 0) {
         foodDetail = { ...result[0].item };
       }
