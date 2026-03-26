@@ -202,7 +202,13 @@
     <!-- Clean Empty State (Strictly only when idle) -->
     <!-- The user explicitly requested to completely remove the old magnifying glass style -->
     <ng-template #emptyState>
-      <div class="text-center py-4"></div>
+      <!-- 導航路線過濾無結果 -->
+      <div *ngIf="routeNoResults" class="text-center py-12 px-6 animate-fade-in-up">
+        <div class="text-5xl mb-4">🔍</div>
+        <p class="text-lg font-semibold text-slate-600 dark:text-zinc-300 mb-2">沿途找不到符合的門市</p>
+        <p class="text-sm text-slate-400 dark:text-zinc-500">沒有門市在您的導航路線上擁有您搜尋的商品，請調整關鍵字後再試。</p>
+      </div>
+      <div *ngIf="!routeNoResults" class="text-center py-4"></div>
     </ng-template>
 
   </ng-container>

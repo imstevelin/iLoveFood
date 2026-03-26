@@ -17,7 +17,7 @@ import { StoreDataService } from 'src/app/services/stores-data.service';
 
 import { environment } from 'src/environments/environment';
 
-import { switchMap, from, of, catchError, Observable, tap, forkJoin, Subject, debounceTime, distinctUntilChanged, map, timeout } from 'rxjs';
+import { switchMap, from, of, catchError, Observable, tap, forkJoin, Subject, debounceTime, distinctUntilChanged, map, timeout, mergeMap, toArray } from 'rxjs';
 
 import { MatAutocompleteSelectedEvent } from '@angular/material/autocomplete';
 import { MatDialog } from '@angular/material/dialog';
@@ -113,6 +113,9 @@ export class NewSearchComponent implements OnInit {
 
   // 商品搜尋相關
   productSearchKeyword: string = ''; // 目前搜尋的商品關鍵字
+  routeProductKeywords: string[] = []; // 導航路線欲過濾的商品名稱
+  routeNoResults: boolean = false; // 導航路線搜尋無結果
+
   productSearchStores: any[] = []; // 商品搜尋結果的門市列表（所有已找到的）
   productSearchIsCategory: boolean = false; // 是否為種類搜尋
 
@@ -824,11 +827,27 @@ export class NewSearchComponent implements OnInit {
       }
 
       // 合併：種類 > 商品 > 門市，每類最多顯示數量有限
-      this.unifiedDropDownList = [
+      const combinedList = [
         ...categoryCandidates.slice(0, 5),
         ...productCandidates.slice(0, 10),
         ...storeCandidates.slice(0, 15)
       ];
+
+      // 檢查是否已經有完全相符的商品名稱
+      const hasExactProductMatch = productCandidates.some(p => p.name.toLowerCase() === lowerInput);
+
+      // 如果沒有找到精確相符，且輸入值有意義，也推入一個手動新增的選項
+      if (!hasExactProductMatch && input.trim().length > 0) {
+        combinedList.push({
+          name: input.trim(),
+          addr: '自訂關鍵字搜尋',
+          label: '自訂搜尋',
+          type: 'product' as const,
+          source: '自訂'
+        });
+      }
+
+      this.unifiedDropDownList = combinedList;
 
       this.loadingService.hide();
     } else {
@@ -930,24 +949,47 @@ export class NewSearchComponent implements OnInit {
   // Google Maps 路徑分析
   // ==========================================
   private handleRouteSelection(originalUrl: string): void {
+    // 收集自動完成選單資料
+    const allOptions: { name: string, type: 'category' | 'product', addr?: string }[] = [];
+    
+    // 1. 種類
+    this.foodCategories.forEach(cat => {
+      allOptions.push({ name: cat.Name, type: 'category', addr: '7-11 食物分類' });
+      cat.Children.forEach(child => allOptions.push({ name: child.Name, type: 'category', addr: `${cat.Name} → ${child.Name}` }));
+    });
+    
+    // 2. 7-11 商品
+    this.foodDetails711.forEach(item => {
+      if (item.name) allOptions.push({ name: item.name, type: 'product', addr: '7-ELEVEN 商品' });
+    });
+    
+    // 3. 全家商品
+    this.foodDetailsFamilyMart.forEach(item => {
+      if (item.title) allOptions.push({ name: item.title, type: 'product', addr: '全家 商品' });
+    });
+
     const dialogRef = this.dialog.open(RouteModeDialogComponent, {
       width: '400px',
       panelClass: 'glass-dialog',
-      data: { originalUrl },
+      data: { originalUrl, allOptions },
       autoFocus: false
     });
 
-    dialogRef.afterClosed().subscribe((selectedMode: 'DRIVING' | 'BICYCLING' | 'CANCEL') => {
-      if (!selectedMode || selectedMode === 'CANCEL') {
+    dialogRef.afterClosed().subscribe((result: any) => {
+      if (!result || result === 'CANCEL') {
         this.goHome();
         return;
       }
+      
+      const selectedMode = typeof result === 'string' ? result : result.mode;
+      this.routeProductKeywords = result.productKeywords || [];
       
       // FIX: 立即清空舊的商店卡片，讓 Loading Overlay 能瞬間跳出來，消除卡頓感
       this.totalStoresShowList = [];
       this.allNearbyStores = [];
       this.hasMoreStores = false;
       this.searchMode = 'route';
+      this.routeNoResults = false; // 重置無結果狀態
       
       // 廢棄任何還在背景跑的舊搜尋 (避免互相干擾)
       this.storeSearchGeneration++;
@@ -1312,10 +1354,31 @@ export class NewSearchComponent implements OnInit {
 
           // 計算總庫存量，若為 0 則過濾掉
           let totalQty = 0;
+          let hasKeywordMatch = false;
+
           if (store.info && Array.isArray(store.info)) {
-            store.info.forEach((cat: any) => totalQty += (cat.qty || 0));
+            store.info.forEach((cat: any) => {
+              totalQty += (cat.qty || 0);
+              if (this.routeProductKeywords.length > 0 && cat.categories) {
+                cat.categories.forEach((subCat: any) => {
+                  if (subCat.products) {
+                    subCat.products.forEach((product: any) => {
+                      // 名稱吻合且數量 > 0
+                      if (product.name && product.qty > 0) {
+                        const productNameLower = product.name.toLowerCase();
+                        if (this.routeProductKeywords.some(kw => productNameLower.includes(kw.toLowerCase()))) {
+                          hasKeywordMatch = true;
+                        }
+                      }
+                    });
+                  }
+                });
+              }
+            });
           }
           if (totalQty === 0) return;
+          
+          if (this.routeProductKeywords.length > 0 && !hasKeywordMatch) return; // 全家關鍵字比對
 
           const lat = parseFloat(store.latitude);
           const lng = parseFloat(store.longitude);
@@ -1338,11 +1401,52 @@ export class NewSearchComponent implements OnInit {
         });
       });
 
+      // 如果沒有需要過濾 7-11 關鍵字，直接渲染
+      if (this.routeProductKeywords.length === 0) {
+        this.finalizeRouteStores(allStores);
+      } else {
+        // 需過濾 7-11：找出 allStores 中的 7-11 門市，用 API 驗證，全家與已驗證成功的 7-11 再合併
+        this.loadingService.show("正在過濾 7-11 商品...");
+        const sevenStores = allStores.filter(s => s.label === '7-11');
+        const fmStores = allStores.filter(s => s.label === '全家');
+        
+        from(sevenStores).pipe(
+          mergeMap(store => 
+            this.sevenElevenService.getItemsByStoreNo(store.StoreNo, {
+              Latitude: this.searchCenterLat, Longitude: this.searchCenterLng
+            }).pipe(
+              map((detailRes: any) => {
+                const detail = detailRes?.element?.StoreStockItem?.CategoryStockItems || [];
+                store.CategoryStockItems = detail; // 更新詳細庫存
+                const hasMatch = detail.some((cat: any) =>
+                  cat.ItemList && cat.ItemList.some((item: any) => {
+                    if (!item.ItemName || item.RemainingQty <= 0) return false;
+                    const itemNameLower = item.ItemName.toLowerCase();
+                    return this.routeProductKeywords.some(kw => itemNameLower.includes(kw.toLowerCase()));
+                  })
+                );
+                return hasMatch ? store : null;
+              }),
+              catchError(() => of(null)) // 驗證失敗則忽略該店
+            )
+          , 5), // 限制最多 5 個併發請求
+          toArray()
+        ).subscribe((verifiedSevenStores: any[]) => {
+          const validSevenStores = verifiedSevenStores.filter(s => s !== null);
+          console.log(`[RouteSearch] 7-11 keyword filter: kept ${validSevenStores.length} of ${sevenStores.length}`);
+          this.finalizeRouteStores([...fmStores, ...validSevenStores]);
+        });
+      }
+    });
+  }
+
+  private finalizeRouteStores(allStores: any[]): void {
       // 最終排序與顯示
       allStores.sort((a, b) => (a.distance || 0) - (b.distance || 0));
       console.log(`[RouteSearch] Total valid stores found: ${allStores.length}`);
-      
-      allStores.forEach(s => this.precomputeCategoryQty(s));
+
+      // 設定「找不到結果」標記
+      this.routeNoResults = (allStores.length === 0 && this.routeProductKeywords.length > 0);
 
       this.allNearbyStores = allStores;
       this.targetDisplayCount = this.minInitialStores;
@@ -1352,7 +1456,6 @@ export class NewSearchComponent implements OnInit {
       this.storeDataService.setIsUserLocationSearch(false);
       
       this.loadingService.hide();
-    });
   }
 
   // ==========================================

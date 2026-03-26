@@ -254,7 +254,11 @@ export class DisplayComponent implements OnChanges, OnInit {
     let foodDetail: any = null;
 
     // 建立一個去除了(外包裝文字)、[外包裝文字] 等前綴或後綴的乾淨名稱
-    const cleanItemName = item.ItemName.replace(/[\(\[【（].*?[\)\]】）]/g, '').trim();
+    // 同時移除常見配銷前綴，如「二配」、「一配」等，以及可能的地區標示如「南區-」
+    const cleanItemName = item.ItemName
+      .replace(/[\(\[【（].*?[\)\]】）]/g, '')
+      .replace(/^(?:(?:[一二三四五六七八九十\d]配|(?:北|中|南|東|全)區)[-_\s]*)+/, '')
+      .trim();
 
     // 1. O(1) 字典精確匹配 (效能最快)
     // 首先嘗試原始名稱
@@ -304,7 +308,12 @@ export class DisplayComponent implements OnChanges, OnInit {
 
     let foodDetail: any = null;
 
-    const cleanItemName = item.ItemName.replace(/[\(\[【（].*?[\)\]】）]/g, '').trim();
+    // 建立一個去除了(外包裝文字)、[外包裝文字] 等前綴或後綴的乾淨名稱
+    // 同時移除常見配銷前綴，如「二配」、「一配」等，以及可能的地區標示如「南區-」
+    const cleanItemName = item.ItemName
+      .replace(/[\(\[【（].*?[\)\]】）]/g, '')
+      .replace(/^(?:(?:[一二三四五六七八九十\d]配|(?:北|中|南|東|全)區)[-_\s]*)+/, '')
+      .trim();
 
     if (this.exactDictFamilyMart.has(item.ItemName)) {
       foodDetail = { ...this.exactDictFamilyMart.get(item.ItemName) };

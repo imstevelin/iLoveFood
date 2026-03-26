@@ -2,6 +2,7 @@ import requests
 import json
 import os
 from xml.etree import ElementTree
+from bs4 import BeautifulSoup
 
 # Configuration
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -80,6 +81,41 @@ def crawl_family_mart():
                     })
     return results
 
+def crawl_family_mart_fresh():
+    url = "https://www.family.com.tw/Marketing/zh/FreshFood/Product"
+    response = requests.get(url, headers=HEADERS)
+    soup = BeautifulSoup(response.text, "html.parser")
+    results = []
+    
+    tab_panes = soup.select(".tab-pane")
+    for pane in tab_panes:
+        cat_title_el = pane.select_one(".tab-title")
+        category = cat_title_el.text.strip() if cat_title_el else "美味鮮食"
+        
+        cards = pane.select(".card")
+        for card in cards:
+            more_link = card.select_one(".food__more")
+            if more_link:
+                title = more_link.get("data-name", "").strip()
+                desc = more_link.get("data-desc", "").strip()
+                img_path = more_link.get("data-img", "").strip()
+                picture_url = f"https://www.family.com.tw{img_path}" if img_path else ""
+                
+                kcal_el = card.select_one(".food__kcal")
+                kcal = kcal_el.text.strip() if kcal_el else ""
+                
+                results.append({
+                    "category": category,
+                    "title": title,
+                    "picture_url": picture_url,
+                    "Protein": "",
+                    "Carb": "",
+                    "Calories": kcal,
+                    "Fat": "",
+                    "Description": desc
+                })
+    return results
+
 def report_diff(old_data, new_data, store_name, name_key="name"):
     old_set = set((item['category'], item[name_key]) for item in old_data)
     new_set = set((item['category'], item[name_key]) for item in new_data)
@@ -111,6 +147,11 @@ def main():
     print("正在取得 全家 最新資料...")
     old_fm = load_json(FAMILY_MART_JSON)
     new_fm = crawl_family_mart()
+    
+    print("正在取得 全家 鮮食新活動資料...")
+    new_fm_fresh = crawl_family_mart_fresh()
+    # Combine the two FamilyMart lists
+    new_fm.extend(new_fm_fresh)
 
     # Identify and merge rather than replace
     report711, added_items_711, removed711 = report_diff(old_711, new_711, "7-Eleven", name_key="name")

@@ -31,7 +31,149 @@
   }
 }
 
-/* ===== Dark Mode Overrides ===== */
+/* ===== Route Search Box ===== */
+.route-search-box {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.65);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(203, 213, 225, 0.4);
+  border-radius: 14px;
+  padding: 8px 12px;
+  min-height: 44px;
+  width: 100%;
+  box-sizing: border-box;
+  transition: border-color 0.3s ease,
+    box-shadow 0.3s ease,
+    background 0.3s ease;
+
+  &:focus-within {
+    border-color: rgba(91, 127, 255, 0.5);
+    box-shadow: 0 0 0 4px rgba(91, 127, 255, 0.12),
+      0 2px 12px rgba(91, 127, 255, 0.08);
+    background: rgba(255, 255, 255, 0.82);
+  }
+}
+
+.route-search-icon {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  margin-top: 10px;
+  color: #9ca3af;
+}
+
+.route-search-chips-area {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.route-chip-grid {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+}
+
+/* ===== Chip Styling ===== */
+/* Force override Angular Material's internal chip styles */
+::ng-deep .route-chip.mat-mdc-chip {
+  max-width: calc(100% - 4px) !important; /* 不超出容器 */
+  height: 28px !important;
+  border-radius: 8px !important;
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  letter-spacing: 0.02em;
+  background: rgba(59, 130, 246, 0.1) !important;
+  border: 1px solid rgba(59, 130, 246, 0.2) !important;
+  padding: 0 6px !important;
+  transition: background 0.2s ease, border-color 0.2s ease;
+
+  /* 確保內部容器也約束寬度 */
+  .mdc-evolution-chip__cell--primary,
+  .mat-mdc-chip-action-label {
+    overflow: hidden;
+    min-width: 0;
+  }
+
+  /* 刪除按鈕：始終保持可見，不被壓縮 */
+  .mdc-evolution-chip__cell--trailing {
+    flex-shrink: 0 !important;
+  }
+
+  /* 所有文字強制為深藍色 */
+  .mdc-evolution-chip__text-label,
+  .mat-mdc-chip-action-label,
+  span {
+    color: #2563eb !important;
+  }
+
+  &:hover {
+    background: rgba(59, 130, 246, 0.18) !important;
+  }
+}
+
+.route-chip-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  display: block;
+  max-width: 160px;
+  color: #2563eb;
+}
+
+/* 刪除按鈕 icon */
+::ng-deep .route-chip-remove-icon.mat-icon {
+  font-size: 16px !important;
+  width: 16px !important;
+  height: 16px !important;
+  color: rgba(59, 130, 246, 0.55) !important;
+  flex-shrink: 0;
+
+  &:hover {
+    color: #2563eb !important;
+  }
+}
+
+/* ===== Input Styling ===== */
+.route-search-input {
+  flex: 1;
+  min-width: 100px;
+  height: 36px;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 14px;
+  color: #334155;
+
+  &::placeholder {
+    color: #94a3b8;
+  }
+}
+
+/* ===== Autocomplete Panel ===== */
+::ng-deep .route-autocomplete-panel {
+  border-radius: 14px !important;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.1),
+    0 2px 8px rgba(0, 0, 0, 0.04) !important;
+  border: 1px solid rgba(203, 213, 225, 0.4) !important;
+  margin-top: 6px !important;
+
+  .mat-mdc-option {
+    min-height: 48px !important;
+    padding: 0 16px !important;
+    border-radius: 0;
+    transition: background 0.15s ease;
+  }
+}
+
+/* ==========================================
+   Dark Mode Overrides
+   ========================================== */
 :host-context([data-theme="dark"]) {
   .mode-btn {
     background-color: rgba(38, 38, 38, 0.6);
@@ -39,7 +181,6 @@
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2),
                 0 0 0 1px rgba(255, 255, 255, 0.03);
 
-    /* Fix: override Angular Material mat-button black text */
     color: #e4e4e7 !important;
 
     span {
@@ -62,7 +203,6 @@
     }
   }
 
-  /* Fix title/description/cancel text */
   h2 {
     color: #e4e4e7 !important;
   }
@@ -76,6 +216,72 @@
 
     &:hover {
       color: #e4e4e7 !important;
+    }
+  }
+
+  /* --- Route Search Box (Dark) --- */
+  .route-search-box {
+    background: rgba(38, 38, 38, 0.7);
+    border-color: rgba(63, 63, 70, 0.6);
+
+    &:focus-within {
+      border-color: rgba(123, 159, 255, 0.5);
+      box-shadow: 0 0 0 4px rgba(123, 159, 255, 0.12),
+        0 2px 12px rgba(123, 159, 255, 0.08);
+      background: rgba(45, 45, 45, 0.9);
+    }
+  }
+
+  .route-search-icon {
+    color: #71717a;
+  }
+
+  .route-search-input {
+    color: #e4e4e7;
+
+    &::placeholder {
+      color: #52525b;
+    }
+  }
+
+  /* --- Chip (Dark) — 白色文字 --- */
+  ::ng-deep .route-chip.mat-mdc-chip {
+    background: rgba(99, 140, 255, 0.15) !important;
+    border-color: rgba(99, 140, 255, 0.3) !important;
+
+    .mdc-evolution-chip__text-label,
+    .mat-mdc-chip-action-label,
+    span {
+      color: #ffffff !important;
+    }
+  }
+
+  .route-chip-text {
+    color: #ffffff !important;
+  }
+
+  ::ng-deep .route-chip-remove-icon.mat-icon {
+    color: rgba(255, 255, 255, 0.5) !important;
+
+    &:hover {
+      color: #ffffff !important;
+    }
+  }
+
+  /* --- Autocomplete (Dark) --- */
+  ::ng-deep .route-autocomplete-panel {
+    background: #1e1e1e !important;
+    border-color: rgba(63, 63, 70, 0.6) !important;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4),
+      0 2px 8px rgba(0, 0, 0, 0.2) !important;
+
+    .mat-mdc-option {
+      color: #e4e4e7 !important;
+
+      &:hover,
+      &.mat-mdc-option-active {
+        background: rgba(63, 63, 70, 0.5) !important;
+      }
     }
   }
 }
