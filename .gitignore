@@ -42,5 +42,6 @@ testem.log
 Thumbs.db
 
 # Python
-venv/src/environments/environment.ts
+# Environment files
+src/environments/environment.ts
 src/environments/environment.prod.ts
