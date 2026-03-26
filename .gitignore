@@ -42,6 +42,8 @@ testem.log
 Thumbs.db
 
 # Python
-# Environment files
+venv/
+
+# Environments with sensitive keys
 src/environments/environment.ts
 src/environments/environment.prod.ts
