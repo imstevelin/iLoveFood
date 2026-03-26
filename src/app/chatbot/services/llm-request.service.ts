@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { environment } from '../../../environments/environment';
 
 @Injectable({
   providedIn: 'root'
@@ -15,7 +16,8 @@ export class LlmRequestService {
   // Google Gemini Configuration
   private url = 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions';
   private model = 'gemini-2.5-flash';
-  private apiKey = 'AIzaSyB01eazvCD50URygZjKWzOi8PmMcx4UjdU';
+  private apiKey = environment.geminiApiKey;
+
 
   constructor(
     private http: HttpClient
