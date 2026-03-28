@@ -1,4 +1,4 @@
-import { Component, Input, OnChanges, SimpleChanges, OnInit, ElementRef, ViewChild, Output, EventEmitter, ChangeDetectorRef } from '@angular/core';
+import { Component, Input, OnChanges, SimpleChanges, OnInit, OnDestroy, ElementRef, ViewChild, Output, EventEmitter, ChangeDetectorRef } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
 
 import { Item, CategoryStockItem, FoodDetail711  } from '../../model/seven-eleven.model';
@@ -16,7 +16,7 @@ import { HapticService } from 'src/app/services/haptic.service';
   templateUrl: './display.component.html',
   styleUrls: ['./display.component.scss']
 })
-export class DisplayComponent implements OnChanges, OnInit {
+export class DisplayComponent implements OnChanges, OnInit, OnDestroy {
   @Input() store!: any;
   @Input() category!: any;
   @Input() foodDetails!: any[];
@@ -34,6 +34,8 @@ export class DisplayComponent implements OnChanges, OnInit {
   private exactDict711: Map<string, any> = new Map();
   private exactDictFamilyMart: Map<string, any> = new Map();
 
+  private computeVersion = 0;  // 用於追蹤且中斷過期的 processBatch 背景運算迴圈
+
   foodDetailCache: { [itemName: string]: any } = {};  // 模板直接讀取此快取
 
   constructor(
@@ -44,6 +46,10 @@ export class DisplayComponent implements OnChanges, OnInit {
   ) {}
 
   ngOnInit() {}
+
+  ngOnDestroy() {
+    this.computeVersion++; // 確保元件銷毀時中斷所有還在執行的異步 tasks
+  }
 
   ngOnChanges(changes: SimpleChanges): void {
     // foodDetails 變化時，重建 Fuse 實例（僅建立一次）
@@ -91,6 +97,9 @@ export class DisplayComponent implements OnChanges, OnInit {
   private precomputeFoodDetails(): void {
     if (!this.foodDetails || this.foodDetails.length === 0) return;
 
+    this.computeVersion++;
+    const currentVersion = this.computeVersion;
+
     const is711 = this.store.StoreName != null;
     const tasks: Item[] = [];
 
@@ -109,6 +118,8 @@ export class DisplayComponent implements OnChanges, OnInit {
 
     // 非同步分批處理以避免手機端卡頓
     const processBatch = (startIndex: number) => {
+      if (this.computeVersion !== currentVersion) return; // 如果版本號不如預期（被新的選單覆蓋或已註銷），立即終止佔用資源
+
       const batchSize = 15; // 每次只處理 15 個商品（確保 Frame < 16ms）
       const endIndex = Math.min(startIndex + batchSize, tasks.length);
 

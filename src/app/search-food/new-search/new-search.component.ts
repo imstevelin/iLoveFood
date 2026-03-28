@@ -1,4 +1,4 @@
-import { Component, OnInit, ViewChild, ElementRef, HostListener } from '@angular/core';
+import { Component, OnInit, OnDestroy, NgZone, ViewChild, ElementRef, HostListener } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { FormGroup, FormControl } from '@angular/forms';
 
@@ -17,7 +17,7 @@ import { StoreDataService } from 'src/app/services/stores-data.service';
 
 import { environment } from 'src/environments/environment';
 
-import { switchMap, from, of, catchError, Observable, tap, forkJoin, Subject, debounceTime, distinctUntilChanged, map, timeout, mergeMap, toArray } from 'rxjs';
+import { switchMap, from, of, catchError, Observable, tap, forkJoin, Subject, debounceTime, distinctUntilChanged, map, timeout, mergeMap, toArray, Subscription } from 'rxjs';
 
 import { MatAutocompleteSelectedEvent } from '@angular/material/autocomplete';
 import { MatDialog } from '@angular/material/dialog';
@@ -45,7 +45,7 @@ import { trigger, style, animate, transition } from '@angular/animations';
     ])
   ]
 })
-export class NewSearchComponent implements OnInit {
+export class NewSearchComponent implements OnInit, OnDestroy {
   user: any = null;
   showFavorites: boolean = false; // 收藏面板是否展開（向下相容）
   showMenu: boolean = false;     // 漢堡選單是否展開
@@ -155,6 +155,8 @@ export class NewSearchComponent implements OnInit {
   // 拼音轉換快取：避免重複轉換相同的文字
   private pinyinCache = new Map<string, string>();
   private searchDebounceTimer: any = null; // 自動完成防抖計時器
+  private favoritesSubscription: Subscription | null = null; // 收藏清單的訂閱
+
 
 
   sevenElevenIconUrl = environment.sevenElevenUrl.icon;
@@ -198,7 +200,8 @@ export class NewSearchComponent implements OnInit {
     public loadingService: LoadingService,
     public dialog: MatDialog,
     private firestore: AngularFirestore,
-    private storeDataService: StoreDataService
+    private storeDataService: StoreDataService,
+    private ngZone: NgZone
   ) {
     this.searchForm = new FormGroup({
       selectedStoreName: new FormControl(''), // 控制選中的商店
@@ -209,6 +212,20 @@ export class NewSearchComponent implements OnInit {
     // 移除自動搜尋，改為手動觸發（Enter 或按鈕）
     // this.searchInput$ 不再自動訂閱
     this.init();
+    
+    // 效能優化：在 Angular Zone 外部註冊高頻事件，避免滑動時瘋狂觸發 Change Detection 導致 UI 卡死
+    this.ngZone.runOutsideAngular(() => {
+      window.addEventListener('touchmove', this.onWindowTouchMove, { passive: true });
+      window.addEventListener('scroll', this.onWindowScroll, { passive: true });
+    });
+  }
+
+  ngOnDestroy(): void {
+    if (this.favoritesSubscription) {
+      this.favoritesSubscription.unsubscribe();
+    }
+    window.removeEventListener('touchmove', this.onWindowTouchMove);
+    window.removeEventListener('scroll', this.onWindowScroll);
   }
 
   getCityName(): Observable<any[]> {
@@ -585,12 +602,13 @@ export class NewSearchComponent implements OnInit {
     }
   }
 
-  // 監聽全站滑動事件，若選單為開啟狀態則自動收起
-  @HostListener('window:touchmove')
-  onWindowTouchMove() {
+  // 效能優化：改為 Zone 外部的 passive 監聽器
+  onWindowTouchMove = () => {
     if (this.showMenu || this.showLabSection) {
-      this.showMenu = false;
-      this.showLabSection = false;
+      this.ngZone.run(() => {
+        this.showMenu = false;
+        this.showLabSection = false;
+      });
     }
   }
 
@@ -1740,48 +1758,46 @@ export class NewSearchComponent implements OnInit {
         // === Phase 2: 商品名稱搜尋 — 用 getItemsByStoreNo 精確驗證 ===
         if (!isCategory && candidateStores.length > 0) {
           isPhase2Running = true;
-          // 按距離排序，取最近的 5 間門市驗證
+          // 將所有候選門市按距離排序後全部驗證，不任意丟棄
           candidateStores.sort((a, b) => {
             return this.calc711DistFromUser(a.StoreNo) - this.calc711DistFromUser(b.StoreNo);
           });
-          const toVerify = candidateStores.slice(0, 5);
-          console.log(`[商品搜尋] 7-11 候選 ${candidateStores.length} 間，驗證最近 ${toVerify.length} 間`);
+          console.log(`[商品搜尋] 7-11 候選 ${candidateStores.length} 間，全部將加入驗證隊列 (併發上限 5)`);
 
-          const verifyRequests = toVerify.map(store =>
-            this.sevenElevenService.getItemsByStoreNo(store.StoreNo, {
-              Latitude: this.searchCenterLat, Longitude: this.searchCenterLng
-            }).pipe(
-              timeout(8000),
-              map((res: any) => ({
-                store,
-                detail: res?.element?.StoreStockItem?.CategoryStockItems || []
-              })),
-              catchError(() => of({ store, detail: [] }))
-            )
-          );
+          from(candidateStores).pipe(
+            mergeMap(store =>
+              this.sevenElevenService.getItemsByStoreNo(store.StoreNo, {
+                Latitude: this.searchCenterLat, Longitude: this.searchCenterLng
+              }).pipe(
+                timeout(8000),
+                map((res: any) => {
+                  const detail = res?.element?.StoreStockItem?.CategoryStockItems || [];
+                  const hasMatch = detail.some((cat: any) =>
+                    cat.ItemList && cat.ItemList.some((item: any) =>
+                      item.ItemName && item.ItemName.toLowerCase().includes(keyword) && item.RemainingQty > 0
+                    )
+                  );
+                  if (hasMatch) {
+                    return {
+                      ...store,
+                      storeName: `7-11${store.StoreName}門市`,
+                      label: '7-11',
+                      distance: this.calc711DistFromUser(store.StoreNo),
+                      remainingQty: store.RemainingQty,
+                      showDistance: true,
+                      CategoryStockItems: detail
+                    };
+                  }
+                  return null;
+                }),
+                catchError(() => of(null))
+              )
+            , 5), // 限制最多 5 個併發請求，避免癱瘓 API
+            toArray()
+          ).subscribe((verifiedResults: any[]) => {
+            const verifiedMatches = verifiedResults.filter(match => match !== null);
 
-          forkJoin(verifyRequests).subscribe((verifiedResults: any[]) => {
-            const verifiedMatches: any[] = [];
-            verifiedResults.forEach(({ store, detail }) => {
-              const hasMatch = detail.some((cat: any) =>
-                cat.ItemList && cat.ItemList.some((item: any) =>
-                  item.ItemName && item.ItemName.toLowerCase().includes(keyword) && item.RemainingQty > 0
-                )
-              );
-              if (hasMatch) {
-                verifiedMatches.push({
-                  ...store,
-                  storeName: `7-11${store.StoreName}門市`,
-                  label: '7-11',
-                  distance: this.calc711DistFromUser(store.StoreNo),
-                  remainingQty: store.RemainingQty,
-                  showDistance: true,
-                  CategoryStockItems: detail
-                });
-              }
-            });
-
-            console.log(`[商品搜尋] 7-11 驗證結果: ${verifiedMatches.length}/${toVerify.length} 間有「${keyword}」`);
+            console.log(`[商品搜尋] 7-11 驗證結果: ${verifiedMatches.length}/${candidateStores.length} 間有「${keyword}」`);
 
             // 交給 finishProductSearchBatch 處理合併與狀態更新
             this.finishProductSearchBatch(currentGen, isInitial, verifiedMatches);
@@ -2493,12 +2509,13 @@ export class NewSearchComponent implements OnInit {
     });
   }
 
-  // 監聽滾動事件，觸發無限滾動（使用 requestAnimationFrame 節流）
-  @HostListener('window:scroll', [])
-  onWindowScroll(): void {
+  // 效能優化：改為 Zone 外部的 passive 監聽器
+  onWindowScroll = (): void => {
     if (this.showMenu || this.showLabSection) {
-      this.showMenu = false;
-      this.showLabSection = false;
+      this.ngZone.run(() => {
+        this.showMenu = false;
+        this.showLabSection = false;
+      });
     }
     
     if (this.scrollTicking) return;
@@ -2511,11 +2528,13 @@ export class NewSearchComponent implements OnInit {
       const documentHeight = document.documentElement.scrollHeight;
 
       if (scrollPosition >= documentHeight - 200) {
-        if (this.searchMode === 'product') {
-          this.loadMoreProductResults();
-        } else if (this.searchMode === 'store' || this.searchMode === 'location' || this.searchMode === 'route') {
-          this.loadMoreStores();
-        }
+        this.ngZone.run(() => {
+          if (this.searchMode === 'product') {
+            this.loadMoreProductResults();
+          } else if (this.searchMode === 'store' || this.searchMode === 'location' || this.searchMode === 'route') {
+            this.loadMoreStores();
+          }
+        });
       }
     });
   }
@@ -2563,8 +2582,11 @@ export class NewSearchComponent implements OnInit {
 
   loadFavoriteStores() {
     if (this.user) {
+      if (this.favoritesSubscription) {
+        this.favoritesSubscription.unsubscribe();
+      }
       const userRef = this.firestore.collection('users').doc(this.user.uid);
-      userRef.collection('favorites').valueChanges().subscribe(favorites => {
+      this.favoritesSubscription = userRef.collection('favorites').valueChanges().subscribe(favorites => {
         this.favoriteStores = favorites;
         // 維護 Set 以供 O(1) 查詢
         this.favoriteStoreNameSet = new Set(favorites.map((f: any) => f.storeName));

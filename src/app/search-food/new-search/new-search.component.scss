@@ -508,6 +508,10 @@ svg.transition-transform {
 
 /* ===== Category Grid — Spring Chip Interactions ===== */
 .category-chip {
+  appearance: none;
+  -webkit-appearance: none;
+  display: block;
+  width: 100%;
   position: relative;
   overflow: hidden;
   user-select: none;
@@ -525,20 +529,14 @@ svg.transition-transform {
     border-color var(--transition-snappy),
     box-shadow var(--transition-snappy);
   -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none; /* 關閉 iOS 長按彈出選單 */
 
   > * {
-    position: relative;
-    /* 移除 z-index: 1 避免建立新的層疊上下文導致手機行為異常 */
-    pointer-events: none !important; /* 子元素全面防彈，避免攔截 Tap */
+    position: relative; /* 必須保留，確保位於 ::before 背景動畫之上 */
   }
-
-  /* 核心點擊表面：絕對位於最上方的透明層 */
-  .category-chip-overlay {
-    position: absolute;
-    inset: 0;
-    z-index: 100; /* 確保絕對在所有子元素 (包含 badge) 之上 */
-    pointer-events: auto !important;
-    background: transparent;
+  
+  img {
+    pointer-events: none; /* 防止圖片被長按反白、儲存或觸發拖曳 */
   }
 
   &::before {

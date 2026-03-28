@@ -248,20 +248,20 @@
       <div class="about-content" style="color: var(--text-secondary); font-size: 14px; line-height: 1.6;">
         <h3 class="font-bold mb-2 mt-4" style="font-size: 15px; color: var(--text-primary);">致謝</h3>
         <p class="mb-3">
-          本專案 Fork 自由 Alan Cheng 開發的 Public Repository <strong><a href="https://github.com/Alan-Cheng/Friendly-Cat"
-              target="_blank" rel="noopener"> 友善黑貓 </a></strong>專案，感謝其超商資料爬蟲與基礎架構。門市、商品與即時資訊的資料來源自全家便利商店與統一超商的公開 API。
+          本專案 Fork 自 Alan Cheng 開發的 Public Repo <strong><a href="https://github.com/Alan-Cheng/Friendly-Cat"
+              target="_blank" rel="noopener"> 友善黑貓 </a></strong>專案，感謝可以基於其原項目向上發展。門市、商品與即時資訊的資料來源自全家便利商店與統一超商的 API。
         </p>
 
         <h3 class="font-bold mb-2 mt-4" style="font-size: 15px; color: var(--text-primary);">關於</h3>
         <p class="mb-4">
-          <strong>友善超人</strong>是一個即時追蹤便利商店（全家、7-11）折扣鮮食商品的工具，由 imstevelin 開發。
+          <strong>友善超人</strong>是一個即時追蹤便利商店（全家、7-11）折扣鮮食商品的工具，由 imstevelin 開發。<br>其實最開始只是女朋友喜歡吃 7-11 的擔擔麵，這個麵原價實在吃不起，i珍食又很難找...... 就讓我想到「不如來做一個查詢小工具」吧。
         </p>
 
         <h3 class="font-bold mb-2 mt-4" style="font-size: 15px; color: var(--text-primary);">功能亮點</h3>
         <ul class="mb-4 pl-4" style="list-style-type: none;">
 
-          <li class="mb-1">🔍 支援商品名稱、門市名稱、商品種類搜尋</li>
-          <li class="mb-1">🗺️ 可以使用 Google 導航連結，搜尋順利的門市</li>
+          <li class="mb-1">🔍 支援定位、商品名稱、門市名稱、商品種類搜尋</li>
+          <li class="mb-1">🗺️ 可以使用 Google 導航連結，搜尋順路的門市並篩選商品</li>
           <li class="mb-1">❤️ 收藏喜愛的門市，快速查看</li>
           <li class="mb-1">✨ 友善小精靈 AI 助手（實驗室功能）</li>
         </ul>
@@ -344,7 +344,7 @@
           </div>
           <div class="grid grid-cols-4 gap-2 mt-2 relative z-50">
             <ng-container *ngFor="let category of foodCategories | slice:0:10; trackBy: trackByCategory">
-              <div *ngIf="getSubCategoryTotalQty(store, category) > 0" class="category-chip"
+              <button type="button" *ngIf="getSubCategoryTotalQty(store, category) > 0" class="category-chip"
                 [class.selected]="store.selectedCategory === category"
                 [class.is-loading]="store.selectedCategory === category && isCategoryLoading(store, category)"
                 [class.loading-complete]="store.selectedCategory === category && isCategoryLoadingComplete(store, category)"
@@ -353,9 +353,7 @@
                   class="w-8 h-8 sm:w-12 sm:h-12 mx-auto mb-1 object-cover" />
                 <span class="block text-xs font-medium leading-tight mb-1">{{ category.Name }}</span>
                 <span class="category-qty-badge">{{ getSubCategoryTotalQty(store, category) }}</span>
-                <!-- 點擊層：確保在所有內容之上，解決手機點擊穿透或遭攔截問題 -->
-                <div class="category-chip-overlay"></div>
-              </div>
+              </button>
             </ng-container>
           </div>
           <!-- Category details with CSS grid expand transition -->
@@ -404,7 +402,7 @@
             </button>
           </div>
           <div class="grid grid-cols-4 gap-2 mt-2 relative z-50">
-            <div *ngFor="let category of store.info | slice:0:10; trackBy: trackByCategory" class="category-chip"
+            <button type="button" *ngFor="let category of store.info | slice:0:10; trackBy: trackByCategory" class="category-chip"
               [class.selected]="store.selectedCategory === category" (click)="toggleSubCategoryDetails(store, category)"
               [class.pointer-events-none]="getFSubCategoryQty(store, category) === 0"
               [class.is-loading]="store.selectedCategory === category && isCategoryLoading(store, category)"
@@ -414,8 +412,7 @@
                 [ngStyle]="{'opacity': getFSubCategoryQty(store, category) === 0 ? 0.3 : 1}" />
               <span class="block text-xs font-medium leading-tight mb-1">{{ getFCatName(category) }}</span>
               <span class="category-qty-badge">{{ getFSubCategoryQty(store, category) }}</span>
-              <div class="category-chip-overlay"></div>
-            </div>
+            </button>
           </div>
           <!-- Category details with CSS grid expand transition -->
           <div class="category-expand-wrapper" [class.expanded]="store.selectedCategory && !isCategoryLoading(store, store.selectedCategory)">
