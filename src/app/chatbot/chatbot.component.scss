@@ -16,6 +16,13 @@
                 opacity 0.3s;
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
     
+    /* Hide when map bottom sheet is up to prevent click interception */
+    :host-context(body.map-sheet-open) & {
+        opacity: 0;
+        pointer-events: none;
+        visibility: hidden;
+    }
+
     &:hover {
         transform: scale(1.05);
         box-shadow: 0 6px 28px rgba(91, 127, 255, 0.45);
@@ -53,6 +60,11 @@
     pointer-events: none;
     transform: translateY(30px) scale(0.95);
     transform-origin: bottom right;
+
+    /* Hide when map bottom sheet is up to prevent click interception */
+    :host-context(body.map-sheet-open) & {
+        display: none !important;
+    }
 }
 
 .chatbot-container.open {

@@ -484,7 +484,6 @@ svg.transition-transform {
   background: var(--accent-light);
   padding: 2px 8px;
   border-radius: 8px;
-  margin-top: 4px;
   /* Subtle scale-in */
   animation: badgeIn var(--duration-normal) var(--spring) both;
 }
@@ -504,6 +503,99 @@ svg.transition-transform {
 .badge-family-dist {
   color: #059669;
   background: rgba(0, 179, 134, 0.1);
+}
+
+/* ===== Store Card Header — 2-Row Layout (matching Map View) ===== */
+.store-card-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 4px 0 12px;
+}
+
+.store-card-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.store-card-name {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary, #1e293b);
+  margin: 0 0 4px;
+  line-height: 1.3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.store-card-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* ===== Qty Badge ===== */
+.qty-badge {
+  font-size: 12px;
+  font-weight: 500;
+  color: #c2410c;
+  background: rgba(251, 146, 60, 0.1);
+  padding: 2px 8px;
+  border-radius: 8px;
+  animation: badgeIn var(--duration-normal) var(--spring) both;
+}
+
+.qty-badge-family {
+  color: #059669;
+  background: rgba(0, 179, 134, 0.08);
+}
+
+/* ===== Store Nav Button (Google Maps) ===== */
+.store-nav-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: rgba(91, 127, 255, 0.08);
+  border: 1px solid rgba(91, 127, 255, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  text-decoration: none;
+  transition: transform 0.2s, background 0.2s;
+
+  &:hover {
+    background: rgba(91, 127, 255, 0.15);
+    transform: scale(1.05);
+  }
+
+  &:active {
+    transform: scale(0.92);
+    transition-duration: 60ms;
+  }
+}
+
+/* ===== Store Favorite Button ===== */
+.store-fav-btn {
+  flex-shrink: 0;
+  padding: 4px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: transform var(--transition-spring);
+  will-change: transform;
+
+  &:active {
+    transform: scale(0.75);
+    transition-duration: 60ms;
+  }
+
+  svg {
+    transition: transform var(--transition-spring);
+  }
 }
 
 /* ===== Category Grid — Spring Chip Interactions ===== */
@@ -990,6 +1082,36 @@ a[href*="google.com/maps"] {
     border-color: rgba(239, 68, 68, 0.3);
   }
 
+  /* --- Store Card Header (Map-style 2-row layout) --- */
+  .store-card-name {
+    color: var(--text-primary, #e4e4e7);
+  }
+
+  .store-nav-btn {
+    background: rgba(91, 127, 255, 0.12);
+    border-color: rgba(91, 127, 255, 0.2);
+  }
+
+  .qty-badge {
+    color: #fb923c;
+    background: rgba(251, 146, 60, 0.15);
+  }
+
+  .qty-badge-family {
+    color: #34d399;
+    background: rgba(0, 179, 134, 0.15);
+  }
+
+  .distance-badge {
+    color: #7B9FFF;
+    background: rgba(123, 159, 255, 0.12);
+  }
+
+  .badge-family-dist {
+    color: #34d399;
+    background: rgba(0, 179, 134, 0.12);
+  }
+
   /* --- Category Chips --- */
   .category-chip {
     background: rgba(45, 45, 45, 0.5);
@@ -1038,4 +1160,104 @@ a[href*="google.com/maps"] {
   .login-prompt {
     color: var(--text-secondary);
   }
+
+  /* --- Chatbot & Map Buttons Dark Mode --- */
+  .chatbot-inline-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+  }
+  .map-fab {
+    background: #4f46e5;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+
+    &:hover {
+      box-shadow: 0 8px 28px rgba(0, 0, 0, 0.6);
+    }
+  }
+}
+
+/* Chatbot Inline Button */
+.chatbot-inline-btn {
+  background: none;
+  border: none;
+  font-size: 18px;
+  cursor: pointer;
+  padding: 4px;
+  margin-left: 4px;
+  border-radius: 50%;
+  transition: transform 0.2s, background 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  &:hover {
+    background: rgba(91, 127, 255, 0.1);
+    transform: scale(1.1);
+  }
+  &:active {
+    transform: scale(0.9);
+  }
+}
+
+/* Map FAB (Floating Action Button) */
+.map-fab {
+    position: fixed;
+    bottom: 1.5rem;
+    right: 1.5rem;
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: var(--accent, #5B7FFF);
+    color: #ffffff; /* Make SVG white */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), 
+                box-shadow 0.2s, 
+                opacity 0.3s,
+                background-color 0.3s;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+    z-index: 900; /* Ensure it stays above other content but below chatbot (1000) */
+    
+    &:hover {
+        transform: scale(1.05);
+        box-shadow: 0 8px 28px rgba(91, 127, 255, 0.45);
+    }
+
+    &:active {
+        transform: scale(0.9) !important;
+        transition-duration: 60ms;
+    }
+
+    /* Dark Mode Override */
+    :host-context([data-theme="dark"]) & {
+        background: #3f3f46; /* Tailwind zinc-700 */
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+
+        &:hover {
+            background: #52525b; /* Tailwind zinc-600 */
+            box-shadow: 0 8px 28px rgba(0, 0, 0, 0.6);
+        }
+    }
+}
+
+@media screen and (max-width: 768px) {
+    .map-fab {
+        bottom: 1.5rem;
+        right: 1rem;
+        width: 54px;
+        height: 54px;
+    }
+}
+
+/* FAB hides when map bottom sheet is open */
+.map-fab {
+    transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275),
+                box-shadow 0.2s,
+                opacity 0.3s;
+
+    &.map-sheet-up {
+        opacity: 0;
+        pointer-events: none;
+    }
 }

@@ -1,8 +1,4 @@
 <div class="chatbot-mobile-backdrop" [class.show]="isOpen"></div>
-<div class="chatbot-fab" *ngIf="!isOpen && chatEnabled" (click)="toggleChat()" (touchstart)="0"
-     appMotion [initial]="{ opacity: 0, transform: 'scale(0.3)' }" [animate]="{ opacity: 1, transform: 'scale(1)' }" [transition]="{ type: 'spring', stiffness: 300, damping: 20 }">
-  <span style="font-size: 28px; line-height: 1;">💬</span>
-</div>
 
 <div class="chatbot-container" [class.open]="isOpen"
      appMotion [animate]="isOpen ? { y: 0, opacity: 1, scale: 1 } : { y: '50px', opacity: 0, scale: 0.95 }"

@@ -63,6 +63,13 @@ export class ChatbotComponent implements OnInit, OnDestroy {
       if (!this.chatEnabled) this.isOpen = false;
     }) as EventListener);
 
+    // 監聽開啟聊天室事件
+    window.addEventListener('openChatbot', () => {
+      if (this.chatEnabled && !this.isOpen) {
+        this.toggleChat();
+      }
+    });
+
     this.authService.isLoggedIn().subscribe(res => this.isLogin = res);
     this.authService.getUser().subscribe(user => {
       if (!user) {

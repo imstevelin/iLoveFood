@@ -28,6 +28,11 @@
             class="flex-1 bg-transparent border-none outline-none text-sm px-3 h-full placeholder:text-gray-400 dark:placeholder:text-zinc-500 dark:text-zinc-100"
             [matAutocomplete]="auto" [(ngModel)]="searchTerm" (input)="onInput($event)" (keydown)="onKeyDown($event)"
             enterkeyhint="search" placeholder="門市、商品或導航路徑" name="first" />
+          
+          <!--  Chatbot Button -->
+          <button *ngIf="chatEnabled" type="button" class="chatbot-inline-btn" (click)="openChatbot()" aria-label="打開聊天機器人">
+            💬
+          </button>
         </div>
 
         <!-- Autocomplete Dropdown -->
@@ -180,8 +185,27 @@
 <!-- Spacer for fixed header -->
 <div class="search-bar-spacer"></div>
 
-<!-- ===== Main Content Area ===== -->
-<div class="max-w-3xl mx-auto px-4 pb-8" style="padding-top: 8px;">
+<!-- ===== Map View ===== -->
+<app-map-view *ngIf="isMapView"
+  [stores]="searchMode === 'product' ? productSearchStores : (allNearbyStores.length > 0 ? allNearbyStores : totalStoresShowList)"
+  [userLat]="latitude"
+  [userLng]="longitude"
+  [isDarkMode]="darkModeEnabled && isDarkSystemTheme"
+  [foodCategories]="foodCategories"
+  [foodDetails711]="foodDetails711"
+  [foodDetailsFamilyMart]="foodDetailsFamilyMart"
+  [sevenElevenIconUrl]="sevenElevenIconUrl"
+  [familyMartIconUrl]="familyMartIconUrl"
+  [storeNoToCoords]="storeNoToCoords"
+  [searchMode]="searchMode"
+  [searchCenterLat]="searchCenterLat"
+  [searchCenterLng]="searchCenterLng"
+  [isParentSearching]="productSearchRunning || isLoadingMore || isSearchingMore"
+  (sheetStateChange)="mapSheetOpen = $event">
+</app-map-view>
+
+<!-- ===== Main Content Area (List View) ===== -->
+<div class="max-w-3xl mx-auto px-4 pb-8" style="padding-top: 8px;" *ngIf="!isMapView">
 
   <!-- ===== Unified Loading & Empty States (When No Cards Are Showing) ===== -->
   <ng-container *ngIf="totalStoresShowList.length === 0 && !locationDenied && !showAboutCard">
@@ -190,7 +214,7 @@
     <div *ngIf="(loadingService.loading$ | async) || isLoadingMore || productSearchRunning; else emptyState"
       class="loading-overlay animate-fade-in-up">
       <div class="premium-spinner spinner-lg"></div>
-      <div style="position: relative; height: 20px; display: flex; justify-content: center; align-items: center; width: 100%;">
+      <div style="position: relative; height: 20px; display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%;">
         <ng-container *ngFor="let msg of [(loadingService.message$ | async) || (productSearchRunning ? '搜尋商品中...' : '載入資料中...')]; trackBy: trackByMsg">
           <span class="loading-text" style="position: absolute;" [@textCrossfade]>
             {{ msg }}
@@ -308,28 +332,23 @@
 
         <!-- === 7-11 Store Card === -->
         <ng-container *ngIf="store.label === '7-11' && store.RemainingQty > 0">
-          <div class="flex items-center gap-3 mb-3">
+          <div class="store-card-header">
             <div class="store-icon-badge badge-seven">
               <img [src]="sevenElevenIconUrl" alt="7-11" width="22" height="22" />
             </div>
-            <div class="flex-1 min-w-0">
-              <h2 class="text-sm font-semibold flex items-center gap-1.5 flex-wrap" style="margin: 1px 0 0 0; line-height: 1.4;">
-                7-11{{ store.StoreName }}門市
-                <a href="https://www.google.com/maps/search/7-ELEVEN{{ store.StoreName }}門市" target="_blank">
-                  <img src="assets/GoogleMap_icon.png" alt="地圖" class="w-5 h-5 inline-block" />
-                </a>
+            <div class="store-card-info">
+              <h2 class="store-card-name">7-11{{ store.StoreName }}門市</h2>
+              <div class="store-card-meta">
                 <span *ngIf="store.distance" class="distance-badge">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor"
-                    viewBox="0 0 24 24">
-                    <path
-                      d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" />
+                  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" />
                   </svg>
-                  {{ store.distance >= 1000 ? (store.distance / 1000 | number:'1.1-1') + ' km' : (store.distance |
-                  number:'1.0-0') + ' m' }}
+                  {{ store.distance >= 1000 ? (store.distance / 1000 | number:'1.1-1') + ' km' : (store.distance | number:'1.0-0') + ' m' }}
                 </span>
-              </h2>
+                <span class="qty-badge">{{ store.RemainingQty }} 件折扣品</span>
+              </div>
             </div>
-            <button (click)="toggleFavorite(store)" class="shrink-0 p-1" *ngIf="user">
+            <button (click)="toggleFavorite(store)" class="store-fav-btn" *ngIf="user">
               <svg *ngIf="favoriteStoreNameSet.has(store.storeName)" xmlns="http://www.w3.org/2000/svg" width="20"
                 height="20" fill="#ef4444" viewBox="0 0 24 24">
                 <path
@@ -341,6 +360,9 @@
                   d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
               </svg>
             </button>
+            <a class="store-nav-btn" href="https://www.google.com/maps/search/7-ELEVEN{{ store.StoreName }}門市" target="_blank" aria-label="導航">
+              <img src="assets/GoogleMap_icon.png" alt="導航" width="24" height="24" />
+            </a>
           </div>
           <div class="grid grid-cols-4 gap-2 mt-2 relative z-50">
             <ng-container *ngFor="let category of foodCategories | slice:0:10; trackBy: trackByCategory">
@@ -367,28 +389,23 @@
 
         <!-- === FamilyMart Store Card === -->
         <ng-container *ngIf="store.label === '全家'">
-          <div class="flex items-center gap-3 mb-3">
+          <div class="store-card-header">
             <div class="store-icon-badge badge-family">
               <img [src]="familyMartIconUrl" alt="全家" width="22" height="22" />
             </div>
-            <div class="flex-1 min-w-0">
-              <h2 class="text-sm font-semibold flex items-center gap-1.5 flex-wrap" style="margin: 1px 0 0 0; line-height: 1.4;">
-                {{ store.name }}
-                <a href="https://www.google.com/maps/search/全家便利商店{{ fStoreName(store.name) }}" target="_blank">
-                  <img src="assets/GoogleMap_icon.png" alt="地圖" class="w-5 h-5 inline-block" />
-                </a>
+            <div class="store-card-info">
+              <h2 class="store-card-name">{{ store.name }}</h2>
+              <div class="store-card-meta">
                 <span *ngIf="store.distance" class="distance-badge badge-family-dist">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor"
-                    viewBox="0 0 24 24">
-                    <path
-                      d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" />
+                  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" />
                   </svg>
-                  {{ store.distance >= 1000 ? (store.distance / 1000 | number:'1.1-1') + ' km' : (store.distance |
-                  number:'1.0-0') + ' m' }}
+                  {{ store.distance >= 1000 ? (store.distance / 1000 | number:'1.1-1') + ' km' : (store.distance | number:'1.0-0') + ' m' }}
                 </span>
-              </h2>
+                <span class="qty-badge qty-badge-family">{{ getStoreTotalQtyList(store) }} 件折扣品</span>
+              </div>
             </div>
-            <button (click)="toggleFavorite(store)" class="shrink-0 p-1" *ngIf="user">
+            <button (click)="toggleFavorite(store)" class="store-fav-btn" *ngIf="user">
               <svg *ngIf="favoriteStoreNameSet.has(store.storeName)" xmlns="http://www.w3.org/2000/svg" width="20"
                 height="20" fill="#ef4444" viewBox="0 0 24 24">
                 <path
@@ -400,6 +417,9 @@
                   d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
               </svg>
             </button>
+            <a class="store-nav-btn" href="https://www.google.com/maps/search/全家便利商店{{ fStoreName(store.name) }}" target="_blank" aria-label="導航">
+              <img src="assets/GoogleMap_icon.png" alt="導航" width="24" height="24" />
+            </a>
           </div>
           <div class="grid grid-cols-4 gap-2 mt-2 relative z-50">
             <button type="button" *ngFor="let category of store.info | slice:0:10; trackBy: trackByCategory" class="category-chip"
@@ -427,7 +447,7 @@
   </ng-container>
 
   <!-- ===== Product Search: Continuous search indicator ===== -->
-  <ng-container *ngIf="searchMode === 'product'">
+  <ng-container *ngIf="searchMode === 'product' && !isMapView">
     <!-- Still searching (Bottom Indicator) -->
     <div *ngIf="productSearchRunning && !productSearchPaused && totalStoresShowList.length > 0" class="search-progress-indicator animate-fade-in-up">
       <div class="premium-spinner spinner-sm"></div>
@@ -459,4 +479,16 @@
       <span class="text-xs text-gray-400 dark:text-zinc-400 font-medium">正在尋找更多門市...</span>
     </div>
   </ng-container>
+
+</div>
+
+<!-- Map View FAB (always visible) -->
+<div class="map-fab" [class.map-sheet-up]="isMapView && mapSheetOpen" (click)="toggleMapView()" (touchstart)="0"
+     appMotion [initial]="{ opacity: 0, transform: 'scale(0.3)' }" [animate]="{ opacity: 1, transform: 'scale(1)' }" [transition]="{ type: 'spring', stiffness: 300, damping: 20 }">
+  <svg *ngIf="!isMapView" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" style="width: 24px; height: 24px;">
+    <path stroke-linecap="round" stroke-linejoin="round" d="M9 6.75V15m6-6v8.25m.503 3.498 4.875-2.437c.381-.19.622-.58.622-1.006V4.82c0-.836-.88-1.38-1.628-1.006l-3.869 1.934c-.317.159-.69.159-1.006 0L9.503 3.252a1.125 1.125 0 0 0-1.006 0L3.622 5.689C3.24 5.88 3 6.27 3 6.695V19.18c0 .836.88 1.38 1.628 1.006l3.869-1.934c.317-.159.69-.159 1.006 0l4.994 2.497c.317.158.69.158 1.006 0Z" />
+  </svg>
+  <svg *ngIf="isMapView" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" style="width: 24px; height: 24px;">
+    <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 6.75h12M8.25 12h12m-12 5.25h12M3.75 6.75h.007v.008H3.75V6.75Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0ZM3.75 12h.007v.008H3.75V12Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm-.375 5.25h.007v.008H3.75v-.008Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z" />
+  </svg>
 </div>

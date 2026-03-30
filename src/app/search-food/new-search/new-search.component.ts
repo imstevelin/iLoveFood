@@ -50,6 +50,8 @@ export class NewSearchComponent implements OnInit, OnDestroy {
   showFavorites: boolean = false; // 收藏面板是否展開（向下相容）
   showMenu: boolean = false;     // 漢堡選單是否展開
   showLabSection: boolean = false; // 實驗室子選單
+  isMapView: boolean = false; // 地圖檢視模式
+  mapSheetOpen: boolean = false; // 地圖門市卡片是否展開
 
   // === 效能優化：分類點擊載入追蹤 ===
   setCategoryLoading(store: any, category: any, isLoading: boolean) {
@@ -108,7 +110,7 @@ export class NewSearchComponent implements OnInit, OnDestroy {
   dropDown711List: Store[] = [];
   dropDownFamilyMartList: fStore[] = [];
   all711Stores: any[] = []; // 儲存所有 7-11 商店資料（包含拼音）
-  private storeNoToCoords = new Map<string, { lat: number; lng: number }>(); // 7-11 StoreNo → 座標快速查表
+  storeNoToCoords = new Map<string, { lat: number; lng: number }>(); // 7-11 StoreNo → 座標快速查表
   unifiedDropDownList: any[] = [];
 
   // 商品搜尋相關
@@ -139,7 +141,7 @@ export class NewSearchComponent implements OnInit, OnDestroy {
   private productSearchFmBatchIdx: number = 0;      // 全家目前批次索引
   private productSearchBatchSize: number = 15;      // 防封鎖：每批 API 查詢量改為 15 間
   private productSearchDisplayed: number = 0;       // 已顯示的門市計數
-  private isSearchingMore: boolean = false;          // 是否正在擴搜
+  public isSearchingMore: boolean = false;          // 是否正在擴搜
   private searchExhausted711: boolean = false;       // 7-11 是否已搜完
   private searchExhaustedFm: boolean = false;        // 全家是否已搜完
   private fmQueriedPKeys: Set<string> = new Set();   // 已查詢過的全家門市 PKey（去重用）
@@ -221,6 +223,7 @@ export class NewSearchComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    document.body.classList.remove('map-active-lock');
     if (this.favoritesSubscription) {
       this.favoritesSubscription.unsubscribe();
     }
@@ -519,6 +522,9 @@ export class NewSearchComponent implements OnInit, OnDestroy {
     this.unifiedDropDownList = [];
     this.showMenu = false;
     this.showAboutCard = false;
+    this.isMapView = false;
+    this.mapSheetOpen = false;
+    document.body.classList.remove('map-active-lock');
     this.onUseCurrentLocation();
   }
 
@@ -533,6 +539,29 @@ export class NewSearchComponent implements OnInit, OnDestroy {
     localStorage.setItem('chatEnabled', JSON.stringify(this.chatEnabled));
     // 通知同頁面的 chatbot 組件
     window.dispatchEvent(new CustomEvent('chatEnabledChanged', { detail: this.chatEnabled }));
+  }
+
+  // 觸發開啟聊天室
+  openChatbot(): void {
+    if (!this.chatEnabled) {
+      this.chatEnabled = true;
+      localStorage.setItem('chatEnabled', JSON.stringify(this.chatEnabled));
+      window.dispatchEvent(new CustomEvent('chatEnabledChanged', { detail: this.chatEnabled }));
+    }
+    window.dispatchEvent(new CustomEvent('openChatbot'));
+  }
+
+  // 切換地圖檢視
+  toggleMapView(): void {
+    this.isMapView = !this.isMapView;
+    this.mapSheetOpen = false;
+    if (this.isMapView) {
+      // 解決從清單滾動後進入地圖，畫面與標記點擊偏移的問題
+      window.scrollTo(0, 0);
+      document.body.classList.add('map-active-lock');
+    } else {
+      document.body.classList.remove('map-active-lock');
+    }
   }
 
   // 深色模式開關
@@ -1892,8 +1921,14 @@ export class NewSearchComponent implements OnInit, OnDestroy {
     }
 
     // 遞迴防呆：如果目前顯示的門市數量未達目標（例如只找到 2 間），且資料庫還沒搜完、未強制暫停，自動發送下一批
+    // 地圖模式下，找到足夠門市後停止自動擴展，讓使用者手動「搜尋這個區域」
     if (this.totalStoresShowList.length < this.targetDisplayCount && !allExhausted && !this.productSearchPaused) {
-      if (isInitial) {
+      if (this.isMapView && this.productSearchStores.length >= this.minInitialStores) {
+        // 地圖模式已找到足夠門市，停止搜尋
+        this.isLoadingMore = false;
+        this.productSearchRunning = false;
+        this.loadingService.hide();
+      } else if (isInitial) {
         setTimeout(() => {
           if (this.productSearchGeneration === currentGen) {
             this.fetchProductSearchBatch(true);
@@ -2496,15 +2531,15 @@ export class NewSearchComponent implements OnInit, OnDestroy {
 
       this.hasMoreStores = !(this.searchExhausted711 && this.searchExhaustedFm);
 
-      // 遞迴防呆：如果這批 API 查完後，畫面上還是沒有補齊這 5 間目標數量，
-      // 而且資料庫還有（全台灣還沒搜完），就自動接續查下一批，確保使用者一定能看到 5 間再暫停
-      if (this.totalStoresShowList.length < this.targetDisplayCount && this.hasMoreStores) {
-        this.isLoadingMore = true; // 狀態保持
-        this.loadMoreStoresFromJSON(); // 當前 API 不足，立即從中斷點接續發送下一批 API
+      // 自動擴展：僅當「總累計結果」不足 minInitialStores 間時才繼續搜尋
+      // 使用 allNearbyStores.length（總結果）而非 totalStoresShowList.length（當次顯示切片）
+      // 地圖模式下不自動擴展搜尋，由使用者手動「搜尋此區域」
+      if (!this.isMapView && this.allNearbyStores.length < this.minInitialStores && this.hasMoreStores) {
+        this.isLoadingMore = true;
+        this.loadMoreStoresFromJSON();
       } else {
-        // 目標達成，安穩休眠 API
         this.isLoadingMore = false;
-        this.loadingService.hide(); // 確保背景 JSON 任務完成時，全域 loading 正式結束
+        this.loadingService.hide();
       }
     });
   }
@@ -2544,12 +2579,13 @@ export class NewSearchComponent implements OnInit, OnDestroy {
     this.ensureMinimumStores();
   }
 
-  // 確保至少顯示 minInitialStores 間門市
+  // 確保至少顯示 minInitialStores 間門市（僅清單模式，基於總累計結果）
   private ensureMinimumStores(): void {
-    if (this.totalStoresShowList.length < this.minInitialStores && this.hasMoreStores && !this.isLoadingMore) {
-      // 延遲一帧确保 DOM 更新
+    if (this.isMapView) return;
+    if (this.allNearbyStores.length < this.minInitialStores && this.hasMoreStores && !this.isLoadingMore) {
       setTimeout(() => {
-        if (this.totalStoresShowList.length < this.minInitialStores && this.hasMoreStores && !this.isLoadingMore) {
+        if (this.isMapView) return;
+        if (this.allNearbyStores.length < this.minInitialStores && this.hasMoreStores && !this.isLoadingMore) {
           this.loadMoreStores();
         }
       }, 100);
@@ -2574,6 +2610,14 @@ export class NewSearchComponent implements OnInit, OnDestroy {
 
   getFSubCategoryQty(store: StoreModel, cat: any): number {
     return cat.qty;
+  }
+
+  getStoreTotalQtyList(store: any): number {
+    if (store.label === '7-11') return store.RemainingQty || store.remainingQty || 0;
+    if (store.label === '全家' && store.info && Array.isArray(store.info)) {
+      return store.info.reduce((sum: number, cat: any) => sum + (cat.qty || 0), 0);
+    }
+    return 0;
   }
 
   fStoreName(storeName: string): string {

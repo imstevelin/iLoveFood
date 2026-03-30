@@ -101,6 +101,15 @@ html {
   scroll-behavior: smooth;
 }
 
+/* ===== Lock scroll when Map is active (mobile fix) ===== */
+body.map-active-lock {
+  overflow: hidden !important;
+  height: 100vh !important;
+  height: 100dvh !important;
+  overscroll-behavior: none !important;
+  touch-action: none !important;
+}
+
 /* Liquid Glass card */
 .glass-card {
   background: var(--glass-bg);
