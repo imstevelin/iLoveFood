@@ -26,6 +26,7 @@ export class ChatbotComponent implements OnInit, OnDestroy {
 
   isLogin = false;
   isOpen = false;
+  isMounted = false;
   chatEnabled = false; // 預設關閉，由實驗室開關控制
   userInput = '';
   userName = '';
@@ -143,6 +144,7 @@ export class ChatbotComponent implements OnInit, OnDestroy {
     if (!this.isOpen) {
       // 延後開啟：為了展示按鈕被「按下」後的縮放回饋，增加 120ms 延遲
       setTimeout(() => {
+        this.isMounted = true;
         this.isOpen = true;
         if (window.innerWidth < 768) {
           // 在手機版上隱藏捲軸，確保全螢幕體驗
@@ -163,6 +165,9 @@ export class ChatbotComponent implements OnInit, OnDestroy {
       if (window.innerWidth < 768) {
         document.body.style.overflow = '';
       }
+      setTimeout(() => {
+        this.isMounted = false;
+      }, 400); // Wait for the close animation to finish before truly unmounting
     }
   }
 

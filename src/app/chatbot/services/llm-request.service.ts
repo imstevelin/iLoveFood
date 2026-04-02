@@ -9,14 +9,14 @@ import { environment } from '../../../environments/environment';
 export class LlmRequestService {
 
   // MiniMax Configuration
-  // private url = 'https://api.minimax.io/v1/text/chatcompletion_v2';
-  // private model = 'MiniMax-M2.5';
-  // private apiKey = 'sk-cp-JYzj0Mc_qZFXvJwKpi0vK9oH0Gv1LTrYI7dvXS_iE8V2S59Ks53Hz2A_ENzkUvC2l5_4l3qCxSaXlUtRx0MTsaS67viraZlMeTnsrxgaVXTrBqA1dehE7XA';
+  private url = 'https://api.minimax.io/v1/text/chatcompletion_v2';
+  private model = 'MiniMax-M2.5';
+  private apiKey = environment.minimaxApiKey;
 
   // Google Gemini Configuration
-  private url = 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions';
-  private model = 'gemini-2.5-flash';
-  private apiKey = environment.geminiApiKey;
+  // private url = 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions';
+  // private model = 'gemini-2.5-flash';
+  // private apiKey = environment.geminiApiKey;
 
 
   constructor(

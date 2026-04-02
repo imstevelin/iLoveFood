@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, NgZone, ViewChild, ElementRef, HostListener } from '@angular/core';
+import { Component, OnInit, OnDestroy, NgZone, ViewChild, ElementRef, HostListener, ChangeDetectorRef } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { FormGroup, FormControl } from '@angular/forms';
 
@@ -14,6 +14,7 @@ import { RouteModeDialogComponent } from 'src/app/components/route-mode-dialog/r
 import { FoodCategory, LocationData, StoreStockItem, Store, Location, FoodDetail711 } from '../model/seven-eleven.model'
 import { fStore, StoreModel, FoodDetailFamilyMart } from '../model/family-mart.model';
 import { StoreDataService } from 'src/app/services/stores-data.service';
+import { MapViewComponent } from './map-view/map-view.component';
 
 import { environment } from 'src/environments/environment';
 
@@ -184,6 +185,10 @@ export class NewSearchComponent implements OnInit, OnDestroy {
   filteredStoresList: any[] = [];  // 用來儲存篩選後的商店列表
 
   selectedStore?: any;
+  mapActiveStore: any = null;
+  listFocusStore: any = null;
+  latestMapStores: any[] = [];
+  private savedScrollPosition: number = 0;
   selectedCategory?: any;
 
   favoriteStores: any[] = [];
@@ -192,6 +197,7 @@ export class NewSearchComponent implements OnInit, OnDestroy {
 
   @ViewChild('menuPanel') menuPanel!: ElementRef;
   @ViewChild('menuButton') menuButton!: ElementRef;
+  @ViewChild(MapViewComponent) mapViewComponent!: MapViewComponent;
 
   constructor(
     private http: HttpClient,
@@ -203,7 +209,8 @@ export class NewSearchComponent implements OnInit, OnDestroy {
     public dialog: MatDialog,
     private firestore: AngularFirestore,
     private storeDataService: StoreDataService,
-    private ngZone: NgZone
+    private ngZone: NgZone,
+    private cdr: ChangeDetectorRef
   ) {
     this.searchForm = new FormGroup({
       selectedStoreName: new FormControl(''), // 控制選中的商店
@@ -552,15 +559,152 @@ export class NewSearchComponent implements OnInit, OnDestroy {
   }
 
   // 切換地圖檢視
-  toggleMapView(): void {
+  toggleMapView(target?: 'list' | 'map'): void {
+    // Prevent re-toggling to the same view
+    if (target === 'list' && !this.isMapView) return;
+    if (target === 'map' && this.isMapView) return;
+
+    if (!this.isMapView || target === 'map') {
+      // We are in List view, about to switch to Map View.
+      // Calculate focus BEFORE flipping the view to ensure bounding boxes are perfectly intact
+      this.calculateListFocus();
+      console.log('[toggleMapView] Target list focus stored as:', this.listFocusStore);
+    }
+
     this.isMapView = !this.isMapView;
     this.mapSheetOpen = false;
+    
     if (this.isMapView) {
-      // 解決從清單滾動後進入地圖，畫面與標記點擊偏移的問題
-      window.scrollTo(0, 0);
+      this.mapActiveStore = null; // 清除上一次的地圖殘留選中狀態
+      this.savedScrollPosition = window.pageYOffset || document.documentElement.scrollTop;
       document.body.classList.add('map-active-lock');
     } else {
       document.body.classList.remove('map-active-lock');
+
+      // 將該地圖區域搜尋到的所有新門市，排在清單的最前面
+      if (this.latestMapStores.length > 0) {
+        const existingIds = new Set(this.totalStoresShowList.map(s => s.StoreName || s.storeName));
+        const newStoresToPrepend: any[] = [];
+        
+        // 保留原有的 map 順序加入
+        for (const mapStore of this.latestMapStores) {
+          const storeId = mapStore.StoreName || mapStore.storeName;
+          if (!existingIds.has(storeId)) {
+            newStoresToPrepend.push(mapStore);
+            existingIds.add(storeId);
+          }
+        }
+        
+        if (newStoresToPrepend.length > 0) {
+          // 將從地圖新搜尋到的門市，依照距離當前位置的遠近排序，避免散亂
+          newStoresToPrepend.sort((a, b) => (a.distance || 0) - (b.distance || 0));
+          this.totalStoresShowList = [...newStoresToPrepend, ...this.totalStoresShowList];
+          this.cdr.detectChanges();
+        }
+      }
+      
+      let targetStoreToScroll = this.mapActiveStore;
+      
+      // Map -> List Sync: 如果地圖沒有「主動選中」任何門市，則取地圖中心點最近的門市
+      if (this.isMapView && !targetStoreToScroll && this.mapViewComponent) {
+        targetStoreToScroll = this.mapViewComponent.getClosestStoreToCenter();
+      }
+      
+      if (targetStoreToScroll) {
+        const storeId = targetStoreToScroll.StoreName || targetStoreToScroll.storeName;
+        
+        // If not implicitly in the map stores array for some reason, ensure the actively clicked one is prepended:
+        const exists = this.totalStoresShowList.some(s => (s.StoreName || s.storeName) === storeId);
+        if (!exists) {
+          this.totalStoresShowList.unshift(targetStoreToScroll);
+          this.cdr.detectChanges(); 
+        }
+
+        setTimeout(() => {
+          const el = document.getElementById('store-' + storeId);
+          if (el) {
+            // 由於全域 CSS (styles.scss) 設定了 scroll-behavior: smooth，
+            // 為了達成無動畫的「瞬間定位」，必須暫時強制覆寫 root 行為
+            const html = document.documentElement;
+            const absoluteY = el.getBoundingClientRect().top + window.pageYOffset;
+            
+            // 計算將卡片置於畫面整中央的 Y 座標，這能確保與 calculateListFocus() 的「視窗中心點」邏輯完美吻合，解決無窮下跳的問題
+            let targetY = absoluteY - (window.innerHeight / 2) + (el.getBoundingClientRect().height / 2);
+            if (targetY < 0) targetY = 0; // 防止滾到最上面出界
+
+            html.style.setProperty('scroll-behavior', 'auto', 'important');
+            window.scrollTo(0, targetY); // 置中顯示
+            
+            // 定位完成後立刻恢復原預設的動畫效果
+            setTimeout(() => {
+              html.style.removeProperty('scroll-behavior');
+            }, 50);
+          }
+        }, 10); // 短暫延遲讓 CSS transform 準備好
+      } else {
+        // Fallback: Restore previous scroll position if no map store was selected
+        setTimeout(() => {
+          window.scrollTo(0, this.savedScrollPosition);
+        }, 10);
+      }
+    }
+  }
+
+  // 接收地圖元件發出的選中門市事件
+  onMapStoreSelected(store: any): void {
+    if (store && this.isMapView) {
+      this.mapActiveStore = { ...store };
+      this.cdr.detectChanges(); // Ensures Angular evaluates new object immediately
+    } else {
+      this.mapActiveStore = null;
+    }
+  }
+
+  // 接收地圖範圍變更後取得的所有門市
+  onMapSearchedStores(stores: any[]): void {
+    this.latestMapStores = stores || [];
+  }
+
+  // Lazy calculation: 從畫面上擷取最適當的門市焦點傳給地圖
+  private calculateListFocus(): void {
+    const cards = Array.from(document.querySelectorAll('.store-glass-card'));
+    if (!cards || cards.length === 0) return;
+
+    let closestCard: Element | null = null;
+    let minDistance = Infinity;
+    const viewportCenterY = window.innerHeight / 2;
+    let expandedCardInView: Element | null = null;
+
+    for (const card of cards) {
+      const rect = card.getBoundingClientRect();
+      const cardCenterY = rect.top + rect.height / 2;
+      const distance = Math.abs(cardCenterY - viewportCenterY);
+      
+      // Is this card currently expanded (has app-display component inside it?)
+      const isExpanded = card.querySelector('app-display') !== null;
+      
+      if (distance < minDistance) {
+        minDistance = distance;
+        closestCard = card;
+      }
+      
+      // Prioritize expanded cards that are visible at all on the screen
+      if (isExpanded && rect.top < window.innerHeight && rect.bottom > 68) {
+        if (!expandedCardInView) expandedCardInView = card;
+      }
+    }
+
+    const targetCard = expandedCardInView || closestCard;
+    if (targetCard) {
+      const storeId = targetCard.id.replace('store-', '');
+      const targetStore = this.totalStoresShowList.find(s => (s.StoreName || s.storeName) === storeId);
+      if (targetStore) {
+        // Create a shallow copy or just pass ref. 
+        // Passing ref will automatically trigger ngOnChanges in map-view if we replace the object wrap
+        this.listFocusStore = { ...targetStore }; // using copy to trigger change detection cleanly
+      }
+    } else {
+      this.listFocusStore = null;
     }
   }
 

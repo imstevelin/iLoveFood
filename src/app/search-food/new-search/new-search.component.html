@@ -185,27 +185,14 @@
 <!-- Spacer for fixed header -->
 <div class="search-bar-spacer"></div>
 
-<!-- ===== Map View ===== -->
-<app-map-view *ngIf="isMapView"
-  [stores]="searchMode === 'product' ? productSearchStores : (allNearbyStores.length > 0 ? allNearbyStores : totalStoresShowList)"
-  [userLat]="latitude"
-  [userLng]="longitude"
-  [isDarkMode]="darkModeEnabled && isDarkSystemTheme"
-  [foodCategories]="foodCategories"
-  [foodDetails711]="foodDetails711"
-  [foodDetailsFamilyMart]="foodDetailsFamilyMart"
-  [sevenElevenIconUrl]="sevenElevenIconUrl"
-  [familyMartIconUrl]="familyMartIconUrl"
-  [storeNoToCoords]="storeNoToCoords"
-  [searchMode]="searchMode"
-  [searchCenterLat]="searchCenterLat"
-  [searchCenterLng]="searchCenterLng"
-  [isParentSearching]="productSearchRunning || isLoadingMore || isSearchingMore"
-  (sheetStateChange)="mapSheetOpen = $event">
-</app-map-view>
+<!-- ===== View Flipper Container ===== -->
+<div class="view-flipper" [class.flipped]="isMapView">
 
-<!-- ===== Main Content Area (List View) ===== -->
-<div class="max-w-3xl mx-auto px-4 pb-8" style="padding-top: 8px;" *ngIf="!isMapView">
+  <!-- Front Face: List View -->
+  <div class="view-face view-face-list" [class.view-active]="!isMapView">
+
+    <!-- ===== Main Content Area (List View) ===== -->
+    <div class="max-w-3xl mx-auto px-4 pb-8" style="padding-top: 8px;" *ngIf="!isMapView">
 
   <!-- ===== Unified Loading & Empty States (When No Cards Are Showing) ===== -->
   <ng-container *ngIf="totalStoresShowList.length === 0 && !locationDenied && !showAboutCard">
@@ -327,6 +314,7 @@
     <ng-container *ngFor="let store of totalStoresShowList; let i = index; trackBy: trackByStore">
       <!-- Only render card if store has content -->
       <div class="store-glass-card card-animate-in"
+        [id]="'store-' + (store.StoreName || store.storeName)"
         [ngClass]="{'card-seven': store.label === '7-11', 'card-family': store.label === '全家'}"
         [style.animation-delay]="(i % 10) * 0.06 + 's'" *ngIf="store.label === '7-11' ? store.RemainingQty > 0 : true">
 
@@ -364,7 +352,7 @@
               <img src="assets/GoogleMap_icon.png" alt="導航" width="24" height="24" />
             </a>
           </div>
-          <div class="grid grid-cols-4 gap-2 mt-2 relative z-50">
+          <div class="grid grid-cols-4 gap-2 mt-2 relative">
             <ng-container *ngFor="let category of foodCategories | slice:0:10; trackBy: trackByCategory">
               <button type="button" *ngIf="getSubCategoryTotalQty(store, category) > 0" class="category-chip"
                 [class.selected]="store.selectedCategory === category"
@@ -421,7 +409,7 @@
               <img src="assets/GoogleMap_icon.png" alt="導航" width="24" height="24" />
             </a>
           </div>
-          <div class="grid grid-cols-4 gap-2 mt-2 relative z-50">
+          <div class="grid grid-cols-4 gap-2 mt-2 relative">
             <button type="button" *ngFor="let category of store.info | slice:0:10; trackBy: trackByCategory" class="category-chip"
               [class.selected]="store.selectedCategory === category" (click)="toggleSubCategoryDetails(store, category)"
               [class.pointer-events-none]="getFSubCategoryQty(store, category) === 0"
@@ -480,15 +468,53 @@
     </div>
   </ng-container>
 
-</div>
+  </div>
 
-<!-- Map View FAB (always visible) -->
-<div class="map-fab" [class.map-sheet-up]="isMapView && mapSheetOpen" (click)="toggleMapView()" (touchstart)="0"
-     appMotion [initial]="{ opacity: 0, transform: 'scale(0.3)' }" [animate]="{ opacity: 1, transform: 'scale(1)' }" [transition]="{ type: 'spring', stiffness: 300, damping: 20 }">
-  <svg *ngIf="!isMapView" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" style="width: 24px; height: 24px;">
-    <path stroke-linecap="round" stroke-linejoin="round" d="M9 6.75V15m6-6v8.25m.503 3.498 4.875-2.437c.381-.19.622-.58.622-1.006V4.82c0-.836-.88-1.38-1.628-1.006l-3.869 1.934c-.317.159-.69.159-1.006 0L9.503 3.252a1.125 1.125 0 0 0-1.006 0L3.622 5.689C3.24 5.88 3 6.27 3 6.695V19.18c0 .836.88 1.38 1.628 1.006l3.869-1.934c.317-.159.69-.159 1.006 0l4.994 2.497c.317.158.69.158 1.006 0Z" />
-  </svg>
-  <svg *ngIf="isMapView" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" style="width: 24px; height: 24px;">
-    <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 6.75h12M8.25 12h12m-12 5.25h12M3.75 6.75h.007v.008H3.75V6.75Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0ZM3.75 12h.007v.008H3.75V12Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm-.375 5.25h.007v.008H3.75v-.008Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z" />
-  </svg>
+  </div> <!-- end .view-face-list -->
+
+  <!-- Back Face: Map View -->
+  <div class="view-face view-face-map" [class.view-active]="isMapView">
+    <app-map-view *ngIf="isMapView"
+      [stores]="searchMode === 'product' ? productSearchStores : totalStoresShowList"
+      [userLat]="latitude"
+      [userLng]="longitude"
+      [isDarkMode]="darkModeEnabled && isDarkSystemTheme"
+      [foodCategories]="foodCategories"
+      [foodDetails711]="foodDetails711"
+      [foodDetailsFamilyMart]="foodDetailsFamilyMart"
+      [sevenElevenIconUrl]="sevenElevenIconUrl"
+      [familyMartIconUrl]="familyMartIconUrl"
+      [storeNoToCoords]="storeNoToCoords"
+      [searchMode]="searchMode"
+      [searchCenterLat]="searchCenterLat"
+      [searchCenterLng]="searchCenterLng"
+      [isParentSearching]="productSearchRunning || isLoadingMore || isSearchingMore"
+      [user]="user"
+      [favoriteStoreNameSet]="favoriteStoreNameSet"
+      [focusStoreFromList]="listFocusStore"
+      (sheetStateChange)="mapSheetOpen = $event"
+      (storeSelected)="onMapStoreSelected($event)"
+      (favoriteToggle)="toggleFavorite($event)"
+      (parsedStoresChange)="onMapSearchedStores($event)">
+    </app-map-view>
+  </div> <!-- end .view-face-map -->
+
+</div> <!-- end .view-flipper -->
+
+<!-- View Toggle Pill (Apple-style segmented control) -->
+<div class="view-toggle-pill" [class.map-sheet-up]="isMapView && mapSheetOpen"
+     appMotion [initial]="{ opacity: 0, y: 20, scale: 0.8 }" [animate]="{ opacity: 1, y: 0, scale: 1 }" [transition]="{ type: 'spring', stiffness: 300, damping: 22 }">
+  <div class="view-toggle-indicator" [class.map-active]="isMapView"></div>
+  <button class="view-toggle-segment" [class.active]="!isMapView" (click)="toggleMapView('list')" (touchstart)="0">
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 6.75h12M8.25 12h12m-12 5.25h12M3.75 6.75h.007v.008H3.75V6.75Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0ZM3.75 12h.007v.008H3.75V12Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm-.375 5.25h.007v.008H3.75v-.008Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z" />
+    </svg>
+    <span>清單</span>
+  </button>
+  <button class="view-toggle-segment" [class.active]="isMapView" (click)="toggleMapView('map')" (touchstart)="0">
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M9 6.75V15m6-6v8.25m.503 3.498 4.875-2.437c.381-.19.622-.58.622-1.006V4.82c0-.836-.88-1.38-1.628-1.006l-3.869 1.934c-.317.159-.69.159-1.006 0L9.503 3.252a1.125 1.125 0 0 0-1.006 0L3.622 5.689C3.24 5.88 3 6.27 3 6.695V19.18c0 .836.88 1.38 1.628 1.006l3.869-1.934c.317-.159.69-.159 1.006 0l4.994 2.497c.317.158.69.158 1.006 0Z" />
+    </svg>
+    <span>地圖</span>
+  </button>
 </div>

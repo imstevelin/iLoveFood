@@ -11,7 +11,7 @@
   background: rgba(255, 255, 255, 0.72);
   backdrop-filter: blur(24px) saturate(180%);
   -webkit-backdrop-filter: blur(24px) saturate(180%);
-  border-bottom: 1px solid rgba(226, 232, 240, 0.5);
+  border-bottom: 1px solid rgba(226, 232, 240, 0.35);
   box-shadow: 0 1px 12px rgba(0, 0, 0, 0.04);
   padding: 12px 16px;
   /* Interruptible: smooth bar appearance */
@@ -28,8 +28,8 @@
   background: rgba(255, 255, 255, 0.65);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(203, 213, 225, 0.4);
-  border-radius: 14px;
+  border: 1px solid rgba(203, 213, 225, 0.3);
+  border-radius: 100px; /* Capsule search bar */
   /* Spring transition — interruptible on rapid focus/blur */
   transition: border-color var(--transition-spring),
     box-shadow var(--transition-spring),
@@ -48,8 +48,8 @@
 .header-icon-btn {
   width: 44px;
   height: 44px;
-  border-radius: 12px;
-  border: 1px solid rgba(203, 213, 225, 0.4);
+  border-radius: 14px;
+  border: 1px solid rgba(203, 213, 225, 0.3);
   background: rgba(255, 255, 255, 0.65);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
@@ -121,7 +121,7 @@
   align-items: center;
   gap: 12px;
   padding: 10px 16px;
-  border-radius: 12px;
+  border-radius: 14px;
   cursor: pointer;
   text-decoration: none;
   color: inherit;
@@ -305,13 +305,15 @@ svg.transition-transform {
   background: rgba(255, 255, 255, 0.58);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(226, 232, 240, 0.5);
-  border-radius: 16px;
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.05);
+  border: 1px solid rgba(226, 232, 240, 0.35);
+  border-radius: 20px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06),
+    0 1px 4px rgba(0, 0, 0, 0.03);
   padding: 16px;
   margin-bottom: 12px;
   position: relative;
   overflow: hidden;
+  scroll-margin-top: 84px; /* 防止自動滾動時（如從地圖切回清單）卡片隱沒在 header 之下 */
   /* Spring transitions — interruptible on rapid scroll/interaction */
   transition: transform var(--transition-spring),
     box-shadow var(--transition-spring),
@@ -319,7 +321,8 @@ svg.transition-transform {
 
   &:hover {
     transform: translateY(-2px);
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08),
+      0 2px 8px rgba(0, 0, 0, 0.04);
   }
 
   &:active {
@@ -348,9 +351,9 @@ svg.transition-transform {
 
 /* 7-11 Brand Card */
 .card-seven {
-  background: linear-gradient(160deg, rgba(255, 127, 36, 0.07) 0%, rgba(255, 255, 255, 0.62) 40%),
+  background: radial-gradient(ellipse at 50% 0%, rgba(255, 127, 36, 0.10) 0%, rgba(255, 255, 255, 0.02) 60%),
     rgba(255, 255, 255, 0.60);
-  border: 1px solid rgba(255, 147, 66, 0.18);
+  border: 1px solid rgba(255, 147, 66, 0.15);
 
   &::before {
     content: '';
@@ -371,9 +374,9 @@ svg.transition-transform {
 
 /* FamilyMart Brand Card */
 .card-family {
-  background: linear-gradient(160deg, rgba(0, 179, 134, 0.07) 0%, rgba(255, 255, 255, 0.62) 40%),
+  background: radial-gradient(ellipse at 50% 0%, rgba(0, 179, 134, 0.10) 0%, rgba(255, 255, 255, 0.02) 60%),
     rgba(255, 255, 255, 0.60);
-  border: 1px solid rgba(0, 179, 134, 0.18);
+  border: 1px solid rgba(0, 179, 134, 0.15);
 
   &::before {
     content: '';
@@ -394,9 +397,9 @@ svg.transition-transform {
 
 /* About Section Inline Card */
 .card-about {
-  background: linear-gradient(160deg, rgba(59, 130, 246, 0.07) 0%, rgba(255, 255, 255, 0.62) 40%),
+  background: radial-gradient(ellipse at 50% 0%, rgba(59, 130, 246, 0.10) 0%, rgba(255, 255, 255, 0.02) 60%),
     rgba(255, 255, 255, 0.60);
-  border: 1px solid rgba(59, 130, 246, 0.25);
+  border: 1px solid rgba(59, 130, 246, 0.2);
 
   &::before {
     content: '';
@@ -417,9 +420,9 @@ svg.transition-transform {
 
 /* Location Permission Inline Card */
 .card-location {
-  background: linear-gradient(160deg, rgba(239, 68, 68, 0.07) 0%, rgba(255, 255, 255, 0.62) 40%),
+  background: radial-gradient(ellipse at 50% 0%, rgba(239, 68, 68, 0.10) 0%, rgba(255, 255, 255, 0.02) 60%),
     rgba(255, 255, 255, 0.60);
-  border: 1px solid rgba(239, 68, 68, 0.25);
+  border: 1px solid rgba(239, 68, 68, 0.2);
 
   &::before {
     content: '';
@@ -442,12 +445,12 @@ svg.transition-transform {
 .store-icon-badge {
   width: 44px;
   height: 44px;
-  border-radius: 12px;
+  border-radius: 14px;
   display: flex;
   align-items: center;
   justify-content: center;
   background: rgba(255, 255, 255, 0.7);
-  border: 1px solid rgba(226, 232, 240, 0.4);
+  border: 1px solid rgba(226, 232, 240, 0.3);
   flex-shrink: 0;
   transition: transform var(--transition-snappy),
     box-shadow var(--transition-snappy);
@@ -482,8 +485,8 @@ svg.transition-transform {
   font-weight: 500;
   color: var(--accent);
   background: var(--accent-light);
-  padding: 2px 8px;
-  border-radius: 8px;
+  padding: 2px 10px;
+  border-radius: 100px; /* Pill badge */
   /* Subtle scale-in */
   animation: badgeIn var(--duration-normal) var(--spring) both;
 }
@@ -542,8 +545,8 @@ svg.transition-transform {
   font-weight: 500;
   color: #c2410c;
   background: rgba(251, 146, 60, 0.1);
-  padding: 2px 8px;
-  border-radius: 8px;
+  padding: 2px 10px;
+  border-radius: 100px; /* Pill badge */
   animation: badgeIn var(--duration-normal) var(--spring) both;
 }
 
@@ -556,9 +559,9 @@ svg.transition-transform {
 .store-nav-btn {
   width: 44px;
   height: 44px;
-  border-radius: 12px;
+  border-radius: 14px;
   background: rgba(91, 127, 255, 0.08);
-  border: 1px solid rgba(91, 127, 255, 0.15);
+  border: 1px solid rgba(91, 127, 255, 0.12);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -608,9 +611,9 @@ svg.transition-transform {
   overflow: hidden;
   user-select: none;
   -webkit-user-select: none;
-  z-index: 100; /* 護城河 z-index 極度提高，確保高於所有擴展開後的內容層與相鄰元素 */
-  border: 1px solid rgba(226, 232, 240, 0.4);
-  border-radius: 12px;
+  z-index: 1; /* Stay above expanded content but don't interfere with overlays */
+  border: 1px solid rgba(226, 232, 240, 0.3);
+  border-radius: 16px;
   background: rgba(255, 255, 255, 0.45);
   text-align: center;
   cursor: pointer;
@@ -749,8 +752,8 @@ svg.transition-transform {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 10px 24px;
-  border-radius: 12px;
+  padding: 10px 28px;
+  border-radius: 100px; /* Capsule button */
   background: var(--accent);
   color: white;
   font-weight: 600;
@@ -779,14 +782,14 @@ svg.transition-transform {
   background: rgba(255, 255, 255, 0.45);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border-radius: 12px;
-  padding: 12px 20px;
+  border-radius: 100px; /* Capsule header */
+  padding: 12px 24px;
   margin: 12px auto 16px;
   text-align: center;
   font-weight: 500;
   font-size: 14px;
   color: var(--text-secondary);
-  border: 1px solid rgba(226, 232, 240, 0.4);
+  border: 1px solid rgba(226, 232, 240, 0.3);
 }
 
 /* ===== Login Prompt ===== */
@@ -802,8 +805,8 @@ svg.transition-transform {
   align-items: center;
   gap: 6px;
   margin-top: 8px;
-  padding: 8px 20px;
-  border-radius: 12px;
+  padding: 10px 24px;
+  border-radius: 100px; /* Capsule button */
   background: var(--accent);
   color: white;
   font-weight: 600;
@@ -874,13 +877,13 @@ a[href*="google.com/maps"] {
 
   .store-glass-card {
     padding: 12px;
-    border-radius: 14px;
+    border-radius: 18px;
   }
 
   .header-icon-btn {
     width: 38px;
     height: 38px;
-    border-radius: 10px;
+    border-radius: 12px;
   }
 
   /* === Mobile Performance Optimizations === */
@@ -988,16 +991,18 @@ a[href*="google.com/maps"] {
   .store-glass-card {
     background: rgba(38, 38, 38, 0.6);
     border-color: var(--border-default);
-    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.25);
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.25),
+      0 1px 4px rgba(0, 0, 0, 0.15);
 
     &:hover {
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35),
+        0 2px 8px rgba(0, 0, 0, 0.2);
     }
   }
 
   /* Brand Cards — Dark variants */
   .card-seven {
-    background: linear-gradient(160deg, rgba(255, 127, 36, 0.1) 0%, rgba(38, 38, 38, 0.65) 40%),
+    background: radial-gradient(ellipse at 50% 0%, rgba(255, 127, 36, 0.12) 0%, rgba(38, 38, 38, 0.02) 60%),
       rgba(38, 38, 38, 0.6);
     border-color: rgba(255, 147, 66, 0.2);
 
@@ -1012,7 +1017,7 @@ a[href*="google.com/maps"] {
   }
 
   .card-family {
-    background: linear-gradient(160deg, rgba(0, 179, 134, 0.1) 0%, rgba(38, 38, 38, 0.65) 40%),
+    background: radial-gradient(ellipse at 50% 0%, rgba(0, 179, 134, 0.12) 0%, rgba(38, 38, 38, 0.02) 60%),
       rgba(38, 38, 38, 0.6);
     border-color: rgba(0, 179, 134, 0.2);
 
@@ -1027,7 +1032,7 @@ a[href*="google.com/maps"] {
   }
 
   .card-about {
-    background: linear-gradient(160deg, rgba(59, 130, 246, 0.1) 0%, rgba(38, 38, 38, 0.65) 40%),
+    background: radial-gradient(ellipse at 50% 0%, rgba(59, 130, 246, 0.12) 0%, rgba(38, 38, 38, 0.02) 60%),
       rgba(38, 38, 38, 0.6);
     border-color: rgba(59, 130, 246, 0.25);
 
@@ -1042,7 +1047,7 @@ a[href*="google.com/maps"] {
   }
 
   .card-location {
-    background: linear-gradient(160deg, rgba(239, 68, 68, 0.1) 0%, rgba(38, 38, 38, 0.65) 40%),
+    background: radial-gradient(ellipse at 50% 0%, rgba(239, 68, 68, 0.12) 0%, rgba(38, 38, 38, 0.02) 60%),
       rgba(38, 38, 38, 0.6);
     border-color: rgba(239, 68, 68, 0.25);
 
@@ -1161,17 +1166,9 @@ a[href*="google.com/maps"] {
     color: var(--text-secondary);
   }
 
-  /* --- Chatbot & Map Buttons Dark Mode --- */
+  /* --- Chatbot Buttons Dark Mode --- */
   .chatbot-inline-btn:hover {
     background: rgba(255, 255, 255, 0.1);
-  }
-  .map-fab {
-    background: #4f46e5;
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
-
-    &:hover {
-      box-shadow: 0 8px 28px rgba(0, 0, 0, 0.6);
-    }
   }
 }
 
@@ -1198,66 +1195,199 @@ a[href*="google.com/maps"] {
   }
 }
 
-/* Map FAB (Floating Action Button) */
-.map-fab {
-    position: fixed;
-    bottom: 1.5rem;
-    right: 1.5rem;
-    width: 60px;
-    height: 60px;
-    border-radius: 50%;
-    background: var(--accent, #5B7FFF);
-    color: #ffffff; /* Make SVG white */
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), 
-                box-shadow 0.2s, 
-                opacity 0.3s,
-                background-color 0.3s;
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
-    z-index: 900; /* Ensure it stays above other content but below chatbot (1000) */
+/* ===== View Flipper — Page Transition Animation ===== */
+.view-flipper {
+  position: relative;
+  min-height: calc(100vh - 68px);
+}
+
+.view-face {
+  opacity: 0;
+  transform: translateY(12px) scale(0.98);
+  transition: opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+              transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  pointer-events: none;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+
+  &.view-active {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    pointer-events: auto;
+    position: relative;
+  }
+}
+
+.view-face-list {
+  /* Override animation direction for list — slide from left when entering */
+  &:not(.view-active) {
+    transform: translateX(-16px) scale(0.97);
+  }
+}
+
+.view-face-map {
+  /* Override animation direction for map — slide from right when entering */
+  &:not(.view-active) {
+    transform: translateX(16px) scale(0.97);
+  }
+}
+
+/* ===== View Toggle Pill — Apple HIG Segmented Control ===== */
+.view-toggle-pill {
+  position: fixed;
+  bottom: 1.5rem;
+  right: 1.5rem;
+  z-index: 900;
+  display: flex;
+  align-items: center;
+  gap: 0;
+  padding: 5px;
+  border-radius: 100px; /* Fully rounded pill */
+  background: rgba(255, 255, 255, 0.78);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border: 1px solid rgba(226, 232, 240, 0.45);
+  box-shadow: 0 4px 32px rgba(0, 0, 0, 0.1),
+              0 1px 6px rgba(0, 0, 0, 0.05);
+  -webkit-tap-highlight-color: transparent;
+  transition: opacity 0.3s, transform 0.3s;
+
+  &.map-sheet-up {
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(20px);
+  }
+}
+
+/* Sliding indicator */
+.view-toggle-indicator {
+  position: absolute;
+  top: 5px;
+  left: 5px;
+  width: calc(50% - 5px);
+  height: calc(100% - 10px);
+  border-radius: 100px; /* Match pill rounding */
+  background: #ffffff;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1),
+              0 0.5px 3px rgba(0, 0, 0, 0.06);
+  /* Spring-like transition via cubic-bezier overshoot */
+  transition: transform 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+  z-index: 0;
+
+  &.map-active {
+    transform: translateX(100%);
+  }
+}
+
+/* Each segment button */
+.view-toggle-segment {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 24px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  border-radius: 100px;
+  color: #94a3b8;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+  -webkit-tap-highlight-color: transparent;
+  transition: color 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  white-space: nowrap;
+  
+  svg {
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+    transition: stroke 0.3s;
+  }
+
+  &.active {
+    color: #1e293b;
     
-    &:hover {
-        transform: scale(1.05);
-        box-shadow: 0 8px 28px rgba(91, 127, 255, 0.45);
+    svg {
+      stroke: #1e293b;
     }
+  }
 
-    &:active {
-        transform: scale(0.9) !important;
-        transition-duration: 60ms;
-    }
+  &:not(.active):hover {
+    color: #64748b;
+  }
 
-    /* Dark Mode Override */
-    :host-context([data-theme="dark"]) & {
-        background: #3f3f46; /* Tailwind zinc-700 */
-        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
-
-        &:hover {
-            background: #52525b; /* Tailwind zinc-600 */
-            box-shadow: 0 8px 28px rgba(0, 0, 0, 0.6);
-        }
-    }
+  &:active {
+    transform: scale(0.95);
+    transition-duration: 60ms;
+  }
 }
 
+/* ===== Dark Mode Overrides for View Toggle ===== */
+:host-context([data-theme="dark"]) {
+  .view-toggle-pill {
+    background: rgba(39, 39, 42, 0.82);
+    border-color: rgba(63, 63, 70, 0.5);
+    box-shadow: 0 4px 32px rgba(0, 0, 0, 0.35),
+                0 1px 6px rgba(0, 0, 0, 0.25);
+  }
+
+  .view-toggle-indicator {
+    background: rgba(63, 63, 70, 0.95);
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.35);
+  }
+
+  .view-toggle-segment {
+    color: #71717a;
+
+    &.active {
+      color: #fafafa;
+
+      svg {
+        stroke: #fafafa;
+      }
+    }
+
+    &:not(.active):hover {
+      color: #a1a1aa;
+    }
+  }
+}
+
+/* ===== Mobile: Full-width dock at bottom ===== */
 @media screen and (max-width: 768px) {
-    .map-fab {
-        bottom: 1.5rem;
-        right: 1rem;
-        width: 54px;
-        height: 54px;
-    }
-}
+  .view-toggle-pill {
+    /* Span full width with side margins */
+    left: 12px;
+    right: 12px;
+    bottom: 12px;
+    bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+    padding: 4px;
+    border-radius: 100px;
+  }
 
-/* FAB hides when map bottom sheet is open */
-.map-fab {
-    transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275),
-                box-shadow 0.2s,
-                opacity 0.3s;
+  .view-toggle-indicator {
+    top: 4px;
+    left: 4px;
+    width: calc(50% - 4px);
+    height: calc(100% - 8px);
+    border-radius: 100px;
+  }
 
-    &.map-sheet-up {
-        opacity: 0;
-        pointer-events: none;
+  .view-toggle-segment {
+    flex: 1; /* Each segment takes equal width */
+    padding: 12px 0;
+    font-size: 14px;
+    gap: 7px;
+
+    svg {
+      width: 18px;
+      height: 18px;
     }
+  }
 }

@@ -1,6 +1,6 @@
-<div class="chatbot-mobile-backdrop" [class.show]="isOpen"></div>
+<div class="chatbot-mobile-backdrop" [class.show]="isOpen" [style.display]="isMounted ? 'block' : 'none'"></div>
 
-<div class="chatbot-container" [class.open]="isOpen"
+<div class="chatbot-container" [class.open]="isOpen" [style.display]="isMounted ? 'flex' : 'none'"
      appMotion [animate]="isOpen ? { y: 0, opacity: 1, scale: 1 } : { y: '50px', opacity: 0, scale: 0.95 }"
      [transition]="{ type: 'spring', stiffness: 300, damping: 25 }">
     <div class="chatbot-header" (click)="toggleChat()">

@@ -45,9 +45,10 @@
     background: rgba(255, 255, 255, 0.92);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
-    border: 1px solid rgba(226, 232, 240, 0.5);
-    border-radius: 20px;
-    box-shadow: 0 8px 40px rgba(0, 0, 0, 0.12);
+    border: 1px solid rgba(226, 232, 240, 0.35);
+    border-radius: 24px;
+    box-shadow: 0 8px 40px rgba(0, 0, 0, 0.12),
+      0 2px 8px rgba(0, 0, 0, 0.04);
     display: flex;
     flex-direction: column;
     overflow: hidden;
@@ -56,8 +57,8 @@
     
     /* Animation base */
     opacity: 0;
-    visibility: hidden;
-    pointer-events: none;
+    visibility: hidden !important;
+    pointer-events: none !important;
     transform: translateY(30px) scale(0.95);
     transform-origin: bottom right;
 
@@ -70,8 +71,8 @@
 .chatbot-container.open {
     /* Animation active */
     opacity: 1;
-    visibility: visible;
-    pointer-events: auto;
+    visibility: visible !important;
+    pointer-events: auto !important;
     transform: translateY(0) scale(1);
 }
 

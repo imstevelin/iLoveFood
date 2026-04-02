@@ -39,9 +39,16 @@ export class MapViewComponent implements OnInit, OnDestroy, OnChanges {
 
   // Allow parent to pass loading state & completely clear stores
   @Input() isParentSearching: boolean = false;
+  @Input() focusStoreFromList: any = null;
+
+  // Favorite support
+  @Input() user: any = null;
+  @Input() favoriteStoreNameSet: Set<string> = new Set();
 
   @Output() storeSelected = new EventEmitter<any>();
   @Output() sheetStateChange = new EventEmitter<boolean>();
+  @Output() favoriteToggle = new EventEmitter<any>();
+  @Output() parsedStoresChange = new EventEmitter<any[]>();
 
   map: any;
   markers: any[] = [];
@@ -161,6 +168,23 @@ export class MapViewComponent implements OnInit, OnDestroy, OnChanges {
     if (changes['isDarkMode'] && this.map) {
       this.map.setOptions({ styles: this.isDarkMode ? this.DARK_MAP_STYLES : this.LIGHT_MAP_STYLES });
     }
+
+    if (changes['focusStoreFromList'] && this.focusStoreFromList && this.map) {
+      const coords = this.getStoreCoords(this.focusStoreFromList);
+      console.log('[MapView] FocusStore updated in OnChanges!', this.focusStoreFromList, 'Coords:', coords);
+      if (coords) {
+        if (this.focusStoreFromList.selectedCategory) {
+          this.onMarkerClick(this.focusStoreFromList, coords);
+        } else {
+          this.map.panTo(coords);
+          if (this.map.getZoom() < 16) {
+            this.map.setZoom(16);
+          }
+        }
+      } else {
+        console.warn('[MapView] getStoreCoords returned null for', this.focusStoreFromList);
+      }
+    }
   }
 
   private mergeInputStores(): void {
@@ -178,17 +202,31 @@ export class MapViewComponent implements OnInit, OnDestroy, OnChanges {
     let centerLat = this.userLat;
     let centerLng = this.userLng;
     let initialZoom = 15;
+    let hasFocusStoreCenter = false;
 
-    if (this.searchMode === 'store' && this.searchCenterLat && this.searchCenterLng) {
-      centerLat = this.searchCenterLat;
-      centerLng = this.searchCenterLng;
-      initialZoom = 17; // Closer zoom for store search so user can see which store
-    } else if (this.searchMode === 'route') {
-      // Route: will be set by fitBoundsToMarkers, start at user
-      centerLat = this.userLat;
-      centerLng = this.userLng;
-      initialZoom = 13;
-      this.suppressIdleCount = 2; // Suppress initial idle
+    if (this.focusStoreFromList) {
+      const coords = this.getStoreCoords(this.focusStoreFromList);
+      console.log('[initMap] FocusStore in initMap!', this.focusStoreFromList, 'Coords:', coords);
+      if (coords) {
+        centerLat = coords.lat;
+        centerLng = coords.lng;
+        initialZoom = 16;
+        hasFocusStoreCenter = true;
+      }
+    }
+
+    if (!hasFocusStoreCenter) {
+      if (this.searchMode === 'store' && this.searchCenterLat && this.searchCenterLng) {
+        centerLat = this.searchCenterLat;
+        centerLng = this.searchCenterLng;
+        initialZoom = 17; // Closer zoom for store search so user can see which store
+      } else if (this.searchMode === 'route') {
+        // Route: will be set by fitBoundsToMarkers, start at user
+        centerLat = this.userLat;
+        centerLng = this.userLng;
+        initialZoom = 13;
+        this.suppressIdleCount = 2; // Suppress initial idle
+      }
     }
 
     this.map = new google.maps.Map(this.mapContainer.nativeElement, {
@@ -239,7 +277,17 @@ export class MapViewComponent implements OnInit, OnDestroy, OnChanges {
     this.updateMarkers();
 
     // For store mode, keep the tight zoom on the searched store — no fitBounds
-    if (this.searchMode === 'store' && this.allMapStores.length > 0) {
+    if (this.focusStoreFromList) {
+      this.initialFitDone = true;
+      const coords = this.getStoreCoords(this.focusStoreFromList);
+      if (coords) {
+         if (this.focusStoreFromList.selectedCategory) {
+            setTimeout(() => {
+               this.onMarkerClick(this.focusStoreFromList, coords);
+            }, 100);
+         }
+      }
+    } else if (this.searchMode === 'store' && this.allMapStores.length > 0) {
       this.initialFitDone = true; // Don't auto-zoom again
     } else if (this.allMapStores.length > 0) {
       this.initialFitDone = true;
@@ -252,6 +300,11 @@ export class MapViewComponent implements OnInit, OnDestroy, OnChanges {
   zoomOut(): void { if (this.map) this.map.setZoom(this.map.getZoom() - 1); }
 
   private onMapIdle(): void {
+    if (this.suppressIdleCount > 0) {
+      this.suppressIdleCount--;
+      return;
+    }
+
     if (this.isSearchingArea) return;
 
     // Fix 6: Skip idle check if suppressed (e.g. after fitBounds from route search)
@@ -398,6 +451,7 @@ export class MapViewComponent implements OnInit, OnDestroy, OnChanges {
 
         this.searchProgress = 100;
         this.cdr.detectChanges();
+        this.parsedStoresChange.emit([...this.allMapStores]);
         this.updateMarkers();
         setTimeout(() => { this.isSearchingArea = false; this.searchProgress = 0; this.cdr.detectChanges(); }, 600);
       },
@@ -487,6 +541,30 @@ export class MapViewComponent implements OnInit, OnDestroy, OnChanges {
     });
   }
 
+  getClosestStoreToCenter(): any {
+    if (!this.map || (!this.allMapStores || this.allMapStores.length === 0)) return null;
+    const center = this.map.getCenter();
+    if (!center) return null;
+    
+    // getDistance takes {latitude, longitude} obj
+    const centerCoords = { latitude: center.lat(), longitude: center.lng() };
+
+    let closestStore = null;
+    let minDistance = Infinity;
+
+    for (const store of this.allMapStores) {
+      const coords = this.getStoreCoords(store);
+      if (!coords) continue;
+      
+      const d = getDistance(centerCoords, { latitude: coords.lat, longitude: coords.lng });
+      if (d < minDistance) {
+        minDistance = d;
+        closestStore = store;
+      }
+    }
+    return closestStore;
+  }
+
   private onMarkerClick(store: any, coords: { lat: number; lng: number }): void {
     // Clear any stale inline styles from previous swipe-close
     const sheetDiv = this.mapContainer?.nativeElement?.parentElement?.querySelector('.bottom-sheet') as HTMLElement;
@@ -500,6 +578,7 @@ export class MapViewComponent implements OnInit, OnDestroy, OnChanges {
     this.sheetDetailMinHeight = 0; // Reset for new store
     this.sheetOpen = true;
     this.sheetStateChange.emit(true);
+    this.storeSelected.emit(this.selectedStore);
     document.body.classList.add('map-sheet-open');
 
     // Pan so the marker is centered in the VISIBLE portion above the bottom sheet
@@ -542,7 +621,6 @@ export class MapViewComponent implements OnInit, OnDestroy, OnChanges {
     this.sheetEl.addEventListener('touchmove', this.onSheetTouchMove, { passive: false });
     this.sheetEl.addEventListener('touchend', this.onSheetTouchEnd, { passive: true });
   }
-
   private detachSheetSwipeListeners(): void {
     if (!this.sheetEl) return;
     this.sheetEl.removeEventListener('touchstart', this.onSheetTouchStart);

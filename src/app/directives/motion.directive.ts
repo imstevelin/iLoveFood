@@ -56,6 +56,10 @@ export class MotionDirective implements OnInit, OnChanges, OnDestroy {
         if (target.opacity > 0) {
           this.el.nativeElement.style.visibility = 'visible';
           this.el.nativeElement.style.pointerEvents = 'auto';
+        } else {
+          // Immediately disable pointer-events when fading OUT
+          // so the element doesn't block clicks during the fade animation
+          this.el.nativeElement.style.pointerEvents = 'none';
         }
       }
 

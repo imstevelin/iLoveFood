@@ -8,7 +8,7 @@
 .login-icon-badge {
   width: 44px;
   height: 44px;
-  border-radius: 12px;
+  border-radius: 14px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -40,8 +40,8 @@
 /* 輸入框玻璃質感與彈性焦點 */
 .input-field {
   background: rgba(248, 250, 252, 0.8);
-  border: 1px solid rgba(203, 213, 225, 0.8);
-  border-radius: 14px;
+  border: 1px solid rgba(203, 213, 225, 0.6);
+  border-radius: 16px;
   box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.02);
   color: var(--text-primary);
   transition: border-color var(--transition-spring),

@@ -31,5 +31,7 @@ export const environment = {
     messagingSenderId: "7612717796",
     appId: "1:7612717796:web:9e231d7f1d97ebf4352af1"
   },
-  geminiApiKey: "YOUR_GEMINI_API_KEY_HERE"
+  geminiApiKey: "YOUR_GEMINI_API_KEY_HERE",
+  minimaxApiKey: "YOUR_MINIMAX_API_KEY_HERE",
+  umamiScript: "YOUR_UMAMI_SCRIPT_HERE"
 };
