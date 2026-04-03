@@ -8,6 +8,8 @@ import { GeolocationService } from '../../services/geolocation.service';
 import { LocationData, Location } from '../../search-food/model/seven-eleven.model';
 import { pinyin } from 'pinyin-pro';
 
+declare var google: any;
+
 /**
  * ChatbotSearchService — 聊天機器人的搜尋引擎
  *
@@ -211,11 +213,17 @@ export class ChatbotSearchService {
   // ============================================================
   // 搜尋：附近門市
   // ============================================================
-  searchNearby(maxStores: number = 5): Observable<any[]> {
-    return from(this.geoService.getCurrentPosition()).pipe(
-      switchMap(position => {
-        const lat = position.coords.latitude;
-        const lng = position.coords.longitude;
+  searchNearby(lat?: number, lng?: number, maxStores: number = 5): Observable<any[]> {
+    const position$: Observable<{ lat: number, lng: number }> = (lat !== undefined && lng !== undefined)
+      ? of({ lat, lng })
+      : from(this.geoService.getCurrentPosition()).pipe(
+          map(pos => ({ lat: pos.coords.latitude, lng: pos.coords.longitude }))
+        );
+
+    return position$.pipe(
+      switchMap(pos => {
+        const lat = pos.lat;
+        const lng = pos.lng;
 
         return this.ensure711Token().pipe(
           switchMap(() => {
@@ -371,5 +379,32 @@ export class ChatbotSearchService {
     return this.dataReady$.pipe(
       switchMap(ready => ready ? of(true) : this.dataReady$)
     );
+  }
+
+  // ============================================================
+  // 經緯度座標轉換工具 (Geocoding)
+  // ============================================================
+  geocodeLocation(locationName: string): Observable<{lat: number, lng: number} | null> {
+    return new Observable(observer => {
+      // 確保 window.google 存在且載入了 Maps API
+      if (typeof google === 'undefined' || !google.maps || !google.maps.Geocoder) {
+        console.warn('[ChatbotSearch] Google Maps API 未載入，無法轉換座標。');
+        observer.next(null);
+        observer.complete();
+        return;
+      }
+      
+      const geocoder = new google.maps.Geocoder();
+      geocoder.geocode({ address: locationName, region: 'tw' }, (results: any, status: any) => {
+        if (status === google.maps.GeocoderStatus.OK && results && results.length > 0) {
+          const loc = results[0].geometry.location;
+          observer.next({ lat: loc.lat(), lng: loc.lng() });
+        } else {
+          console.warn(`[ChatbotSearch] 找不到 ${locationName} 的座標 (狀態: ${status})`);
+          observer.next(null);
+        }
+        observer.complete();
+      });
+    });
   }
 }

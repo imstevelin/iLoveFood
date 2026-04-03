@@ -1235,12 +1235,43 @@ a[href*="google.com/maps"] {
   }
 }
 
-/* ===== View Toggle Pill — Apple HIG Segmented Control ===== */
-.view-toggle-pill {
+/* ===== View Toggle Pill — Apple HIG Segmented Control with Misty Blur ===== */
+.view-toggle-container {
   position: fixed;
   bottom: 1.5rem;
   right: 1.5rem;
   z-index: 900;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.4s cubic-bezier(0.32, 0.72, 0, 1),
+              transform 0.4s cubic-bezier(0.32, 0.72, 0, 1),
+              visibility 0s linear 0.4s;
+  pointer-events: none; /* Let clicks pass through to child pill */
+
+  > * {
+    pointer-events: auto; /* Re-enable clicks for actual UI */
+  }
+}
+
+.view-toggle-mist {
+  position: absolute;
+  /* 擴展範圍以讓模糊有足夠空間消散 */
+  inset: -40px;
+  
+  /* 純模糊效果，移除明顯背景色，讓視覺聚焦在模糊本身 */
+  backdrop-filter: blur(24px) saturate(120%);
+  -webkit-backdrop-filter: blur(24px) saturate(120%);
+  
+  /* 利用遮罩（mask）讓模糊從中心（膠囊位置）向外漸弱到透明，消除明顯的邊界硬邊 */
+  mask-image: radial-gradient(ellipse at center, black 15%, transparent 70%);
+  -webkit-mask-image: radial-gradient(ellipse at center, black 15%, transparent 70%);
+  
+  z-index: -1;
+  pointer-events: none;
+}
+
+.view-toggle-pill {
   display: flex;
   align-items: center;
   gap: 0;
@@ -1253,13 +1284,7 @@ a[href*="google.com/maps"] {
   box-shadow: 0 4px 32px rgba(0, 0, 0, 0.1),
               0 1px 6px rgba(0, 0, 0, 0.05);
   -webkit-tap-highlight-color: transparent;
-  transition: opacity 0.3s, transform 0.3s;
-
-  &.map-sheet-up {
-    opacity: 0;
-    pointer-events: none;
-    transform: translateY(20px);
-  }
+  position: relative;
 }
 
 /* Sliding indicator */
@@ -1330,10 +1355,16 @@ a[href*="google.com/maps"] {
 
 /* ===== Dark Mode Overrides for View Toggle ===== */
 :host-context([data-theme="dark"]) {
+  .view-toggle-mist {
+    /* 在深色模式下稍微降低飽和度，保持純淨的模糊消散感 */
+    backdrop-filter: blur(24px) saturate(100%);
+    -webkit-backdrop-filter: blur(24px) saturate(100%);
+  }
+
   .view-toggle-pill {
     background: rgba(39, 39, 42, 0.82);
     border-color: rgba(63, 63, 70, 0.5);
-    box-shadow: 0 4px 32px rgba(0, 0, 0, 0.35),
+    box-shadow: 0 4px 32px rgba(0, 0, 0, 0.45),
                 0 1px 6px rgba(0, 0, 0, 0.25);
   }
 
@@ -1361,14 +1392,123 @@ a[href*="google.com/maps"] {
 
 /* ===== Mobile: Full-width dock at bottom ===== */
 @media screen and (max-width: 768px) {
-  .view-toggle-pill {
-    /* Span full width with side margins */
+  .view-toggle-container {
     left: 12px;
     right: 12px;
-    bottom: 12px;
-    bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+    /* 更貼近底部，保留 safe-area 確保不會被 Home Bar 擋住 */
+    bottom: 4px;
+    bottom: calc(4px + env(safe-area-inset-bottom, 0px));
+    /* 靠右對齊，讓縮小時自然靠右 */
+    justify-content: flex-end;
+
+    /* == 縮小為圓形微型按鈕 (清單向下滑動 或 地圖卡片開啟) == */
+    &.scrolled-down, &.map-sheet-up {
+      /* 收攏到右側 */
+      left: auto;
+      right: 8px;
+
+      .view-toggle-mist {
+        inset: -20px;
+        mask-image: radial-gradient(circle at center, black 35%, transparent 72%);
+        -webkit-mask-image: radial-gradient(circle at center, black 35%, transparent 72%);
+      }
+
+      .view-toggle-pill {
+        width: 64px;
+        height: 64px;
+        padding: 0;
+        border-radius: 50%;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.18);
+      }
+
+      .view-toggle-indicator {
+        opacity: 0;
+      }
+    }
+
+    /* 清單模式下縮小：隱藏清單，顯示地圖圖示 */
+    &.scrolled-down {
+      .view-toggle-segment:first-of-type {
+        max-width: 0;
+        padding: 0;
+        opacity: 0;
+        overflow: hidden;
+      }
+
+      .view-toggle-segment:last-of-type {
+        flex: 1;
+        width: 64px;
+        height: 64px;
+        padding: 0;
+        gap: 0;
+
+        span {
+          max-width: 0;
+          opacity: 0;
+          overflow: hidden;
+        }
+
+        svg {
+          width: 28px;
+          height: 28px;
+        }
+      }
+    }
+
+    /* 地圖模式下縮小：隱藏地圖，顯示清單圖示 */
+    &.map-sheet-up {
+      .view-toggle-segment:last-of-type {
+        max-width: 0;
+        padding: 0;
+        opacity: 0;
+        overflow: hidden;
+      }
+
+      .view-toggle-segment:first-of-type {
+        flex: 1;
+        width: 64px;
+        height: 64px;
+        padding: 0;
+        gap: 0;
+        margin: 0;
+
+        span {
+          max-width: 0;
+          opacity: 0;
+          overflow: hidden;
+        }
+
+        svg {
+          width: 28px;
+          height: 28px;
+        }
+      }
+    }
+  }
+
+  .view-toggle-mist {
+    inset: -30px;
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    mask-image: radial-gradient(ellipse at center, black 30%, transparent 80%);
+    -webkit-mask-image: radial-gradient(ellipse at center, black 30%, transparent 80%);
+    will-change: inset;
+    transition: inset 0.35s cubic-bezier(0.32, 0.72, 0, 1),
+                mask-image 0.35s cubic-bezier(0.32, 0.72, 0, 1),
+                -webkit-mask-image 0.35s cubic-bezier(0.32, 0.72, 0, 1);
+  }
+
+  .view-toggle-pill {
+    width: 100%;
     padding: 4px;
     border-radius: 100px;
+    overflow: hidden;
+    will-change: width, height, border-radius;
+    transition: width 0.35s cubic-bezier(0.32, 0.72, 0, 1),
+                height 0.35s cubic-bezier(0.32, 0.72, 0, 1),
+                padding 0.35s cubic-bezier(0.32, 0.72, 0, 1),
+                border-radius 0.35s cubic-bezier(0.32, 0.72, 0, 1),
+                box-shadow 0.35s ease;
   }
 
   .view-toggle-indicator {
@@ -1377,17 +1517,33 @@ a[href*="google.com/maps"] {
     width: calc(50% - 4px);
     height: calc(100% - 8px);
     border-radius: 100px;
+    transition: transform 0.45s cubic-bezier(0.34, 1.56, 0.64, 1),
+                opacity 0.25s ease;
   }
 
   .view-toggle-segment {
-    flex: 1; /* Each segment takes equal width */
+    flex: 1;
     padding: 12px 0;
     font-size: 14px;
     gap: 7px;
+    transition: max-width 0.35s cubic-bezier(0.32, 0.72, 0, 1),
+                padding 0.35s cubic-bezier(0.32, 0.72, 0, 1),
+                opacity 0.25s ease,
+                gap 0.35s cubic-bezier(0.32, 0.72, 0, 1);
+
+    span {
+      display: inline-block;
+      max-width: 60px;
+      overflow: hidden;
+      white-space: nowrap;
+      transition: max-width 0.35s cubic-bezier(0.32, 0.72, 0, 1),
+                  opacity 0.25s ease;
+    }
 
     svg {
       width: 18px;
       height: 18px;
+      transition: width 0.3s ease, height 0.3s ease;
     }
   }
 }

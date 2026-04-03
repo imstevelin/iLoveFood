@@ -1,18 +1,15 @@
-import { Component } from '@angular/core';
+import { Component, ViewChild, ElementRef, OnInit, OnDestroy } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
-import { ViewChild, ElementRef, OnInit, OnDestroy } from '@angular/core';
 import { AuthService } from '../services/auth.service';
 import { SearchFoodModule } from '../search-food/search-food.module';
-import { ChatbotSearchService } from './services/chatbot-search.service';
-import { LlmRequestService } from './services/llm-request.service';
-import { forkJoin, of, Observable } from 'rxjs';
-import { map, catchError } from 'rxjs/operators';
+import { AgentCoreService } from './core/agent-core.service';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { marked } from 'marked';
 import { MotionDirective } from '../directives/motion.directive';
 import { GestureDirective } from '../directives/gesture.directive';
 import { HapticService } from '../services/haptic.service';
+import { Subscription } from 'rxjs';
 
 @Component({
   selector: 'app-chatbot',
@@ -33,14 +30,12 @@ export class ChatbotComponent implements OnInit, OnDestroy {
   messages: { text: string; safeHtml?: SafeHtml; sender: string; isLoading?: boolean }[] = [];
   showScrollBottom = false;
   suggestedReplies: string[] = [];
-  private conversationHistory: any[] = [];
-  private readonly MAX_HISTORY = 10;
   private lastVvH = 0;
+  private stateSub?: Subscription;
 
   constructor(
     private authService: AuthService,
-    private searchService: ChatbotSearchService,
-    private llmService: LlmRequestService,
+    private agentCore: AgentCoreService,
     private sanitizer: DomSanitizer,
     private haptic: HapticService
   ) { }
@@ -88,12 +83,23 @@ export class ChatbotComponent implements OnInit, OnDestroy {
       window.visualViewport.addEventListener('resize', this.onVisualViewportChange);
       window.visualViewport.addEventListener('scroll', this.onVisualViewportChange);
     }
+
+    this.stateSub = this.agentCore.state$.subscribe(state => {
+      if (state.sender === 'user') return; // User messages are handled locally in sendMessage
+      if (!state.isLoading) {
+        this.clearLoading();
+      }
+      this.putMessage(state.text, 'bot', state.isLoading);
+    });
   }
 
   ngOnDestroy() {
     if (window.visualViewport) {
       window.visualViewport.removeEventListener('resize', this.onVisualViewportChange);
       window.visualViewport.removeEventListener('scroll', this.onVisualViewportChange);
+    }
+    if (this.stateSub) {
+      this.stateSub.unsubscribe();
     }
   }
 
@@ -198,133 +204,12 @@ export class ChatbotComponent implements OnInit, OnDestroy {
       return;
     }
 
-    this.putMessage('思考中...', 'bot', true);
-
-    // 加入 user message
-    this.addToHistory({ role: 'user', content: input });
-    this.runAgentLoop();
-  }
-
-  private runAgentLoop() {
-    this.llmService.chatWithTools(this.conversationHistory).subscribe({
-      next: res => {
-        const choice = res?.choices?.[0];
-        const message = choice?.message;
-
-        if (!message) {
-          this.clearLoading();
-          this.putMessage('抱歉，我現在大腦有點卡卡的，請稍後再試！', 'bot');
-          return;
-        }
-
-        // 1. 判斷是否有 tool_calls
-        if (message.tool_calls && message.tool_calls.length > 0) {
-          // 將 assistant 的 tool_calls 加入紀錄
-          this.conversationHistory.push(message);
-
-          // 計算動態讀取文字 (根據 Tool 組合精確判斷)
-          const toolCalls = message.tool_calls;
-          const inventoryCalls = toolCalls.filter((tc: any) => tc.function.name === 'query_store_inventory');
-          const hasStoreSearch = toolCalls.some((tc: any) => tc.function.name === 'search_stores_by_keyword');
-          const hasNearbySearch = toolCalls.some((tc: any) => tc.function.name === 'get_nearby_stores_inventory');
-          
-          let loadingMsg = '正在為您處理中...';
-          
-          if (hasNearbySearch) {
-            loadingMsg = '正在掃描您周邊的所有門市...';
-          } else if (inventoryCalls.length > 0) {
-            const brands = Array.from(new Set(inventoryCalls.map((tc: any) => JSON.parse(tc.function.arguments).brand)));
-            if (brands.length > 1) {
-              loadingMsg = '正在同步查詢各大品牌門市庫存...';
-            } else {
-              loadingMsg = `正在查詢 ${brands[0]} 門市庫存...`;
-            }
-          } else if (hasStoreSearch) {
-            const firstSearch = toolCalls.find((tc: any) => tc.function.name === 'search_stores_by_keyword');
-            const keyword = JSON.parse(firstSearch.function.arguments || '{}').keyword || '';
-            loadingMsg = keyword ? `正在搜尋「${keyword}」相關門市...` : '正在搜尋門市...';
-          }
-
-          // 更新讀取狀態
-          this.putMessage(loadingMsg, 'bot', true);
-
-          // 解析並執行 tools
-          this.handleToolCalls(message.tool_calls);
-        } else {
-          // 2. 純文字回覆
-          this.clearLoading();
-          let content = message.content?.trim() || '';
-          if (!content) content = '你好！想找什麼好吃的嗎？ 😊';
-          this.putMessage(content, 'bot');
-          this.addToHistory({ role: 'assistant', content: content });
-        }
-      },
-      error: () => {
-        this.clearLoading();
-        this.putMessage('暫時無法連線，請稍後再試！', 'bot');
-      }
-    });
-
-  }
-
-  private handleToolCalls(toolCalls: any[]) {
-    const toolsObs = toolCalls.map(toolCall => {
-      const args = JSON.parse(toolCall.function.arguments || '{}');
-      const toolName = toolCall.function.name;
-
-      console.log(`[友善小精靈] 呼叫工具: ${toolName}`, args);
-      let search$: Observable<any>;
-
-      if (toolName === 'search_stores_by_keyword') {
-        search$ = this.searchService.findStoresByKeyword(args.keyword || '');
-      } else if (toolName === 'query_store_inventory') {
-        search$ = this.searchService.queryStoreInventory(args.brand, args.store_id, args.lat, args.lng);
-      } else if (toolName === 'get_nearby_stores_inventory') {
-        search$ = this.searchService.searchNearby();
-      } else {
-        search$ = of([]); // Fallback
-      }
-
-      return search$.pipe(
-         map(result => {
-           console.log(`[友善小精靈] 工具 ${toolName} 執行完畢，取得結果：`, result);
-           return {
-             tool_call_id: toolCall.id,
-             role: 'tool',
-             name: toolName,
-             content: JSON.stringify(result)
-           };
-         }),
-         catchError(err => {
-           console.error(`[友善小精靈] 工具 ${toolName} 執行失敗`, err);
-           return of({
-             tool_call_id: toolCall.id,
-             role: 'tool',
-             name: toolName,
-             content: "[]" // Error is treated as no result
-           });
-         })
-      );
-    });
-
-    forkJoin(toolsObs).subscribe(toolMessages => {
-      // 把 tool 結果加回 conversationHistory
-      toolMessages.forEach(msg => this.conversationHistory.push(msg));
-      
-      // 再次呼叫 LLM 進行總結
-      this.runAgentLoop();
-    });
+    this.agentCore.sendMessage(input);
   }
 
   // ==========================================
   // 輔助
   // ==========================================
-  private addToHistory(message: any): void {
-    this.conversationHistory.push(message);
-    if (this.conversationHistory.length > this.MAX_HISTORY * 3) {
-      this.conversationHistory = this.conversationHistory.slice(-this.MAX_HISTORY * 3);
-    }
-  }
 
   private clearLoading(): void {
     this.messages = this.messages.filter(msg => !msg.isLoading);

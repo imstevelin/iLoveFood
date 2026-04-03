@@ -53,6 +53,8 @@ export class NewSearchComponent implements OnInit, OnDestroy {
   showLabSection: boolean = false; // 實驗室子選單
   isMapView: boolean = false; // 地圖檢視模式
   mapSheetOpen: boolean = false; // 地圖門市卡片是否展開
+  isScrolledDown: boolean = false; // 向下滾動狀態 (用於縮小懸浮膠囊)
+  private lastScrollY: number = 0; // 上次滾動位置
 
   // === 效能優化：分類點擊載入追蹤 ===
   setCategoryLoading(store: any, category: any, isLoading: boolean) {
@@ -580,6 +582,10 @@ export class NewSearchComponent implements OnInit, OnDestroy {
       document.body.classList.add('map-active-lock');
     } else {
       document.body.classList.remove('map-active-lock');
+      // Fix: 從地圖切回清單時，膠囊預設展開
+      this.isScrolledDown = false;
+      this.lastScrollY = 0;
+      document.querySelector('.view-toggle-container')?.classList.remove('scrolled-down');
 
       // 將該地圖區域搜尋到的所有新門市，排在清單的最前面
       if (this.latestMapStores.length > 0) {
@@ -635,16 +641,30 @@ export class NewSearchComponent implements OnInit, OnDestroy {
             html.style.setProperty('scroll-behavior', 'auto', 'important');
             window.scrollTo(0, targetY); // 置中顯示
             
-            // 定位完成後立刻恢復原預設的動畫效果
+            // 更新 scrollY 避免 onWindowScroll 誤判為向下滾動並再次縮小膠囊
+            this.lastScrollY = targetY;
+            
+            // 定位完成後立刻恢復原預設的動畫效果，並確保膠囊為展開狀態
             setTimeout(() => {
               html.style.removeProperty('scroll-behavior');
+              this.isScrolledDown = false;
+              document.querySelector('.view-toggle-container')?.classList.remove('scrolled-down');
             }, 50);
           }
         }, 10); // 短暫延遲讓 CSS transform 準備好
       } else {
         // Fallback: Restore previous scroll position if no map store was selected
         setTimeout(() => {
+          const html = document.documentElement;
+          html.style.setProperty('scroll-behavior', 'auto', 'important');
           window.scrollTo(0, this.savedScrollPosition);
+          this.lastScrollY = this.savedScrollPosition;
+          
+          setTimeout(() => {
+            html.style.removeProperty('scroll-behavior');
+            this.isScrolledDown = false;
+            document.querySelector('.view-toggle-container')?.classList.remove('scrolled-down');
+          }, 50);
         }, 10);
       }
     }
@@ -2701,6 +2721,26 @@ export class NewSearchComponent implements OnInit, OnDestroy {
     this.scrollTicking = true;
     requestAnimationFrame(() => {
       this.scrollTicking = false;
+      const currentScrollY = window.scrollY;
+
+      // 偵測滾動方向：直接操作 DOM class，避免 ngZone.run 觸發變更偵測導致動畫卡頓
+      // 僅在清單模式下啟用膠囊收縮效果
+      const delta = currentScrollY - this.lastScrollY;
+      if (!this.isMapView && delta > 8 && currentScrollY > 80) {
+        // 向下滾動：縮小膠囊
+        if (!this.isScrolledDown) {
+          this.isScrolledDown = true;
+          document.querySelector('.view-toggle-container')?.classList.add('scrolled-down');
+        }
+      } else if (delta < -3 || currentScrollY <= 10) {
+        // 向上滾動（極低門檻）或回到頂部：展開膠囊
+        if (this.isScrolledDown) {
+          this.isScrolledDown = false;
+          document.querySelector('.view-toggle-container')?.classList.remove('scrolled-down');
+        }
+      }
+      this.lastScrollY = currentScrollY;
+
       if (!this.hasMoreStores || this.isLoadingMore) return;
 
       const scrollPosition = window.innerHeight + window.scrollY;
