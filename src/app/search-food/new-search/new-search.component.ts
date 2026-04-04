@@ -831,6 +831,16 @@ export class NewSearchComponent implements OnInit, OnDestroy {
     }
   }
 
+  clearSearch(event: Event): void {
+    event.stopPropagation();
+    event.preventDefault();
+    this.searchTerm = '';
+    this.unifiedDropDownList = [];
+    if (this.searchMode !== 'location') {
+      this.onUseCurrentLocation();
+    }
+  }
+
   onKeyDown(event: KeyboardEvent): void {
     // 按下 Enter 鍵時觸發搜尋
     if (event.key === 'Enter') {

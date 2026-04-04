@@ -17,7 +17,7 @@
 
       <!-- Search Input -->
       <form (ngSubmit)="onSubmit()" class="flex-1 min-w-0">
-        <div class="search-input-glass flex items-center h-11 px-3">
+        <div class="search-input-glass flex items-center h-11 px-3" matAutocompleteOrigin #origin="matAutocompleteOrigin">
           <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 256 256"
             class="text-gray-400 dark:text-zinc-400 shrink-0">
             <path
@@ -26,9 +26,16 @@
           </svg>
           <input mat-input type="search"
             class="flex-1 bg-transparent border-none outline-none text-sm px-3 h-full placeholder:text-gray-400 dark:placeholder:text-zinc-500 dark:text-zinc-100"
-            [matAutocomplete]="auto" [(ngModel)]="searchTerm" (input)="onInput($event)" (keydown)="onKeyDown($event)"
+            [matAutocomplete]="auto" [matAutocompleteConnectedTo]="origin" [(ngModel)]="searchTerm" (input)="onInput($event)" (keydown)="onKeyDown($event)"
             enterkeyhint="search" placeholder="門市、商品或導航路徑" name="first" />
           
+          <!-- Clear Button -->
+          <button *ngIf="searchTerm" type="button" class="shrink-0 text-gray-400 hover:text-gray-600 dark:text-zinc-500 dark:hover:text-zinc-300 mr-2 p-1 rounded-full outline-none transition-colors" (click)="clearSearch($event)" aria-label="清除文字">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 256 256">
+              <path d="M205.66,194.34a8,8,0,0,1-11.32,11.32L128,139.31,61.66,205.66a8,8,0,0,1-11.32-11.32L116.69,128,50.34,61.66A8,8,0,0,1,61.66,50.34L128,116.69l66.34-66.35a8,8,0,0,1,11.32,11.32L139.31,128Z"></path>
+            </svg>
+          </button>
+
           <!--  Chatbot Button -->
           <button *ngIf="chatEnabled" type="button" class="chatbot-inline-btn" (click)="openChatbot()" aria-label="打開聊天機器人">
             💬
@@ -265,7 +272,9 @@
 
         <h3 class="font-bold mb-2 mt-4" style="font-size: 15px; color: var(--text-primary);">關於</h3>
         <p class="mb-4">
-          <strong>友善超人</strong>是一個即時追蹤便利商店（全家、7-11）折扣鮮食商品的工具，由 imstevelin 開發。<br>其實最開始只是女朋友喜歡吃 7-11 的擔擔麵，這個麵原價實在吃不起，i珍食又很難找...... 就讓我想到「不如來做一個查詢小工具」吧。
+          <strong>友善超人</strong>是一個即時追蹤便利商店（全家、7-11）折扣鮮食商品的工具，由 imstevelin 開發。<br>其實最開始只是女朋友喜歡吃 7-11 的擔擔麵，這個麵原價實在吃不起，i珍食又很難找...... 就讓我想到「不如來做一個查詢小工具」吧。<br><br>
+          🌱 <strong>開源宣告</strong>：本專案為完全開源專案，歡迎前往 GitHub 查看原始碼或參與貢獻（請不要商用這個專案）：<br>
+          👉 <a href="https://github.com/imstevelin/iLoveFood" target="_blank" rel="noopener" class="text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300 font-medium">GitHub: imstevelin/iLoveFood</a>
         </p>
 
         <h3 class="font-bold mb-2 mt-4" style="font-size: 15px; color: var(--text-primary);">功能亮點</h3>

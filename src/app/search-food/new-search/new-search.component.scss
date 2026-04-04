@@ -1574,3 +1574,8 @@ a[href*="google.com/maps"] {
     }
   }
 }
+/* Hide default webkit clear button on search inputs */
+input[type="search"]::-webkit-search-cancel-button {
+  -webkit-appearance: none;
+  appearance: none;
+}
