@@ -579,7 +579,17 @@ export class NewSearchComponent implements OnInit, OnDestroy {
     if (this.isMapView) {
       this.mapActiveStore = null; // 清除上一次的地圖殘留選中狀態
       this.savedScrollPosition = window.pageYOffset || document.documentElement.scrollTop;
+      
+      // Fix: 強制將畫面捲動至最上方，確保地圖不會因為清單的向下滾動而導致上半部被遮擋無法點擊
+      const html = document.documentElement;
+      html.style.setProperty('scroll-behavior', 'auto', 'important');
+      window.scrollTo(0, 0);
+
       document.body.classList.add('map-active-lock');
+
+      setTimeout(() => {
+        html.style.removeProperty('scroll-behavior');
+      }, 50);
     } else {
       document.body.classList.remove('map-active-lock');
       // Fix: 從地圖切回清單時，膠囊預設展開

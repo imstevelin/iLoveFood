@@ -1,4 +1,4 @@
-/* 友善超人 — Apple HIG-Inspired Animation System */
+/* 友善超人 — Premium Gradient Glass Animation System */
 /* All transitions use spring physics, are interruptible, and non-linear */
 
 /* ===== Fixed Search Bar ===== */
@@ -11,10 +11,10 @@
   background: rgba(255, 255, 255, 0.72);
   backdrop-filter: blur(24px) saturate(180%);
   -webkit-backdrop-filter: blur(24px) saturate(180%);
-  border-bottom: 1px solid rgba(226, 232, 240, 0.35);
-  box-shadow: 0 1px 12px rgba(0, 0, 0, 0.04);
+  border-bottom: 1px solid rgba(91, 127, 255, 0.08);
+  box-shadow: 0 1px 12px rgba(0, 0, 0, 0.04),
+    0 1px 0 rgba(91, 127, 255, 0.04);
   padding: 12px 16px;
-  /* Interruptible: smooth bar appearance */
   transition: background var(--transition-gentle),
     box-shadow var(--transition-gentle);
 }
@@ -28,28 +28,27 @@
   background: rgba(255, 255, 255, 0.65);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(203, 213, 225, 0.3);
-  border-radius: 100px; /* Capsule search bar */
-  /* Spring transition — interruptible on rapid focus/blur */
+  border: 1.5px solid rgba(91, 127, 255, 0.12);
+  border-radius: 100px;
   transition: border-color var(--transition-spring),
     box-shadow var(--transition-spring),
     background var(--transition-spring);
 
   &:focus-within {
-    border-color: rgba(91, 127, 255, 0.5);
-    box-shadow: 0 0 0 4px rgba(91, 127, 255, 0.12),
-      0 2px 12px rgba(91, 127, 255, 0.08);
-    background: rgba(255, 255, 255, 0.82);
+    border-color: rgba(91, 127, 255, 0.45);
+    box-shadow: 0 0 0 4px rgba(91, 127, 255, 0.1),
+      0 0 20px rgba(91, 127, 255, 0.12),
+      0 2px 12px rgba(91, 127, 255, 0.06);
+    background: rgba(255, 255, 255, 0.88);
   }
 }
 
 /* ===== Header Icon Buttons (Home + Hamburger) ===== */
-/* Apple haptic feedback pattern: instant press, spring release */
 .header-icon-btn {
   width: 44px;
   height: 44px;
   border-radius: 14px;
-  border: 1px solid rgba(203, 213, 225, 0.3);
+  border: 1px solid rgba(91, 127, 255, 0.1);
   background: rgba(255, 255, 255, 0.65);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
@@ -58,20 +57,18 @@
   justify-content: center;
   cursor: pointer;
   flex-shrink: 0;
-  /* Spring release — transition handles the spring-back when :active releases */
   transition: transform var(--transition-snappy),
     background var(--transition-snappy),
     border-color var(--transition-snappy),
     box-shadow var(--transition-snappy);
-  /* GPU acceleration for smooth transforms */
   will-change: transform;
 
   &:hover {
-    background: rgba(255, 255, 255, 0.88);
-    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+    background: rgba(255, 255, 255, 0.9);
+    box-shadow: 0 2px 12px rgba(91, 127, 255, 0.1);
+    border-color: rgba(91, 127, 255, 0.2);
   }
 
-  /* Instant press — no delay, immediate visual feedback */
   &:active {
     transform: scale(0.88);
     transition-duration: 60ms;
@@ -80,12 +77,12 @@
   &.active {
     background: var(--accent-light);
     border-color: rgba(91, 127, 255, 0.3);
-    box-shadow: 0 0 0 2px rgba(91, 127, 255, 0.08);
+    box-shadow: 0 0 0 2px rgba(91, 127, 255, 0.08),
+      var(--glow-primary);
   }
 }
 
 /* ===== Menu Panel ===== */
-/* Interruptible expand/collapse — CSS transition auto-interrupts */
 .menu-panel {
   max-height: 0;
   overflow: hidden;
@@ -126,7 +123,7 @@
   text-decoration: none;
   color: inherit;
   font-size: 14px;
-  /* Spring hover + instant press */
+  position: relative;
   transition: background var(--transition-snappy),
     transform var(--transition-snappy);
 
@@ -146,11 +143,11 @@
 
 .menu-divider {
   height: 1px;
-  background: rgba(226, 232, 240, 0.5);
+  background: linear-gradient(90deg, transparent, rgba(91, 127, 255, 0.12), transparent);
   margin: 6px 16px;
 }
 
-/* Lab subsection expand — spring with subtle Y movement */
+/* Lab subsection expand */
 .lab-subsection {
   max-height: 0;
   overflow: hidden;
@@ -172,7 +169,7 @@
   padding-left: 44px;
 }
 
-/* ===== Toggle Switch — Apple-style bouncy knob ===== */
+/* ===== Toggle Switch — Apple-style with glow ===== */
 .toggle-switch {
   position: relative;
   display: inline-block;
@@ -195,7 +192,8 @@
   bottom: 0;
   background: #cbd5e1;
   border-radius: 24px;
-  transition: background var(--transition-snappy);
+  transition: background var(--transition-snappy),
+    box-shadow var(--transition-snappy);
 
   &::before {
     content: '';
@@ -206,7 +204,6 @@
     bottom: 3px;
     background: white;
     border-radius: 50%;
-    /* Spring bounce for the knob */
     transition: transform var(--transition-spring);
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15),
       0 0 1px rgba(0, 0, 0, 0.1);
@@ -215,13 +212,14 @@
 
 .toggle-switch input:checked+.toggle-slider {
   background: var(--accent);
+  box-shadow: 0 0 12px rgba(91, 127, 255, 0.35);
 }
 
 .toggle-switch input:checked+.toggle-slider::before {
   transform: translateX(20px);
 }
 
-/* Chevron rotation — spring */
+/* Chevron rotation */
 .rotate-180 {
   transform: rotate(180deg);
 }
@@ -244,7 +242,20 @@ svg.transition-transform {
   font-size: 14px;
   font-weight: 600;
   color: var(--text-secondary);
-  animation: breathe 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  background: linear-gradient(90deg,
+    var(--text-secondary) 25%,
+    var(--accent) 50%,
+    var(--text-secondary) 75%);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: shimmer 2.5s linear infinite;
+}
+
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
 }
 
 @keyframes breathe {
@@ -259,15 +270,14 @@ svg.transition-transform {
     box-shadow var(--transition-snappy);
 }
 
-/* ===== Premium CSS Spinner ===== */
-/* Ultra-premium glassmorphic fading tail spinner */
+/* ===== Premium CSS Spinner — Gradient ===== */
 .premium-spinner {
   border-radius: 50%;
-  padding: 3px; /* controls ring thickness */
+  padding: 3px;
   background: conic-gradient(
     from 0deg at 50% 50%,
     rgba(91, 127, 255, 0) 0deg,
-    rgba(91, 127, 255, 0.2) 180deg,
+    rgba(91, 127, 255, 0.3) 180deg,
     var(--accent) 360deg
   );
   -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #fff calc(100% - 3px + 0.5px));
@@ -300,28 +310,29 @@ svg.transition-transform {
   100% { transform: rotate(360deg); }
 }
 
-/* ===== Store Card — Spring-powered interactions ===== */
+/* ===== Store Card — Gradient Glass ===== */
 .store-glass-card {
-  background: rgba(255, 255, 255, 0.58);
+  background: rgba(255, 255, 255, 0.6);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(226, 232, 240, 0.35);
+  border: 1px solid rgba(91, 127, 255, 0.08);
   border-radius: 20px;
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06),
-    0 1px 4px rgba(0, 0, 0, 0.03);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.05),
+    0 1px 4px rgba(0, 0, 0, 0.02);
   padding: 16px;
   margin-bottom: 12px;
   position: relative;
   overflow: hidden;
-  scroll-margin-top: 84px; /* 防止自動滾動時（如從地圖切回清單）卡片隱沒在 header 之下 */
-  /* Spring transitions — interruptible on rapid scroll/interaction */
+  scroll-margin-top: 84px;
   transition: transform var(--transition-spring),
     box-shadow var(--transition-spring),
+    border-color var(--transition-spring),
     opacity var(--transition-spring);
 
   &:hover {
     transform: translateY(-2px);
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08),
+    border-color: rgba(91, 127, 255, 0.18);
+    box-shadow: 0 8px 32px rgba(91, 127, 255, 0.08),
       0 2px 8px rgba(0, 0, 0, 0.04);
   }
 
@@ -332,7 +343,6 @@ svg.transition-transform {
 }
 
 /* ===== Card Entrance Animation ===== */
-/* Apple-style: fade + subtle scale + Y translation via spring */
 .card-animate-in {
   animation: cardSpringIn var(--duration-slow) var(--spring-gentle) both;
 }
@@ -349,99 +359,105 @@ svg.transition-transform {
   }
 }
 
-/* 7-11 Brand Card */
+/* 7-11 Brand Card — Warm gradient */
 .card-seven {
-  background: radial-gradient(ellipse at 50% 0%, rgba(255, 127, 36, 0.10) 0%, rgba(255, 255, 255, 0.02) 60%),
-    rgba(255, 255, 255, 0.60);
-  border: 1px solid rgba(255, 147, 66, 0.15);
+  background: radial-gradient(ellipse at 50% 0%, rgba(255, 127, 36, 0.08) 0%, rgba(255, 169, 64, 0.03) 40%, rgba(255, 255, 255, 0.02) 60%),
+    rgba(255, 255, 255, 0.62);
+  border: 1px solid rgba(255, 147, 66, 0.12);
 
   &::before {
     content: '';
     position: absolute;
     top: 0;
-    left: 12px;
-    right: 12px;
+    left: 0;
+    right: 0;
     height: 2px;
-    background: linear-gradient(90deg, transparent, rgba(255, 107, 0, 0.4), transparent);
+    background: linear-gradient(90deg, transparent, rgba(255, 107, 0, 0.5), transparent);
     border-radius: 2px;
   }
 
   &:hover {
-    box-shadow: 0 10px 40px rgba(255, 107, 0, 0.10),
+    border-color: rgba(255, 107, 0, 0.22);
+    box-shadow: 0 10px 40px rgba(255, 107, 0, 0.08),
+      0 0 20px rgba(255, 107, 0, 0.04),
       0 2px 12px rgba(0, 0, 0, 0.04);
   }
 }
 
-/* FamilyMart Brand Card */
+/* FamilyMart Brand Card — Cool gradient */
 .card-family {
-  background: radial-gradient(ellipse at 50% 0%, rgba(0, 179, 134, 0.10) 0%, rgba(255, 255, 255, 0.02) 60%),
-    rgba(255, 255, 255, 0.60);
-  border: 1px solid rgba(0, 179, 134, 0.15);
+  background: radial-gradient(ellipse at 50% 0%, rgba(0, 179, 134, 0.08) 0%, rgba(52, 211, 153, 0.03) 40%, rgba(255, 255, 255, 0.02) 60%),
+    rgba(255, 255, 255, 0.62);
+  border: 1px solid rgba(0, 179, 134, 0.12);
 
   &::before {
     content: '';
     position: absolute;
     top: 0;
-    left: 12px;
-    right: 12px;
+    left: 0;
+    right: 0;
     height: 2px;
-    background: linear-gradient(90deg, transparent, rgba(0, 179, 134, 0.4), transparent);
+    background: linear-gradient(90deg, transparent, rgba(0, 179, 134, 0.5), transparent);
     border-radius: 2px;
   }
 
   &:hover {
-    box-shadow: 0 10px 40px rgba(0, 179, 134, 0.10),
+    border-color: rgba(0, 179, 134, 0.22);
+    box-shadow: 0 10px 40px rgba(0, 179, 134, 0.08),
+      0 0 20px rgba(0, 179, 134, 0.04),
       0 2px 12px rgba(0, 0, 0, 0.04);
   }
 }
 
 /* About Section Inline Card */
 .card-about {
-  background: radial-gradient(ellipse at 50% 0%, rgba(59, 130, 246, 0.10) 0%, rgba(255, 255, 255, 0.02) 60%),
-    rgba(255, 255, 255, 0.60);
-  border: 1px solid rgba(59, 130, 246, 0.2);
+  background: radial-gradient(ellipse at 50% 0%, rgba(91, 127, 255, 0.08) 0%, rgba(255, 255, 255, 0.02) 60%),
+    rgba(255, 255, 255, 0.62);
+  border: 1px solid rgba(91, 127, 255, 0.15);
 
   &::before {
     content: '';
     position: absolute;
     top: 0;
-    left: 12px;
-    right: 12px;
+    left: 0;
+    right: 0;
     height: 2px;
-    background: linear-gradient(90deg, transparent, rgba(59, 130, 246, 0.5), transparent);
+    background: linear-gradient(90deg, transparent, rgba(91, 127, 255, 0.45), transparent);
     border-radius: 2px;
   }
 
   &:hover {
-    box-shadow: 0 10px 40px rgba(59, 130, 246, 0.12),
+    box-shadow: 0 10px 40px rgba(91, 127, 255, 0.1),
+      var(--glow-primary),
       0 2px 12px rgba(0, 0, 0, 0.04);
   }
 }
 
 /* Location Permission Inline Card */
 .card-location {
-  background: radial-gradient(ellipse at 50% 0%, rgba(239, 68, 68, 0.10) 0%, rgba(255, 255, 255, 0.02) 60%),
-    rgba(255, 255, 255, 0.60);
-  border: 1px solid rgba(239, 68, 68, 0.2);
+  background: radial-gradient(ellipse at 50% 0%, rgba(239, 68, 68, 0.08) 0%, rgba(255, 255, 255, 0.02) 60%),
+    rgba(255, 255, 255, 0.62);
+  border: 1px solid rgba(239, 68, 68, 0.15);
 
   &::before {
     content: '';
     position: absolute;
     top: 0;
-    left: 12px;
-    right: 12px;
+    left: 0;
+    right: 0;
     height: 2px;
     background: linear-gradient(90deg, transparent, rgba(239, 68, 68, 0.5), transparent);
     border-radius: 2px;
   }
 
   &:hover {
-    box-shadow: 0 10px 40px rgba(239, 68, 68, 0.12),
+    box-shadow: 0 10px 40px rgba(239, 68, 68, 0.1),
+      0 0 20px rgba(239, 68, 68, 0.08),
       0 2px 12px rgba(0, 0, 0, 0.04);
   }
 }
 
-/* ===== Store Icon Badge — Brand Tint ===== */
+/* ===== Store Icon Badge ===== */
 .store-icon-badge {
   width: 44px;
   height: 44px;
@@ -458,22 +474,26 @@ svg.transition-transform {
 
 .badge-seven {
   background: rgba(255, 107, 0, 0.08);
-  border-color: rgba(255, 107, 0, 0.2);
+  border-color: rgba(255, 107, 0, 0.18);
+  box-shadow: inset 0 1px 2px rgba(255, 107, 0, 0.06);
 }
 
 .badge-family {
   background: rgba(0, 179, 134, 0.08);
-  border-color: rgba(0, 179, 134, 0.2);
+  border-color: rgba(0, 179, 134, 0.18);
+  box-shadow: inset 0 1px 2px rgba(0, 179, 134, 0.06);
 }
 
 .badge-about {
-  background: rgba(59, 130, 246, 0.08);
-  border-color: rgba(59, 130, 246, 0.25);
+  background: rgba(91, 127, 255, 0.08);
+  border-color: rgba(91, 127, 255, 0.2);
+  box-shadow: inset 0 1px 2px rgba(91, 127, 255, 0.06);
 }
 
 .badge-location {
   background: rgba(239, 68, 68, 0.08);
-  border-color: rgba(239, 68, 68, 0.25);
+  border-color: rgba(239, 68, 68, 0.2);
+  box-shadow: inset 0 1px 2px rgba(239, 68, 68, 0.06);
 }
 
 /* ===== Distance Badge ===== */
@@ -486,8 +506,7 @@ svg.transition-transform {
   color: var(--accent);
   background: var(--accent-light);
   padding: 2px 10px;
-  border-radius: 100px; /* Pill badge */
-  /* Subtle scale-in */
+  border-radius: 100px;
   animation: badgeIn var(--duration-normal) var(--spring) both;
 }
 
@@ -508,7 +527,7 @@ svg.transition-transform {
   background: rgba(0, 179, 134, 0.1);
 }
 
-/* ===== Store Card Header — 2-Row Layout (matching Map View) ===== */
+/* ===== Store Card Header ===== */
 .store-card-header {
   display: flex;
   align-items: center;
@@ -546,7 +565,7 @@ svg.transition-transform {
   color: #c2410c;
   background: rgba(251, 146, 60, 0.1);
   padding: 2px 10px;
-  border-radius: 100px; /* Pill badge */
+  border-radius: 100px;
   animation: badgeIn var(--duration-normal) var(--spring) both;
 }
 
@@ -560,19 +579,20 @@ svg.transition-transform {
   width: 44px;
   height: 44px;
   border-radius: 14px;
-  background: rgba(91, 127, 255, 0.08);
-  border: 1px solid rgba(91, 127, 255, 0.12);
+  background: rgba(91, 127, 255, 0.06);
+  border: 1px solid rgba(91, 127, 255, 0.1);
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   flex-shrink: 0;
   text-decoration: none;
-  transition: transform 0.2s, background 0.2s;
+  transition: transform 0.2s, background 0.2s, box-shadow 0.2s;
 
   &:hover {
-    background: rgba(91, 127, 255, 0.15);
+    background: rgba(91, 127, 255, 0.12);
     transform: scale(1.05);
+    box-shadow: 0 2px 8px rgba(91, 127, 255, 0.12);
   }
 
   &:active {
@@ -601,7 +621,7 @@ svg.transition-transform {
   }
 }
 
-/* ===== Category Grid — Spring Chip Interactions ===== */
+/* ===== Category Grid — Gradient Chip Interactions ===== */
 .category-chip {
   appearance: none;
   -webkit-appearance: none;
@@ -611,27 +631,26 @@ svg.transition-transform {
   overflow: hidden;
   user-select: none;
   -webkit-user-select: none;
-  z-index: 1; /* Stay above expanded content but don't interfere with overlays */
-  border: 1px solid rgba(226, 232, 240, 0.3);
+  z-index: 1;
+  border: 1px solid rgba(91, 127, 255, 0.08);
   border-radius: 16px;
-  background: rgba(255, 255, 255, 0.45);
+  background: rgba(255, 255, 255, 0.5);
   text-align: center;
   cursor: pointer;
   padding: 8px;
-  /* Spring transition — every property smoothly interpolates */
   transition: transform var(--transition-spring),
     background var(--transition-snappy),
     border-color var(--transition-snappy),
     box-shadow var(--transition-snappy);
   -webkit-tap-highlight-color: transparent;
-  -webkit-touch-callout: none; /* 關閉 iOS 長按彈出選單 */
+  -webkit-touch-callout: none;
 
   > * {
-    position: relative; /* 必須保留，確保位於 ::before 背景動畫之上 */
+    position: relative;
   }
   
   img {
-    pointer-events: none; /* 防止圖片被長按反白、儲存或觸發拖曳 */
+    pointer-events: none;
   }
 
   &::before {
@@ -641,38 +660,38 @@ svg.transition-transform {
     left: 0;
     width: 100%;
     height: 0%;
-    background: rgba(60, 130, 255, 0.2); /* 調整為更淡的藍色，保持優雅質感 */
+    background: linear-gradient(180deg, rgba(91, 127, 255, 0.12) 0%, rgba(91, 127, 255, 0.15) 100%);
     z-index: 0;
     pointer-events: none !important;
-    transition: height 0.4s ease-out; /* 結束後平滑且迅速地退回 */
+    transition: height 0.4s ease-out;
   }
 
   &.is-loading::before {
     height: 85%;
-    transition: height 1s cubic-bezier(0.1, 0.7, 0.1, 1); /* 加快上升速度，讓等待感不那麼拖沓 */
+    transition: height 1s cubic-bezier(0.1, 0.7, 0.1, 1);
   }
 
   &.loading-complete::before {
     height: 100%;
-    transition: height 0.15s ease-in; /* 動態加速：一取得資料便立刻疾速填滿到 100% 傳達「完成」 */
+    transition: height 0.15s ease-in;
   }
 
   &:hover {
     background: rgba(255, 255, 255, 0.78);
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    border-color: rgba(91, 127, 255, 0.15);
+    box-shadow: 0 2px 10px rgba(91, 127, 255, 0.08);
     transform: scale(1.04);
   }
 
-  /* Selected state — gentle spring scale */
   &.selected {
     background: var(--accent-light);
-    border-color: rgba(91, 127, 255, 0.3);
+    border-color: rgba(91, 127, 255, 0.25);
     transform: scale(1.02);
     box-shadow: 0 0 0 2px rgba(91, 127, 255, 0.08),
-      0 4px 16px rgba(91, 127, 255, 0.1);
+      0 4px 16px rgba(91, 127, 255, 0.08),
+      var(--glow-primary);
   }
 
-  /* Instant haptic press — placed after .selected to ensure it overrides the scale */
   &:active {
     transform: scale(0.92);
     transition-duration: 60ms;
@@ -683,21 +702,17 @@ svg.transition-transform {
   display: inline-block;
   font-size: 11px;
   font-weight: 600;
-  background: rgba(251, 146, 60, 0.12);
+  background: linear-gradient(135deg, rgba(251, 146, 60, 0.12), rgba(239, 68, 68, 0.08));
   color: #c2410c;
   padding: 2px 8px;
   border-radius: 20px;
-  /* 強制不攔截點擊與文字選取 */
   pointer-events: none !important;
   user-select: none !important;
   -webkit-user-select: none !important;
-  /* Subtle pop */
   transition: transform var(--transition-snappy);
 }
 
 /* ===== Category Expand Animation ===== */
-/* 棄用 CSS grid-template-rows 技巧，避免 Apple iOS/WebView 的 stale layout reflow bug 
- * 固定使用 max-height 動畫並加上 will-change 來觸發硬體加速，保證所有行動裝置正確展開 */
 .category-expand-wrapper {
   max-height: 0;
   opacity: 0;
@@ -709,7 +724,7 @@ svg.transition-transform {
   will-change: max-height, opacity, margin-top;
 
   &.expanded {
-    max-height: 8000px; /* 安全上限，容納數量龐大的門市商品清單 */
+    max-height: 8000px;
     opacity: 1;
     margin-top: 12px;
   }
@@ -747,30 +762,30 @@ svg.transition-transform {
   animation: fadeInUp var(--duration-slow) var(--spring-gentle) both;
 }
 
-/* ===== Buttons — Apple haptic press style ===== */
+/* ===== Buttons — Gradient style ===== */
 .resume-search-btn {
   display: inline-flex;
   align-items: center;
   gap: 8px;
   padding: 10px 28px;
-  border-radius: 100px; /* Capsule button */
-  background: var(--accent);
+  border-radius: 100px;
+  background: var(--accent-gradient);
   color: white;
   font-weight: 600;
   font-size: 14px;
   border: none;
   cursor: pointer;
   transition: transform var(--transition-spring),
-    background var(--transition-snappy),
-    box-shadow var(--transition-spring);
+    box-shadow var(--transition-spring),
+    filter var(--transition-snappy);
   will-change: transform;
 
   &:hover {
-    background: var(--accent-hover);
-    box-shadow: 0 4px 20px rgba(91, 127, 255, 0.25);
+    filter: brightness(1.08);
+    box-shadow: 0 4px 20px rgba(91, 127, 255, 0.3),
+      0 0 30px rgba(91, 127, 255, 0.15);
   }
 
-  /* Instant press, spring release */
   &:active {
     transform: scale(0.94);
     transition-duration: 60ms;
@@ -779,17 +794,17 @@ svg.transition-transform {
 
 /* ===== Result Header ===== */
 .result-header-glass {
-  background: rgba(255, 255, 255, 0.45);
+  background: rgba(255, 255, 255, 0.5);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border-radius: 100px; /* Capsule header */
+  border-radius: 100px;
   padding: 12px 24px;
   margin: 12px auto 16px;
   text-align: center;
   font-weight: 500;
   font-size: 14px;
   color: var(--text-secondary);
-  border: 1px solid rgba(226, 232, 240, 0.3);
+  border: 1px solid rgba(91, 127, 255, 0.08);
 }
 
 /* ===== Login Prompt ===== */
@@ -806,21 +821,22 @@ svg.transition-transform {
   gap: 6px;
   margin-top: 8px;
   padding: 10px 24px;
-  border-radius: 100px; /* Capsule button */
-  background: var(--accent);
+  border-radius: 100px;
+  background: var(--accent-gradient);
   color: white;
   font-weight: 600;
   font-size: 14px;
   border: none;
   cursor: pointer;
   transition: transform var(--transition-spring),
-    background var(--transition-snappy),
-    box-shadow var(--transition-spring);
+    box-shadow var(--transition-spring),
+    filter var(--transition-snappy);
   will-change: transform;
 
   &:hover {
-    background: var(--accent-hover);
-    box-shadow: 0 4px 20px rgba(91, 127, 255, 0.25);
+    filter: brightness(1.08);
+    box-shadow: 0 4px 20px rgba(91, 127, 255, 0.3),
+      0 0 30px rgba(91, 127, 255, 0.15);
   }
 
   &:active {
@@ -829,7 +845,7 @@ svg.transition-transform {
   }
 }
 
-/* ===== Favorite Button — Heart bounce micro-interaction ===== */
+/* ===== Favorite Button ===== */
 button[class*="shrink-0"] {
   transition: transform var(--transition-spring);
   will-change: transform;
@@ -839,7 +855,6 @@ button[class*="shrink-0"] {
     transition-duration: 60ms;
   }
 
-  /* Heart SVG animation */
   svg {
     transition: transform var(--transition-spring);
   }
@@ -849,12 +864,12 @@ button[class*="shrink-0"] {
   }
 }
 
-/* ===== Close Button — Spring press ===== */
+/* ===== Close Button ===== */
 button svg path {
   transition: stroke var(--transition-snappy);
 }
 
-/* ===== Google Map Icon — Hover spring ===== */
+/* ===== Google Map Icon ===== */
 a[href*="google.com/maps"] {
   display: inline-flex;
   transition: transform var(--transition-snappy);
@@ -888,7 +903,6 @@ a[href*="google.com/maps"] {
 
   /* === Mobile Performance Optimizations === */
   .store-glass-card {
-    /* Remove hover effects on mobile (no hover) */
     transition: none;
 
     &:hover {
@@ -897,13 +911,11 @@ a[href*="google.com/maps"] {
     }
   }
 
-  /* Simplify card entrance animation to opacity-only on mobile */
   .card-animate-in {
     animation: cardFadeIn 300ms ease-out both;
   }
 
   .category-chip {
-    /* Simplify transitions on mobile */
     transition: transform 150ms ease-out,
       background 150ms ease-out,
       border-color 150ms ease-out;
@@ -920,21 +932,23 @@ a[href*="google.com/maps"] {
 
   /* --- Fixed Search Bar --- */
   .search-bar-fixed {
-    background: rgba(24, 24, 24, 0.85);
-    border-bottom-color: var(--border-default);
-    box-shadow: 0 1px 12px rgba(0, 0, 0, 0.25);
+    background: rgba(18, 18, 22, 0.88);
+    border-bottom-color: rgba(123, 159, 255, 0.08);
+    box-shadow: 0 1px 12px rgba(0, 0, 0, 0.3),
+      0 1px 0 rgba(123, 159, 255, 0.04);
   }
 
   /* --- Search Input Glass --- */
   .search-input-glass {
-    background: rgba(38, 38, 38, 0.7);
-    border-color: var(--border-subtle);
+    background: rgba(35, 35, 42, 0.75);
+    border-color: rgba(123, 159, 255, 0.1);
 
     &:focus-within {
-      border-color: rgba(123, 159, 255, 0.5);
-      box-shadow: 0 0 0 4px rgba(123, 159, 255, 0.12),
-        0 2px 12px rgba(123, 159, 255, 0.08);
-      background: rgba(45, 45, 45, 0.9);
+      border-color: rgba(123, 159, 255, 0.4);
+      box-shadow: 0 0 0 4px rgba(123, 159, 255, 0.1),
+        0 0 20px rgba(123, 159, 255, 0.1),
+        0 2px 12px rgba(123, 159, 255, 0.05);
+      background: rgba(40, 40, 48, 0.92);
     }
 
     input {
@@ -944,8 +958,8 @@ a[href*="google.com/maps"] {
 
   /* --- Header Icon Buttons --- */
   .header-icon-btn {
-    background: rgba(50, 50, 50, 0.7);
-    border-color: var(--border-subtle);
+    background: rgba(40, 40, 48, 0.75);
+    border-color: rgba(123, 159, 255, 0.08);
     color: #d4d4d8;
 
     svg {
@@ -954,19 +968,20 @@ a[href*="google.com/maps"] {
     }
 
     &:hover {
-      background: rgba(60, 60, 60, 0.9);
-      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.2);
+      background: rgba(50, 50, 58, 0.9);
+      box-shadow: 0 2px 12px rgba(123, 159, 255, 0.08);
+      border-color: rgba(123, 159, 255, 0.15);
     }
 
     &.active {
       background: var(--accent-light);
-      border-color: rgba(123, 159, 255, 0.3);
+      border-color: rgba(123, 159, 255, 0.25);
     }
   }
 
   /* --- Menu Panel --- */
   .menu-divider {
-    background: var(--border-default);
+    background: linear-gradient(90deg, transparent, rgba(123, 159, 255, 0.1), transparent);
   }
 
   .menu-link-item {
@@ -982,133 +997,193 @@ a[href*="google.com/maps"] {
     background: rgba(82, 82, 82, 0.6);
   }
 
+  .toggle-switch input:checked+.toggle-slider {
+    box-shadow: 0 0 12px rgba(123, 159, 255, 0.3);
+  }
+
   /* --- Loading --- */
   .loading-text {
-    color: var(--text-secondary);
+    background: linear-gradient(90deg,
+      var(--text-secondary) 25%,
+      var(--accent) 50%,
+      var(--text-secondary) 75%);
+    background-size: 200% auto;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
   }
 
   /* --- Store Glass Cards --- */
   .store-glass-card {
-    background: rgba(38, 38, 38, 0.6);
-    border-color: var(--border-default);
+    background: rgba(30, 30, 38, 0.65);
+    border-color: rgba(123, 159, 255, 0.06);
     box-shadow: 0 4px 24px rgba(0, 0, 0, 0.25),
       0 1px 4px rgba(0, 0, 0, 0.15);
 
     &:hover {
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35),
+      border-color: rgba(123, 159, 255, 0.12);
+      box-shadow: 0 8px 32px rgba(123, 159, 255, 0.06),
         0 2px 8px rgba(0, 0, 0, 0.2);
     }
   }
 
   /* Brand Cards — Dark variants */
   .card-seven {
-    background: radial-gradient(ellipse at 50% 0%, rgba(255, 127, 36, 0.12) 0%, rgba(38, 38, 38, 0.02) 60%),
-      rgba(38, 38, 38, 0.6);
-    border-color: rgba(255, 147, 66, 0.2);
+    background: radial-gradient(ellipse at 50% 0%, rgba(255, 127, 36, 0.1) 0%, rgba(30, 30, 38, 0.02) 60%),
+      rgba(30, 30, 38, 0.65);
+    border-color: rgba(255, 147, 66, 0.15);
 
     &::before {
-      background: linear-gradient(90deg, transparent, rgba(255, 107, 0, 0.3), transparent);
+      opacity: 0.45;
     }
 
     &:hover {
-      box-shadow: 0 10px 40px rgba(255, 107, 0, 0.12),
+      border-color: rgba(255, 107, 0, 0.22);
+      box-shadow: 0 10px 40px rgba(255, 107, 0, 0.08),
+        0 0 20px rgba(255, 107, 0, 0.04),
         0 2px 12px rgba(0, 0, 0, 0.2);
     }
   }
 
   .card-family {
-    background: radial-gradient(ellipse at 50% 0%, rgba(0, 179, 134, 0.12) 0%, rgba(38, 38, 38, 0.02) 60%),
-      rgba(38, 38, 38, 0.6);
-    border-color: rgba(0, 179, 134, 0.2);
+    background: radial-gradient(ellipse at 50% 0%, rgba(0, 179, 134, 0.1) 0%, rgba(30, 30, 38, 0.02) 60%),
+      rgba(30, 30, 38, 0.65);
+    border-color: rgba(0, 179, 134, 0.15);
 
     &::before {
-      background: linear-gradient(90deg, transparent, rgba(0, 179, 134, 0.3), transparent);
+      opacity: 0.45;
     }
 
     &:hover {
-      box-shadow: 0 10px 40px rgba(0, 179, 134, 0.12),
+      border-color: rgba(0, 179, 134, 0.22);
+      box-shadow: 0 10px 40px rgba(0, 179, 134, 0.08),
+        0 0 20px rgba(0, 179, 134, 0.04),
         0 2px 12px rgba(0, 0, 0, 0.2);
     }
   }
 
   .card-about {
-    background: radial-gradient(ellipse at 50% 0%, rgba(59, 130, 246, 0.12) 0%, rgba(38, 38, 38, 0.02) 60%),
-      rgba(38, 38, 38, 0.6);
-    border-color: rgba(59, 130, 246, 0.25);
+    background: radial-gradient(ellipse at 50% 0%, rgba(123, 159, 255, 0.1) 0%, rgba(30, 30, 38, 0.02) 60%),
+      rgba(30, 30, 38, 0.65);
+    border-color: rgba(123, 159, 255, 0.15);
 
     &::before {
-      background: linear-gradient(90deg, transparent, rgba(59, 130, 246, 0.35), transparent);
+      opacity: 0.45;
     }
 
     &:hover {
-      box-shadow: 0 10px 40px rgba(59, 130, 246, 0.15),
+      box-shadow: 0 10px 40px rgba(123, 159, 255, 0.1),
+        var(--glow-primary),
         0 2px 12px rgba(0, 0, 0, 0.2);
     }
   }
 
   .card-location {
-    background: radial-gradient(ellipse at 50% 0%, rgba(239, 68, 68, 0.12) 0%, rgba(38, 38, 38, 0.02) 60%),
-      rgba(38, 38, 38, 0.6);
-    border-color: rgba(239, 68, 68, 0.25);
+    background: radial-gradient(ellipse at 50% 0%, rgba(239, 68, 68, 0.1) 0%, rgba(30, 30, 38, 0.02) 60%),
+      rgba(30, 30, 38, 0.65);
+    border-color: rgba(239, 68, 68, 0.18);
 
     &::before {
       background: linear-gradient(90deg, transparent, rgba(239, 68, 68, 0.35), transparent);
     }
 
     &:hover {
-      box-shadow: 0 10px 40px rgba(239, 68, 68, 0.15),
+      box-shadow: 0 10px 40px rgba(239, 68, 68, 0.1),
+        0 0 20px rgba(239, 68, 68, 0.06),
         0 2px 12px rgba(0, 0, 0, 0.2);
     }
   }
 
   /* --- Store Icon Badges --- */
   .store-icon-badge {
-    background: rgba(45, 45, 45, 0.7);
+    background: rgba(40, 40, 48, 0.7);
     border-color: var(--border-subtle);
   }
 
   .badge-seven {
-    background: rgba(255, 107, 0, 0.12);
-    border-color: rgba(255, 107, 0, 0.25);
+    background: rgba(255, 107, 0, 0.1);
+    border-color: rgba(255, 107, 0, 0.22);
+    box-shadow: inset 0 1px 2px rgba(255, 107, 0, 0.08);
   }
 
   .badge-family {
-    background: rgba(0, 179, 134, 0.12);
-    border-color: rgba(0, 179, 134, 0.25);
+    background: rgba(0, 179, 134, 0.1);
+    border-color: rgba(0, 179, 134, 0.22);
+    box-shadow: inset 0 1px 2px rgba(0, 179, 134, 0.08);
   }
 
   .badge-about {
-    background: rgba(59, 130, 246, 0.12);
-    border-color: rgba(59, 130, 246, 0.3);
+    background: rgba(123, 159, 255, 0.1);
+    border-color: rgba(123, 159, 255, 0.25);
   }
 
   .badge-location {
-    background: rgba(239, 68, 68, 0.12);
-    border-color: rgba(239, 68, 68, 0.3);
+    background: rgba(239, 68, 68, 0.1);
+    border-color: rgba(239, 68, 68, 0.25);
   }
 
-  /* --- Store Card Header (Map-style 2-row layout) --- */
+  /* --- Store Card Header --- */
   .store-card-name {
     color: var(--text-primary, #e4e4e7);
   }
 
   .store-nav-btn {
-    background: rgba(91, 127, 255, 0.12);
-    border-color: rgba(91, 127, 255, 0.2);
+    background: rgba(123, 159, 255, 0.08);
+    border-color: rgba(123, 159, 255, 0.12);
   }
 
   .qty-badge {
     color: #fb923c;
-    background: rgba(251, 146, 60, 0.15);
+    background: rgba(251, 146, 60, 0.12);
   }
 
   .qty-badge-family {
     color: #34d399;
-    background: rgba(0, 179, 134, 0.15);
+    background: rgba(0, 179, 134, 0.12);
   }
 
   .distance-badge {
-    color: #7B9FFF;
+    color: var(--accent);
+    background: rgba(123, 159, 255, 0.1);
+  }
+
+  .badge-family-dist {
+    color: #34d399;
+    background: rgba(0, 179, 134, 0.1);
+  }
+
+  /* --- Category Chips --- */
+  .category-chip {
+    background: rgba(35, 35, 42, 0.55);
+    border-color: rgba(123, 159, 255, 0.06);
+    color: #d4d4d8;
+
+    &::before {
+      background: linear-gradient(180deg, rgba(123, 159, 255, 0.12) 0%, rgba(123, 159, 255, 0.1) 100%);
+    }
+
+    &:hover {
+      background: rgba(45, 45, 52, 0.75);
+      border-color: rgba(123, 159, 255, 0.12);
+      box-shadow: 0 2px 10px rgba(123, 159, 255, 0.06);
+    }
+
+    &.selected {
+      background: var(--accent-light);
+      border-color: rgba(123, 159, 255, 0.22);
+      box-shadow: 0 0 0 2px rgba(123, 159, 255, 0.08),
+        0 4px 16px rgba(123, 159, 255, 0.08),
+        var(--glow-primary);
+    }
+  }
+
+  .category-qty-badge {
+    background: linear-gradient(135deg, rgba(251, 146, 60, 0.15), rgba(239, 68, 68, 0.1));
+    color: #fb923c;
+  }
+
+  /* --- Distance Badge --- */
+  .distance-badge {
     background: rgba(123, 159, 255, 0.12);
   }
 
@@ -1117,48 +1192,10 @@ a[href*="google.com/maps"] {
     background: rgba(0, 179, 134, 0.12);
   }
 
-  /* --- Category Chips --- */
-  .category-chip {
-    background: rgba(45, 45, 45, 0.5);
-    border-color: var(--border-subtle);
-    color: #d4d4d8;
-
-    &::before {
-      background: rgba(123, 159, 255, 0.2);
-    }
-
-    &:hover {
-      background: rgba(55, 55, 55, 0.75);
-      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
-    }
-
-    &.selected {
-      background: var(--accent-light);
-      border-color: rgba(123, 159, 255, 0.3);
-      box-shadow: 0 0 0 2px rgba(123, 159, 255, 0.1),
-        0 4px 16px rgba(123, 159, 255, 0.12);
-    }
-  }
-
-  .category-qty-badge {
-    background: rgba(251, 146, 60, 0.18);
-    color: #fb923c;
-  }
-
-  /* --- Distance Badge --- */
-  .distance-badge {
-    background: rgba(123, 159, 255, 0.15);
-  }
-
-  .badge-family-dist {
-    color: #34d399;
-    background: rgba(0, 179, 134, 0.15);
-  }
-
   /* --- Result Header --- */
   .result-header-glass {
-    background: rgba(38, 38, 38, 0.5);
-    border-color: var(--border-default);
+    background: rgba(30, 30, 38, 0.55);
+    border-color: rgba(123, 159, 255, 0.08);
   }
 
   /* --- Login Prompt --- */
@@ -1187,7 +1224,7 @@ a[href*="google.com/maps"] {
   justify-content: center;
 
   &:hover {
-    background: rgba(91, 127, 255, 0.1);
+    background: rgba(91, 127, 255, 0.08);
     transform: scale(1.1);
   }
   &:active {
@@ -1222,20 +1259,18 @@ a[href*="google.com/maps"] {
 }
 
 .view-face-list {
-  /* Override animation direction for list — slide from left when entering */
   &:not(.view-active) {
     transform: translateX(-16px) scale(0.97);
   }
 }
 
 .view-face-map {
-  /* Override animation direction for map — slide from right when entering */
   &:not(.view-active) {
     transform: translateX(16px) scale(0.97);
   }
 }
 
-/* ===== View Toggle Pill — Apple HIG Segmented Control with Misty Blur ===== */
+/* ===== View Toggle Pill — Gradient Glass ===== */
 .view-toggle-container {
   position: fixed;
   bottom: 1.5rem;
@@ -1247,23 +1282,20 @@ a[href*="google.com/maps"] {
   transition: opacity 0.4s cubic-bezier(0.32, 0.72, 0, 1),
               transform 0.4s cubic-bezier(0.32, 0.72, 0, 1),
               visibility 0s linear 0.4s;
-  pointer-events: none; /* Let clicks pass through to child pill */
+  pointer-events: none;
 
   > * {
-    pointer-events: auto; /* Re-enable clicks for actual UI */
+    pointer-events: auto;
   }
 }
 
 .view-toggle-mist {
   position: absolute;
-  /* 擴展範圍以讓模糊有足夠空間消散 */
   inset: -40px;
   
-  /* 純模糊效果，移除明顯背景色，讓視覺聚焦在模糊本身 */
   backdrop-filter: blur(24px) saturate(120%);
   -webkit-backdrop-filter: blur(24px) saturate(120%);
   
-  /* 利用遮罩（mask）讓模糊從中心（膠囊位置）向外漸弱到透明，消除明顯的邊界硬邊 */
   mask-image: radial-gradient(ellipse at center, black 15%, transparent 70%);
   -webkit-mask-image: radial-gradient(ellipse at center, black 15%, transparent 70%);
   
@@ -1276,13 +1308,14 @@ a[href*="google.com/maps"] {
   align-items: center;
   gap: 0;
   padding: 5px;
-  border-radius: 100px; /* Fully rounded pill */
-  background: rgba(255, 255, 255, 0.78);
+  border-radius: 100px;
+  background: rgba(255, 255, 255, 0.82);
   backdrop-filter: blur(24px) saturate(180%);
   -webkit-backdrop-filter: blur(24px) saturate(180%);
-  border: 1px solid rgba(226, 232, 240, 0.45);
-  box-shadow: 0 4px 32px rgba(0, 0, 0, 0.1),
-              0 1px 6px rgba(0, 0, 0, 0.05);
+  border: 1px solid rgba(91, 127, 255, 0.1);
+  box-shadow: 0 4px 32px rgba(0, 0, 0, 0.08),
+              0 1px 6px rgba(0, 0, 0, 0.04),
+              0 0 0 1px rgba(91, 127, 255, 0.04);
   -webkit-tap-highlight-color: transparent;
   position: relative;
 }
@@ -1294,11 +1327,10 @@ a[href*="google.com/maps"] {
   left: 5px;
   width: calc(50% - 5px);
   height: calc(100% - 10px);
-  border-radius: 100px; /* Match pill rounding */
+  border-radius: 100px;
   background: #ffffff;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1),
-              0 0.5px 3px rgba(0, 0, 0, 0.06);
-  /* Spring-like transition via cubic-bezier overshoot */
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08),
+              0 0.5px 3px rgba(0, 0, 0, 0.04);
   transition: transform 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
   z-index: 0;
 
@@ -1336,10 +1368,10 @@ a[href*="google.com/maps"] {
   }
 
   &.active {
-    color: #1e293b;
+    color: var(--accent);
     
     svg {
-      stroke: #1e293b;
+      stroke: var(--accent);
     }
   }
 
@@ -1356,20 +1388,20 @@ a[href*="google.com/maps"] {
 /* ===== Dark Mode Overrides for View Toggle ===== */
 :host-context([data-theme="dark"]) {
   .view-toggle-mist {
-    /* 在深色模式下稍微降低飽和度，保持純淨的模糊消散感 */
     backdrop-filter: blur(24px) saturate(100%);
     -webkit-backdrop-filter: blur(24px) saturate(100%);
   }
 
   .view-toggle-pill {
-    background: rgba(39, 39, 42, 0.82);
-    border-color: rgba(63, 63, 70, 0.5);
+    background: rgba(30, 30, 38, 0.85);
+    border-color: rgba(123, 159, 255, 0.1);
     box-shadow: 0 4px 32px rgba(0, 0, 0, 0.45),
-                0 1px 6px rgba(0, 0, 0, 0.25);
+                0 1px 6px rgba(0, 0, 0, 0.25),
+                0 0 0 1px rgba(123, 159, 255, 0.06);
   }
 
   .view-toggle-indicator {
-    background: rgba(63, 63, 70, 0.95);
+    background: rgba(50, 50, 60, 0.95);
     box-shadow: 0 2px 12px rgba(0, 0, 0, 0.35);
   }
 
@@ -1377,10 +1409,10 @@ a[href*="google.com/maps"] {
     color: #71717a;
 
     &.active {
-      color: #fafafa;
+      color: var(--accent);
 
       svg {
-        stroke: #fafafa;
+        stroke: var(--accent);
       }
     }
 
@@ -1395,15 +1427,11 @@ a[href*="google.com/maps"] {
   .view-toggle-container {
     left: 12px;
     right: 12px;
-    /* 更貼近底部，保留 safe-area 確保不會被 Home Bar 擋住 */
     bottom: 4px;
     bottom: calc(4px + env(safe-area-inset-bottom, 0px));
-    /* 靠右對齊，讓縮小時自然靠右 */
     justify-content: flex-end;
 
-    /* == 縮小為圓形微型按鈕 (清單向下滑動 或 地圖卡片開啟) == */
     &.scrolled-down, &.map-sheet-up {
-      /* 收攏到右側 */
       left: auto;
       right: 8px;
 
@@ -1418,7 +1446,8 @@ a[href*="google.com/maps"] {
         height: 64px;
         padding: 0;
         border-radius: 50%;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.18);
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15),
+          0 0 20px rgba(91, 127, 255, 0.08);
       }
 
       .view-toggle-indicator {
@@ -1426,7 +1455,6 @@ a[href*="google.com/maps"] {
       }
     }
 
-    /* 清單模式下縮小：隱藏清單，顯示地圖圖示 */
     &.scrolled-down {
       .view-toggle-segment:first-of-type {
         max-width: 0;
@@ -1455,7 +1483,6 @@ a[href*="google.com/maps"] {
       }
     }
 
-    /* 地圖模式下縮小：隱藏地圖，顯示清單圖示 */
     &.map-sheet-up {
       .view-toggle-segment:last-of-type {
         max-width: 0;

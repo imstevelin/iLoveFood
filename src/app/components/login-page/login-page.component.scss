@@ -1,10 +1,23 @@
-/* 友善超人 — Glassmorphism Login Dialog Styles */
+/* 友善超人 — Glassmorphism Login Dialog — Gradient Edition */
 
 .login-wrapper {
   padding: 24px 16px;
+  position: relative;
+
+  /* 頂部裝飾性漸層線條 */
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 24px;
+    right: 24px;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, rgba(91, 127, 255, 0.4), transparent);
+    border-radius: 2px;
+  }
 }
 
-/* 頂部 Icon 徽章 */
+/* 頂部 Icon 徽章 — Gradient */
 .login-icon-badge {
   width: 44px;
   height: 44px;
@@ -12,12 +25,13 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--accent-light);
-  border: 1px solid rgba(91, 127, 255, 0.2);
+  background: linear-gradient(135deg, rgba(91, 127, 255, 0.1), rgba(91, 127, 255, 0.08));
+  border: 1px solid rgba(91, 127, 255, 0.18);
   flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(91, 127, 255, 0.08);
 }
 
-/* 關閉按鈕 — iOS style haptic press */
+/* 關閉按鈕 */
 .close-btn {
   background: rgba(241, 245, 249, 0.8);
   border-radius: 50%;
@@ -37,10 +51,10 @@
   }
 }
 
-/* 輸入框玻璃質感與彈性焦點 */
+/* 輸入框 — Gradient glow on focus */
 .input-field {
   background: rgba(248, 250, 252, 0.8);
-  border: 1px solid rgba(203, 213, 225, 0.6);
+  border: 1.5px solid rgba(91, 127, 255, 0.12);
   border-radius: 16px;
   box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.02);
   color: var(--text-primary);
@@ -54,34 +68,36 @@
 
   &:focus {
     outline: none;
-    border-color: rgba(91, 127, 255, 0.6);
-    box-shadow: 0 0 0 4px rgba(91, 127, 255, 0.15),
+    border-color: rgba(91, 127, 255, 0.5);
+    box-shadow: 0 0 0 4px rgba(91, 127, 255, 0.1),
+      0 0 20px rgba(91, 127, 255, 0.1),
+      0 0 40px rgba(91, 127, 255, 0.04),
       inset 0 2px 4px rgba(0, 0, 0, 0.01);
     background: #ffffff;
   }
 }
 
-/* 登入主按鈕 — Apple style button with depth */
+/* 登入主按鈕 — Gradient with strong glow */
 .login-btn {
-  background: var(--accent);
+  background: var(--accent-gradient);
   color: white;
   border: none;
-  /* 增加微妙的底部陰影增加立體感 */
   box-shadow: 0 4px 14px rgba(91, 127, 255, 0.3),
+    0 0 30px rgba(91, 127, 255, 0.1),
     inset 0 1px 0 rgba(255, 255, 255, 0.2);
   transition: transform var(--transition-spring),
-    background var(--transition-snappy),
-    box-shadow var(--transition-spring);
+    box-shadow var(--transition-spring),
+    filter var(--transition-snappy);
   will-change: transform;
 
   &:hover {
-    background: var(--accent-hover);
+    filter: brightness(1.08);
     box-shadow: 0 6px 20px rgba(91, 127, 255, 0.35),
+      0 0 40px rgba(91, 127, 255, 0.15),
       inset 0 1px 0 rgba(255, 255, 255, 0.2);
     transform: translateY(-1px);
   }
 
-  /* 觸覺按壓 */
   &:active {
     transform: scale(0.96) translateY(0);
     box-shadow: 0 2px 8px rgba(91, 127, 255, 0.2);
@@ -117,17 +133,21 @@
 /* ===== Dark Mode Overrides ===== */
 :host-context([data-theme="dark"]) {
 
+  .login-wrapper::before {
+    opacity: 0.3;
+  }
+
   .close-btn {
-    background: rgba(60, 60, 60, 0.6);
+    background: rgba(55, 55, 65, 0.6);
 
     &:hover {
-      background: rgba(75, 75, 75, 0.8);
+      background: rgba(70, 70, 80, 0.8);
     }
   }
 
   .input-field {
-    background: rgba(38, 38, 38, 0.85);
-    border-color: var(--border-subtle);
+    background: rgba(30, 30, 40, 0.85);
+    border-color: rgba(123, 159, 255, 0.1);
     color: var(--text-primary);
 
     &::placeholder {
@@ -135,14 +155,24 @@
     }
 
     &:focus {
-      border-color: rgba(123, 159, 255, 0.6);
-      box-shadow: 0 0 0 4px rgba(123, 159, 255, 0.15),
+      border-color: rgba(123, 159, 255, 0.45);
+      box-shadow: 0 0 0 4px rgba(123, 159, 255, 0.08),
+        0 0 20px rgba(123, 159, 255, 0.08),
+        0 0 40px rgba(123, 159, 255, 0.03),
         inset 0 2px 4px rgba(0, 0, 0, 0.1);
-      background: rgba(45, 45, 45, 0.95);
+      background: rgba(38, 38, 48, 0.95);
     }
   }
 
   .login-icon-badge {
-    border-color: rgba(123, 159, 255, 0.25);
+    background: linear-gradient(135deg, rgba(123, 159, 255, 0.1), rgba(123, 159, 255, 0.08));
+    border-color: rgba(123, 159, 255, 0.2);
+    box-shadow: 0 2px 8px rgba(123, 159, 255, 0.06);
+  }
+
+  .login-btn {
+    box-shadow: 0 4px 14px rgba(123, 159, 255, 0.25),
+      0 0 30px rgba(123, 159, 255, 0.08),
+      inset 0 1px 0 rgba(255, 255, 255, 0.1);
   }
 }

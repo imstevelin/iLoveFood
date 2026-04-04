@@ -1,5 +1,5 @@
 /* Global Styles — 友善超人 Friendly Wallet */
-/* Apple HIG-Inspired Animation System */
+/* Premium Gradient Glass Design System */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -7,57 +7,71 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
 :root {
-  /* Refined color palette — soft blue-violet tones */
+  /* ===== Apple HIG 色彩系統 — 灰階藍調 ===== */
+  --accent: #5B7FFF;
+  --accent-hover: #4A6DE8;
+  --accent-secondary: #7B9FFF;
+  --accent-warm: #5B7FFF;
+  --accent-light: rgba(91, 127, 255, 0.1);
+  --accent-gradient: linear-gradient(135deg, #5B7FFF 0%, #7B9FFF 100%);
+  --accent-gradient-warm: linear-gradient(135deg, #5B7FFF 0%, #93b4ff 100%);
+
+  /* Surface & Glass */
   --glass-bg: rgba(255, 255, 255, 0.55);
   --glass-border: rgba(255, 255, 255, 0.35);
   --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.06);
   --glass-blur: 20px;
   --glass-radius: 20px;
   --card-radius: 16px;
-  --accent: #5B7FFF;
-  --accent-hover: #4A6DE8;
-  --accent-light: #EEF2FF;
+
+  /* Status */
   --success: #10B981;
   --success-light: #ECFDF5;
+
+  /* Text */
   --text-primary: #1e293b;
   --text-secondary: #64748b;
+
+  /* Background — Apple 風格灰階 */
   --bg-gradient-start: #f8fafc;
   --bg-gradient-mid: #f1f5f9;
   --bg-gradient-end: #eef2ff;
 
-  /* Shared surface & border tokens */
+  /* Surfaces */
   --surface: #ffffff;
   --surface-dim: rgba(248, 250, 252, 0.8);
+  --surface-elevated: rgba(255, 255, 255, 0.72);
   --border-default: rgba(226, 232, 240, 0.5);
   --border-subtle: rgba(203, 213, 225, 0.4);
 
-  /* ===== Apple-Style Animation Tokens ===== */
+  /* Glow Effects — 淡雅藍 */
+  --glow-primary: 0 0 20px rgba(91, 127, 255, 0.2);
+  --glow-accent: 0 0 30px rgba(91, 127, 255, 0.12), 0 0 60px rgba(91, 127, 255, 0.06);
+  --glow-warm: 0 0 20px rgba(91, 127, 255, 0.15);
 
-  /* Spring easing — simulates iOS UISpringAnimation (damping ~0.8, response ~0.4s)
-     Generated via CSS linear() to approximate spring physics:
-     Fast start → overshoots slightly → settles naturally */
+  /* Brand Gradients */
+  --seven-gradient: linear-gradient(135deg, #ff6b00, #ffa940);
+  --family-gradient: linear-gradient(135deg, #00b386, #34d399);
+
+  /* ===== Apple-Style Animation Tokens ===== */
   --spring: linear(0, 0.009, 0.035 2.1%, 0.141 4.4%, 0.723 12.9%, 0.938 16.7%,
       1.017, 1.077 21.8%, 1.112 24%, 1.116, 1.108 27.1%,
       1.067 30.2%, 1.013 34.8%, 0.991 38.2%, 0.985 43.2%,
       0.997 53.7%, 1.001 60.2%, 1);
 
-  /* Snappy spring — quicker, less bounce (button presses, toggles) */
   --spring-snappy: linear(0, 0.11 2.6%, 0.434 7.1%, 0.786 12.5%, 0.965 17.2%,
       1.034 20.3%, 1.065 22.7%, 1.071 24.3%, 1.062 26.4%,
       1.014 33%, 0.997 39%, 1.001 53%, 1);
 
-  /* Gentle spring — subtle, no overshoot (cards, panels) */
   --spring-gentle: linear(0, 0.007, 0.029 2.2%, 0.118 4.7%, 0.625 14.4%, 0.826 19%,
       0.942 23.8%, 0.987 27.6%, 1.004 38.3%, 1);
 
-  /* Standard durations following Apple timing */
   --duration-instant: 100ms;
   --duration-fast: 200ms;
   --duration-normal: 350ms;
   --duration-slow: 500ms;
   --duration-expand: 450ms;
 
-  /* Shared transition shortcuts */
   --transition-spring: var(--duration-normal) var(--spring);
   --transition-snappy: var(--duration-fast) var(--spring-snappy);
   --transition-gentle: var(--duration-slow) var(--spring-gentle);
@@ -65,23 +79,37 @@
 
 /* ===== Dark Theme Variables ===== */
 [data-theme="dark"] {
+  --accent: #7B9FFF;
+  --accent-hover: #6B8FEE;
+  --accent-secondary: #93b4ff;
+  --accent-warm: #7B9FFF;
+  --accent-light: rgba(123, 159, 255, 0.12);
+  --accent-gradient: linear-gradient(135deg, #7B9FFF 0%, #93b4ff 100%);
+  --accent-gradient-warm: linear-gradient(135deg, #7B9FFF 0%, #a5bfff 100%);
+
   --glass-bg: rgba(38, 38, 38, 0.65);
   --glass-border: rgba(255, 255, 255, 0.08);
   --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-  --accent: #7B9FFF;
-  --accent-hover: #6B8FEE;
-  --accent-light: rgba(91, 127, 255, 0.15);
+
   --success: #34D399;
   --success-light: rgba(16, 185, 129, 0.15);
+
   --text-primary: #e4e4e7;
   --text-secondary: #a1a1aa;
+
   --bg-gradient-start: #121212;
   --bg-gradient-mid: #171717;
   --bg-gradient-end: #1a1a1a;
+
   --surface: #1e1e1e;
   --surface-dim: rgba(38, 38, 38, 0.8);
+  --surface-elevated: rgba(45, 45, 45, 0.72);
   --border-default: rgba(82, 82, 82, 0.5);
   --border-subtle: rgba(63, 63, 70, 0.4);
+
+  --glow-primary: 0 0 20px rgba(123, 159, 255, 0.15);
+  --glow-accent: 0 0 30px rgba(123, 159, 255, 0.1), 0 0 60px rgba(123, 159, 255, 0.05);
+  --glow-warm: 0 0 20px rgba(123, 159, 255, 0.12);
 }
 
 html,
@@ -90,7 +118,10 @@ body {
   margin: 0;
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   background-color: var(--bg-gradient-start);
-  background-image: linear-gradient(160deg, var(--bg-gradient-start) 0%, var(--bg-gradient-mid) 40%, var(--bg-gradient-end) 100%);
+  background-image:
+    radial-gradient(ellipse at 20% 50%, rgba(91, 127, 255, 0.04) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 20%, rgba(91, 127, 255, 0.03) 0%, transparent 50%),
+    linear-gradient(160deg, var(--bg-gradient-start) 0%, var(--bg-gradient-mid) 40%, var(--bg-gradient-end) 100%);
   background-attachment: fixed;
   color: var(--text-primary);
   -webkit-font-smoothing: antialiased;
@@ -108,6 +139,35 @@ body.map-active-lock {
   height: 100dvh !important;
   overscroll-behavior: none !important;
   touch-action: none !important;
+}
+
+/* ===== Global Shimmer Animation ===== */
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+.shimmer-text {
+  background: linear-gradient(90deg,
+    var(--text-secondary) 25%,
+    var(--accent) 50%,
+    var(--text-secondary) 75%);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: shimmer 3s linear infinite;
+}
+
+/* ===== Global Glow Ring ===== */
+.glow-ring {
+  box-shadow: var(--glow-primary);
+  transition: box-shadow var(--transition-spring);
+
+  &:hover,
+  &:focus-within {
+    box-shadow: var(--glow-accent);
+  }
 }
 
 /* Liquid Glass card */
@@ -159,25 +219,27 @@ body.map-active-lock {
   animation: fadeInUp var(--duration-slow) var(--spring-gentle) both;
 }
 
-/* Override Angular Material for glass aesthetic */
+/* ===== Override Angular Material for glass aesthetic ===== */
 .mat-mdc-autocomplete-panel {
-  background: rgba(255, 255, 255, 0.88) !important;
-  backdrop-filter: blur(20px) !important;
-  -webkit-backdrop-filter: blur(20px) !important;
+  background: rgba(255, 255, 255, 0.92) !important;
+  backdrop-filter: blur(24px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(180%) !important;
   border-radius: 16px !important;
-  border: 1px solid rgba(255, 255, 255, 0.3) !important;
+  border: 1px solid rgba(91, 127, 255, 0.12) !important;
   box-shadow: 0 12px 48px rgba(0, 0, 0, 0.12),
-    0 0 0 1px rgba(0, 0, 0, 0.04) !important;
+    0 0 0 1px rgba(91, 127, 255, 0.06),
+    var(--glow-primary) !important;
   margin-top: 4px !important;
   /* Spring entrance */
   animation: dropdownIn var(--duration-normal) var(--spring) both !important;
 }
 
 [data-theme="dark"] .mat-mdc-autocomplete-panel {
-  background: rgba(38, 38, 38, 0.95) !important;
-  border: 1px solid rgba(255, 255, 255, 0.08) !important;
-  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.4),
-    0 0 0 1px rgba(255, 255, 255, 0.05) !important;
+  background: rgba(30, 30, 35, 0.95) !important;
+  border: 1px solid rgba(123, 159, 255, 0.15) !important;
+  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.45),
+    0 0 0 1px rgba(123, 159, 255, 0.08),
+    var(--glow-primary) !important;
 }
 
 @keyframes dropdownIn {
@@ -200,7 +262,7 @@ body.map-active-lock {
 }
 
 .mat-mdc-option:hover {
-  background: rgba(91, 127, 255, 0.06) !important;
+  background: rgba(91, 127, 255, 0.08) !important;
 }
 
 [data-theme="dark"] .mat-mdc-option {
@@ -212,7 +274,7 @@ body.map-active-lock {
 }
 
 [data-theme="dark"] .mat-mdc-option:hover {
-  background: rgba(91, 127, 255, 0.15) !important;
+  background: rgba(123, 159, 255, 0.15) !important;
 }
 
 .mat-mdc-option:active {
@@ -225,19 +287,18 @@ body.map-active-lock {
 
 /* ===== Global Glass Dialogs (Login, Messages, etc) ===== */
 .glass-dialog .mat-mdc-dialog-container {
-  /* 確保外部容器完全透明，避免阻擋高斯模糊 */
   background: transparent !important;
 
   .mdc-dialog__surface,
   .mat-mdc-dialog-surface {
-    /* 真實的玻璃高頻模糊，底色調白一點 */
-    background: rgba(255, 255, 255, 0.85) !important;
+    background: rgba(255, 255, 255, 0.88) !important;
     backdrop-filter: blur(40px) saturate(200%) !important;
     -webkit-backdrop-filter: blur(40px) saturate(200%) !important;
     border-radius: 28px !important;
-    border: 1px solid rgba(255, 255, 255, 0.8) !important;
-    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.16),
-      0 0 0 1px rgba(255, 255, 255, 0.5) inset !important;
+    border: 1px solid rgba(91, 127, 255, 0.15) !important;
+    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.14),
+      0 0 0 1px rgba(255, 255, 255, 0.5) inset,
+      var(--glow-accent) !important;
     overflow: hidden !important;
   }
 }
@@ -245,10 +306,11 @@ body.map-active-lock {
 [data-theme="dark"] .glass-dialog .mat-mdc-dialog-container {
   .mdc-dialog__surface,
   .mat-mdc-dialog-surface {
-    background: rgba(38, 38, 38, 0.92) !important;
-    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    background: rgba(30, 30, 35, 0.94) !important;
+    border: 1px solid rgba(123, 159, 255, 0.12) !important;
     box-shadow: 0 24px 64px rgba(0, 0, 0, 0.5),
-      0 0 0 1px rgba(255, 255, 255, 0.08) inset !important;
+      0 0 0 1px rgba(123, 159, 255, 0.08) inset,
+      var(--glow-accent) !important;
   }
 }
 
@@ -272,7 +334,8 @@ body.map-active-lock {
     background: #ffffff !important;
     border-radius: 24px !important;
     overflow: hidden !important;
-    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.16) !important;
+    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.16),
+      var(--glow-primary) !important;
     padding: 0 !important;
   }
 }
@@ -281,7 +344,8 @@ body.map-active-lock {
   .mdc-dialog__surface,
   .mat-mdc-dialog-surface {
     background: var(--surface) !important;
-    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.5) !important;
+    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.5),
+      var(--glow-primary) !important;
   }
 }
 

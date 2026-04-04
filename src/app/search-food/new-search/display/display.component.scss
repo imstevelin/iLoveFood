@@ -1,23 +1,23 @@
-/* Display Component — Apple HIG-Inspired Animations */
-/* Product cards with blurred image backgrounds and 3x scaled product images */
+/* Display Component — Premium Gradient Glass Animations */
+/* Product cards with blurred image backgrounds and refined typography */
 
-/* ===== Product Card — Blurred Background ===== */
+/* ===== Product Card — Gradient Border Glow ===== */
 .product-card {
   position: relative;
   border-radius: 16px;
   overflow: hidden;
-  /* 與超商卡片類似的邊框與玻璃質感 */
-  border: 1px solid rgba(200, 210, 224, 0.8);
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
-  background: rgba(255, 255, 255, 0.5); /* 基底玻璃質感 */
+  border: 1px solid rgba(91, 127, 255, 0.1);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.05);
+  background: rgba(255, 255, 255, 0.5);
   transition: transform var(--transition-spring),
               box-shadow var(--transition-spring),
               border-color var(--transition-spring);
 
   &:hover {
     transform: translateY(-2px);
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-    border-color: rgba(91, 127, 255, 0.4);
+    box-shadow: 0 8px 32px rgba(91, 127, 255, 0.08),
+      0 2px 8px rgba(0, 0, 0, 0.04);
+    border-color: rgba(91, 127, 255, 0.22);
   }
 
   &:active {
@@ -26,24 +26,22 @@
   }
 }
 
-/* Blurred background layer — product image as faint color tint */
+/* Blurred background layer */
 .product-card-bg {
   position: absolute;
   inset: 0;
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
-  filter: saturate(20) blur(24px);
+  filter: saturate(8) blur(24px);
   transform: scale(2.5);
   opacity: 0.25;
   z-index: 0;
   mix-blend-mode: normal;
-  /* Contain: isolate compositing to this element only */
   contain: strict;
-  /* No transition needed — background doesn't animate */
 }
 
-/* Content layer — sits above the blurred background */
+/* Content layer */
 .product-card-content {
   position: relative;
   z-index: 1;
@@ -52,8 +50,7 @@
   align-items: center;
   padding: 12px;
   min-height: 120px;
-  /* 使用較高不透明度取代 backdrop-filter blur，視覺幾乎一致但效能大幅提升 */
-  background: rgba(255, 255, 255, 0.88);
+  background: rgba(255, 255, 255, 0.78);
 }
 
 /* ===== Status Badges Container ===== */
@@ -85,25 +82,24 @@
 }
 
 .badge-quantity {
-  background: rgba(220, 252, 231, 0.95);
+  background: linear-gradient(135deg, rgba(220, 252, 231, 0.95), rgba(187, 247, 208, 0.9));
   color: #166534;
-  border: 1px solid rgba(22, 101, 52, 0.2);
+  border: 1px solid rgba(22, 101, 52, 0.15);
 }
 
 .badge-new {
-  background: rgba(254, 226, 226, 0.95);
+  background: linear-gradient(135deg, rgba(254, 226, 226, 0.95), rgba(254, 202, 202, 0.9));
   color: #991b1b;
-  border: 1px solid rgba(153, 27, 27, 0.2);
+  border: 1px solid rgba(153, 27, 27, 0.15);
 }
 
 .badge-sale {
-  background: rgba(254, 249, 195, 0.95);
+  background: linear-gradient(135deg, rgba(254, 249, 195, 0.95), rgba(254, 240, 138, 0.9));
   color: #854d0e;
-  border: 1px solid rgba(133, 77, 14, 0.2);
+  border: 1px solid rgba(133, 77, 14, 0.15);
 }
 
-/* ===== 3x Scaled Product Image ===== */
-/* Container clips the oversized image */
+/* ===== Product Image ===== */
 .product-img-wrapper {
   width: 96px;
   height: 96px;
@@ -111,20 +107,18 @@
   overflow: hidden;
   flex-shrink: 0;
   cursor: pointer;
-  margin-right: 12px; /* 稍微縮小圖片與文字間距 */
+  margin-right: 12px;
   margin-bottom: 0;
-  /* Subtle inner shadow for depth */
-  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.04),
+  box-shadow: inset 0 0 0 1px rgba(91, 127, 255, 0.06),
               0 2px 8px rgba(0, 0, 0, 0.06);
-  /* White background for images for a clean blend */
   background: #ffffff;
   transition: transform var(--transition-spring),
               box-shadow var(--transition-spring);
 
   &:hover {
     transform: scale(1.04);
-    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.04),
-                0 4px 16px rgba(0, 0, 0, 0.1);
+    box-shadow: inset 0 0 0 1px rgba(91, 127, 255, 0.1),
+                0 4px 16px rgba(91, 127, 255, 0.1);
   }
 
   &:active {
@@ -139,16 +133,14 @@
   }
 }
 
-/* Image actual sizing */
 .product-img-normal {
   width: 100%;
   height: 100%;
   object-fit: contain;
-  /* Smooth transition for image load */
   transition: transform var(--transition-spring);
 }
 
-/* ===== Sub-category section — spring reveal ===== */
+/* ===== Sub-category section ===== */
 .sub-category-item {
   animation: subcatSpringIn 450ms var(--spring-gentle) both;
 }
@@ -164,7 +156,7 @@
   }
 }
 
-/* ===== Grid for Desktop — Support full width for single items ===== */
+/* ===== Grid for Desktop ===== */
 .product-cards-grid {
   display: flex;
   flex-direction: column;
@@ -184,7 +176,6 @@
   }
 }
 
-/* Product item cards — pure CSS staggered entrance (replaces per-item JS motion) */
 li {
   list-style: none;
   width: 100%;
@@ -194,7 +185,7 @@ li {
   animation: productSlideIn 350ms var(--spring-gentle) both;
 }
 
-/* CSS nth-child stagger — zero JS overhead */
+/* CSS nth-child stagger */
 .product-item-animate:nth-child(1) { animation-delay: 50ms; }
 .product-item-animate:nth-child(2) { animation-delay: 100ms; }
 .product-item-animate:nth-child(3) { animation-delay: 150ms; }
@@ -216,7 +207,7 @@ li {
   }
 }
 
-/* ===== Tag badges — pop in ===== */
+/* ===== Tag badges ===== */
 div[class*="bg-green-100"],
 div[class*="bg-red-100"],
 div[class*="bg-yellow-100"] {
@@ -234,7 +225,7 @@ div[class*="bg-yellow-100"] {
   }
 }
 
-/* Loading spinner — smooth entrance */
+/* Loading spinner */
 mat-progress-spinner {
   animation: spinnerIn 400ms var(--spring-gentle) both;
 }
@@ -253,13 +244,11 @@ mat-progress-spinner {
 /* ===== Mobile Performance Optimizations ===== */
 @media (max-width: 640px) {
   .product-card-bg {
-    /* 手機上降低模糊量，但增加飽和度至 2000% 以維持色彩明亮 */
-    filter: saturate(20) blur(12px);
+    filter: saturate(8) blur(12px);
     transform: scale(2);
   }
 
   .product-card {
-    /* 手機無 hover，移除不必要的 transition 屬性 */
     transition: none;
 
     &:hover {
@@ -276,7 +265,6 @@ mat-progress-spinner {
   }
 
   .sub-category-item {
-    /* 手機上簡化進場動畫：只做 opacity，不做 translate + scale */
     animation: subcatFadeIn 300ms ease-out both;
   }
 
@@ -299,28 +287,26 @@ mat-progress-spinner {
 /* ===== Dark Mode Overrides ===== */
 :host-context([data-theme="dark"]) {
 
-  /* Sub-category cards — dark background instead of white */
   .sub-category-item {
-    background: #2a2a2a !important;
-    border-color: rgba(82, 82, 82, 0.4) !important;
+    background: rgba(30, 30, 38, 0.85) !important;
+    border-color: rgba(123, 159, 255, 0.06) !important;
 
-    /* Fix #1: Sub-category title text — override Tailwind's text-black */
     h3 {
       color: #e4e4e7 !important;
     }
   }
 
   .product-card {
-    background: rgba(65, 65, 65, 0.7);
-    border-color: rgba(255, 255, 255, 0.15) !important;
-    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
+    background: rgba(45, 45, 55, 0.7);
+    border-color: rgba(123, 159, 255, 0.08) !important;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.35);
 
     &:hover {
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
-      border-color: rgba(123, 159, 255, 0.6) !important;
+      box-shadow: 0 8px 32px rgba(123, 159, 255, 0.06),
+        0 2px 8px rgba(0, 0, 0, 0.3);
+      border-color: rgba(123, 159, 255, 0.2) !important;
     }
 
-    /* Fix #1: Product card title & text — override Tailwind text-gray-800 etc. */
     h3 {
       color: #e4e4e7 !important;
     }
@@ -338,45 +324,41 @@ mat-progress-spinner {
     }
   }
 
-  /* Make Gaussian blur background more visible in dark mode */
   .product-card-bg {
-    opacity: 0.65;
-    filter: blur(20px) brightness(0.9) saturate(1.5);
+    opacity: 0.6;
+    filter: blur(20px) brightness(0.85) saturate(1.5);
   }
 
   .product-card-content {
-    background: rgba(50, 50, 50, 0.8);
+    background: rgba(35, 35, 45, 0.82);
   }
 
-  /* Product image background should be white */
   .product-img-wrapper {
     background: #ffffff;
     box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.05),
                 0 2px 8px rgba(0, 0, 0, 0.2);
 
     &:hover {
-      box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.08),
-                  0 4px 16px rgba(0, 0, 0, 0.3);
+      box-shadow: inset 0 0 0 1px rgba(123, 159, 255, 0.1),
+                  0 4px 16px rgba(123, 159, 255, 0.08);
     }
   }
 
   .badge-quantity {
-    background: rgba(22, 101, 52, 0.25);
+    background: linear-gradient(135deg, rgba(22, 101, 52, 0.25), rgba(34, 197, 94, 0.15));
     color: #86efac;
-    border-color: rgba(34, 197, 94, 0.25);
+    border-color: rgba(34, 197, 94, 0.2);
   }
 
   .badge-new {
-    background: rgba(153, 27, 27, 0.25);
+    background: linear-gradient(135deg, rgba(153, 27, 27, 0.25), rgba(239, 68, 68, 0.15));
     color: #fca5a5;
-    border-color: rgba(239, 68, 68, 0.25);
+    border-color: rgba(239, 68, 68, 0.2);
   }
 
   .badge-sale {
-    background: rgba(133, 77, 14, 0.25);
+    background: linear-gradient(135deg, rgba(133, 77, 14, 0.25), rgba(245, 158, 11, 0.15));
     color: #fde68a;
-    border-color: rgba(245, 158, 11, 0.25);
+    border-color: rgba(245, 158, 11, 0.2);
   }
 }
-
-
