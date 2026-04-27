@@ -3008,7 +3008,21 @@ export class NewSearchComponent implements OnInit, OnDestroy {
     if (store.label === "全家") {
       lat = store.storeFLatitude;
       lng = store.storeFLongitude;
-      this.onOptionSelect(null, lat, lng);
+      
+      const fakeEvent = {
+        option: {
+          value: {
+            name: store.storeName.replace('全家', ''),
+            addr: '',
+            label: '全家',
+            type: 'store',
+            longitude: lng,
+            latitude: lat
+          }
+        }
+      } as unknown as MatAutocompleteSelectedEvent;
+
+      this.onOptionSelect(fakeEvent, lat, lng);
       this.searchTerm = '';
     }
     else {
@@ -3021,7 +3035,21 @@ export class NewSearchComponent implements OnInit, OnDestroy {
       if (foundStore) {
         lat = parseFloat(foundStore.lat);
         lng = parseFloat(foundStore.lng);
-        this.onOptionSelect(null, lat, lng);
+
+        const fakeEvent = {
+          option: {
+            value: {
+              name: store.store711Name,
+              addr: '',
+              label: '7-11',
+              type: 'store',
+              longitude: lng,
+              latitude: lat
+            }
+          }
+        } as unknown as MatAutocompleteSelectedEvent;
+
+        this.onOptionSelect(fakeEvent, lat, lng);
         this.searchTerm = '';
       } else {
         // 如果找不到，嘗試取得位置後再搜尋
@@ -3042,7 +3070,21 @@ export class NewSearchComponent implements OnInit, OnDestroy {
             if (matchedStore) {
               lat = parseFloat(matchedStore.lat);
               lng = parseFloat(matchedStore.lng);
-              this.onOptionSelect(null, lat, lng);
+
+              const fakeEvent = {
+                option: {
+                  value: {
+                    name: store.store711Name,
+                    addr: '',
+                    label: '7-11',
+                    type: 'store',
+                    longitude: lng,
+                    latitude: lat
+                  }
+                }
+              } as unknown as MatAutocompleteSelectedEvent;
+
+              this.onOptionSelect(fakeEvent, lat, lng);
               this.searchTerm = '';
             } else {
               console.error('找不到 7-11 商店:', store.store711Name);
