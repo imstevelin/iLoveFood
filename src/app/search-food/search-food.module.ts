@@ -12,6 +12,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatAutocompleteModule } from '@angular/material/autocomplete'; // 用於 mat-autocomplete
 import { MatButtonModule } from '@angular/material/button'; // 用於 mat-button
 import { MatIconModule } from '@angular/material/icon';
+import { MatChipsModule } from '@angular/material/chips';
 import { MatCardModule } from '@angular/material/card';
 import { MatMenuModule } from '@angular/material/menu'
 import { MatToolbarModule } from '@angular/material/toolbar';
@@ -49,6 +50,7 @@ import { GestureDirective } from '../directives/gesture.directive';
     MatButtonModule,
     MatIconModule,
     MatCardModule,
+    MatChipsModule,
     MatMenuModule,
     MatToolbarModule,
     MatDividerModule,

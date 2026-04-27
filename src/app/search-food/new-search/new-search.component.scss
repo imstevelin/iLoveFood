@@ -1260,13 +1260,13 @@ a[href*="google.com/maps"] {
 
 .view-face-list {
   &:not(.view-active) {
-    transform: translateX(-16px) scale(0.97);
+    transform: translateY(16px) scale(0.97);
   }
 }
 
 .view-face-map {
   &:not(.view-active) {
-    transform: translateX(16px) scale(0.97);
+    transform: translateY(16px) scale(0.97);
   }
 }
 
@@ -1579,3 +1579,253 @@ input[type="search"]::-webkit-search-cancel-button {
   -webkit-appearance: none;
   appearance: none;
 }
+
+/* ===== Main Search Chips — Liquid Glass Pill System ===== */
+
+/* Outer wrapper: positions the gradient fade masks */
+.main-search-chips-wrapper {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  height: 100%;
+}
+
+/* Gradient fade masks — soften the edge transitions */
+.main-search-chips-fade {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 20px;
+  z-index: 2;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.25s ease;
+
+  &.visible {
+    opacity: 1;
+  }
+}
+
+.main-search-chips-fade--left {
+  left: 0;
+  background: linear-gradient(to right, rgba(255, 255, 255, 0.85) 0%, transparent 100%);
+}
+
+.main-search-chips-fade--right {
+  right: 0;
+  background: linear-gradient(to left, rgba(255, 255, 255, 0.85) 0%, transparent 100%);
+}
+
+/* Scrollable inner area */
+.main-search-chips-area {
+  flex: 1;
+  min-width: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  display: flex;
+  align-items: center;
+  height: 100%;
+  scroll-behavior: smooth;
+
+  /* Hide scrollbar across all browsers */
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* --- mat-chip-grid layout reset --- */
+.main-chip-grid {
+  display: flex !important;
+  align-items: center;
+  height: 100%;
+  width: 100%;
+}
+
+::ng-deep .main-chip-grid .mdc-evolution-chip-set__chips {
+  flex-wrap: nowrap !important;
+  align-items: center !important;
+  gap: 6px !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  min-height: unset !important;
+}
+
+/* --- Individual Chip Pill — Liquid Glass accent --- */
+::ng-deep .main-chip.mat-mdc-chip {
+  height: 26px !important;
+  min-height: 26px !important;
+  max-height: 26px !important;
+  border-radius: 13px !important;
+  font-size: 12.5px !important;
+  font-weight: 500 !important;
+  letter-spacing: 0.01em;
+  background: rgba(91, 127, 255, 0.10) !important;
+  border: 1px solid rgba(91, 127, 255, 0.20) !important;
+  padding: 0 4px 0 8px !important;
+  margin: 0 !important;
+  flex-shrink: 0;
+  transition: background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+  cursor: default;
+  box-shadow: 0 1px 3px rgba(91, 127, 255, 0.06);
+
+  /* Reset internal cell layout */
+  .mdc-evolution-chip__cell--primary,
+  .mat-mdc-chip-action-label {
+    overflow: hidden;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+  }
+
+  .mdc-evolution-chip__cell--trailing {
+    flex-shrink: 0 !important;
+  }
+
+  /* Strip Material's internal action padding to compact the chip */
+  .mdc-evolution-chip__action--primary {
+    padding: 0 !important;
+  }
+  .mdc-evolution-chip__action--trailing {
+    padding: 0 !important;
+    margin-left: 2px !important;
+  }
+
+  /* All text inside chips */
+  .mdc-evolution-chip__text-label,
+  .mat-mdc-chip-action-label,
+  span {
+    color: rgba(60, 80, 180, 0.85) !important;
+    line-height: 1 !important;
+  }
+
+  &:hover {
+    background: rgba(91, 127, 255, 0.18) !important;
+    border-color: rgba(91, 127, 255, 0.30) !important;
+    box-shadow: 0 2px 8px rgba(91, 127, 255, 0.10);
+  }
+
+  &:active {
+    transform: scale(0.96);
+    transition-duration: 0.08s;
+  }
+}
+
+/* Chip text label */
+.main-chip-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  display: block;
+  max-width: 140px;
+  color: rgba(60, 80, 180, 0.85);
+  font-size: 12.5px;
+  line-height: 1;
+}
+
+/* Remove button inside chip */
+.main-chip-remove {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 16px !important;
+  height: 16px !important;
+  padding: 0 !important;
+  margin-left: 4px !important;
+  margin-right: -2px !important;
+  border: none !important;
+  background: transparent !important;
+  border-radius: 50% !important;
+  color: rgba(91, 127, 255, 0.40) !important;
+  cursor: pointer !important;
+  transition: color 0.15s ease, background 0.15s ease !important;
+  flex-shrink: 0 !important;
+
+  svg {
+    width: 12px;
+    height: 12px;
+  }
+
+  &:hover {
+    color: rgba(91, 127, 255, 0.80) !important;
+    background: rgba(91, 127, 255, 0.08) !important;
+  }
+}
+
+::ng-deep .main-chip button[matChipRemove] {
+  @extend .main-chip-remove;
+}
+
+/* --- Input field inside chip grid --- */
+.main-chip-input {
+  flex: 1 1 0;
+  min-width: 120px;
+  max-width: 100%;
+  height: 100%;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 14px;
+  color: #334155;
+  padding: 0 4px;
+  line-height: 44px; /* Match the search bar height for perfect vertical centering */
+
+  &::placeholder {
+    color: #94a3b8;
+    font-size: 14px;
+  }
+}
+
+/* ===== Dark Mode — Main Chips ===== */
+:host-context([data-theme="dark"]) {
+  .main-search-chips-fade--left {
+    background: linear-gradient(to right, rgba(24, 24, 32, 0.9) 0%, transparent 100%);
+  }
+
+  .main-search-chips-fade--right {
+    background: linear-gradient(to left, rgba(24, 24, 32, 0.9) 0%, transparent 100%);
+  }
+
+  ::ng-deep .main-chip.mat-mdc-chip {
+    background: rgba(123, 159, 255, 0.14) !important;
+    border-color: rgba(123, 159, 255, 0.22) !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+
+    .mdc-evolution-chip__text-label,
+    .mat-mdc-chip-action-label,
+    span {
+      color: #c7d2fe !important;
+    }
+
+    &:hover {
+      background: rgba(123, 159, 255, 0.22) !important;
+      border-color: rgba(123, 159, 255, 0.35) !important;
+    }
+  }
+
+  .main-chip-text {
+    color: #c7d2fe !important;
+  }
+
+  .main-chip-remove,
+  ::ng-deep .main-chip button[matChipRemove] {
+    color: rgba(199, 210, 254, 0.40) !important;
+
+    &:hover {
+      color: #c7d2fe !important;
+      background: rgba(123, 159, 255, 0.12) !important;
+    }
+  }
+
+  .main-chip-input {
+    color: #e4e4e7;
+
+    &::placeholder {
+      color: #52525b;
+    }
+  }
+}
+

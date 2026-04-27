@@ -133,6 +133,7 @@ html {
 }
 
 /* ===== Lock scroll when Map is active (mobile fix) ===== */
+html.map-active-lock,
 body.map-active-lock {
   overflow: hidden !important;
   height: 100vh !important;

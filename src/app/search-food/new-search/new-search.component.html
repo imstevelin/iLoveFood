@@ -17,27 +17,53 @@
 
       <!-- Search Input -->
       <form (ngSubmit)="onSubmit()" class="flex-1 min-w-0">
-        <div class="search-input-glass flex items-center h-11 px-3" matAutocompleteOrigin #origin="matAutocompleteOrigin">
+        <div class="search-input-glass flex items-center h-11 px-3 gap-2" matAutocompleteOrigin #origin="matAutocompleteOrigin">
+          <!-- Search icon -->
           <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 256 256"
             class="text-gray-400 dark:text-zinc-400 shrink-0">
             <path
               d="M229.66,218.34l-50.07-50.06a88.11,88.11,0,1,0-11.31,11.31l50.06,50.07a8,8,0,0,0,11.32-11.32ZM40,112a72,72,0,1,1,72,72A72.08,72.08,0,0,1,40,112Z">
             </path>
           </svg>
-          <input mat-input type="search"
-            class="flex-1 bg-transparent border-none outline-none text-sm px-3 h-full placeholder:text-gray-400 dark:placeholder:text-zinc-500 dark:text-zinc-100"
-            [matAutocomplete]="auto" [matAutocompleteConnectedTo]="origin" [(ngModel)]="searchTerm" (input)="onInput($event)" (keydown)="onKeyDown($event)"
-            enterkeyhint="search" placeholder="門市、商品或導航路徑" name="first" />
-          
-          <!-- Clear Button -->
-          <button *ngIf="searchTerm" type="button" class="shrink-0 text-gray-400 hover:text-gray-600 dark:text-zinc-500 dark:hover:text-zinc-300 mr-2 p-1 rounded-full outline-none transition-colors" (click)="clearSearch($event)" aria-label="清除文字">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 256 256">
-              <path d="M205.66,194.34a8,8,0,0,1-11.32,11.32L128,139.31,61.66,205.66a8,8,0,0,1-11.32-11.32L116.69,128,50.34,61.66A8,8,0,0,1,61.66,50.34L128,116.69l66.34-66.35a8,8,0,0,1,11.32,11.32L139.31,128Z"></path>
-            </svg>
-          </button>
+
+          <!-- Chips + Input scrollable area with CSS mask fades -->
+          <div class="main-search-chips-wrapper">
+            <div class="main-search-chips-area"
+                 #chipsScrollArea
+                 (scroll)="onChipsScroll()"
+                 [class.has-chips]="selectedKeywords.length > 0"
+                 [class.scrolled-left]="chipsScrolledLeft">
+              <mat-chip-grid #chipGrid aria-label="搜尋關鍵字" class="main-chip-grid">
+                <mat-chip-row *ngFor="let keyword of selectedKeywords" (removed)="removeKeyword(keyword)"
+                  class="main-chip">
+                  <span class="main-chip-text">{{ keyword.name || keyword }}</span>
+                  <button matChipRemove aria-label="移除關鍵字" class="main-chip-remove">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" viewBox="0 0 256 256">
+                      <path d="M205.66,194.34a8,8,0,0,1-11.32,11.32L128,139.31,61.66,205.66a8,8,0,0,1-11.32-11.32L116.69,128,50.34,61.66A8,8,0,0,1,61.66,50.34L128,116.69l66.34-66.35a8,8,0,0,1,11.32,11.32L139.31,128Z"></path>
+                    </svg>
+                  </button>
+                </mat-chip-row>
+
+                <input [placeholder]="selectedKeywords.length > 0 ? '...' : '門市、商品或導航路徑'"
+                       #keywordInput
+                       [formControl]="keywordCtrl"
+                       [matChipInputFor]="chipGrid"
+                       [matAutocomplete]="auto"
+                       [matAutocompleteConnectedTo]="origin"
+                       [matChipInputSeparatorKeyCodes]="separatorKeysCodes"
+                       (matChipInputTokenEnd)="addToken($event)"
+                       (input)="onInput($event)"
+                       (keydown)="onKeyDown($event)"
+                       (compositionstart)="isComposing = true"
+                       (compositionend)="isComposing = false"
+                       enterkeyhint="search"
+                       class="main-chip-input" />
+              </mat-chip-grid>
+            </div>
+          </div>
 
           <!--  Chatbot Button -->
-          <button *ngIf="chatEnabled" type="button" class="chatbot-inline-btn" (click)="openChatbot()" aria-label="打開聊天機器人">
+          <button *ngIf="chatEnabled" type="button" class="chatbot-inline-btn shrink-0" (click)="openChatbot()" aria-label="打開聊天機器人">
             💬
           </button>
         </div>
