@@ -54,19 +54,11 @@ async function getSevenToken() {
   const tokenFarmUrl = 'https://ilovefood-api.imstevelin.com/get_token';
   const farmResp = await fetch(tokenFarmUrl, { method: 'POST', headers: { 'User-Agent': UA } });
   const farmData = await farmResp.json();
-  
-  if (farmData.status !== 'success' || !farmData.mid_v) {
-    throw new Error('無法從 Token Farm 獲取 mid_v');
-  }
-
+  if (farmData.status !== 'success' || !farmData.mid_v) throw new Error('無法從 Token Farm 獲取 mid_v');
   const loginUrl = SEVEN_BASE + 'Auth/FrontendAuth/AccessToken?mid_v=' + farmData.mid_v;
   const loginResp = await fetch(loginUrl, { method: 'POST', headers: { 'User-Agent': UA } });
   const loginData = await loginResp.json();
-
-  if (!loginData.isSuccess || !loginData.element) {
-    throw new Error('7-11 登入失敗: ' + (loginData.message || '無回應'));
-  }
-
+  if (!loginData.isSuccess || !loginData.element) throw new Error('7-11 登入失敗');
   return loginData.element;
 }
 
@@ -86,9 +78,7 @@ function loadStores(filePath, brandName) {
         lat, lng
       };
     });
-  } catch (e) {
-    return [];
-  }
+  } catch (e) { return []; }
 }
 
 cli({
@@ -113,64 +103,80 @@ cli({
             const workerUrl = `https://maps-proxy.imstevelin.workers.dev/?url=${encodeURIComponent(url)}`;
             const resp = await fetch(workerUrl);
             const data = await resp.json();
-            
-            if (data.error) {
-                throw new CliError('API_ERROR', '代理伺服器解析錯誤: ' + data.error);
-            }
-            
+            if (data.error) throw new CliError('API_ERROR', '代理伺服器解析錯誤: ' + data.error);
             finalUrl = data.resolvedUrl || url;
             proxyHtml = data.html || '';
         }
         
         const coords = [];
+
+        // 1. 嘗試從 URL Path 中尋找起點 /dir/lat,lng/
         const dirMatch = finalUrl.match(/\/dir\/(-?\d+\.\d+),(-?\d+\.\d+)\//);
         if (dirMatch) {
             coords.push({ type: 'origin', lat: parseFloat(dirMatch[1]), lng: parseFloat(dirMatch[2]) });
         }
 
+        // 2. 嘗試從 saddr 參數找座標 (這在某些 URL 變體中會出現)
+        const saddrMatch = finalUrl.match(/saddr=(-?\d+\.\d+),(-?\d+\.\d+)/);
+        if (saddrMatch) {
+            coords.push({ type: 'origin', lat: parseFloat(saddrMatch[1]), lng: parseFloat(saddrMatch[2]) });
+        }
+        
+        // 3. 嘗試從 daddr 參數找座標
+        const daddrMatch = finalUrl.match(/daddr=(-?\d+\.\d+),(-?\d+\.\d+)/);
+        if (daddrMatch) {
+            coords.push({ type: 'destination', lat: parseFloat(daddrMatch[1]), lng: parseFloat(daddrMatch[2]) });
+        }
+
+        // 4. 嘗試從 !1d(lng)!2d(lat) 格式找終點
         const d12Match = finalUrl.match(/!1d(-?\d+\.\d+)!2d(-?\d+\.\d+)/);
         if (d12Match) {
             coords.push({ type: 'destination', lat: parseFloat(d12Match[2]), lng: parseFloat(d12Match[1]) });
-        } else {
-            const regex = /!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/g;
-            let match;
-            while ((match = regex.exec(finalUrl)) !== null) {
-                coords.push({ type: 'destination', lat: parseFloat(match[1]), lng: parseFloat(match[2]) });
-            }
         }
-        
-        if (coords.length === 0 && proxyHtml) {
-            const regex = /!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/g;
-            let match;
-            while ((match = regex.exec(proxyHtml)) !== null) {
-                coords.push({ lat: parseFloat(match[1]), lng: parseFloat(match[2]) });
-            }
-            if (coords.length > 0) {
-                coords[0].type = 'origin';
-                coords[coords.length - 1].type = 'destination';
+
+        // 5. 嘗試通用經緯度匹配 (!3d lat !4d lng)
+        const regex3d4d = /!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/g;
+        let match;
+        while ((match = regex3d4d.exec(finalUrl)) !== null) {
+            coords.push({ lat: parseFloat(match[1]), lng: parseFloat(match[2]) });
+        }
+
+        // 6. 如果從 URL 找不到，嘗試從 Proxy 返回的 HTML 中找所有經緯度特徵
+        if (coords.length < 2 && proxyHtml) {
+            const htmlRegex = /!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/g;
+            let m;
+            while ((m = htmlRegex.exec(proxyHtml)) !== null) {
+                coords.push({ lat: parseFloat(m[1]), lng: parseFloat(m[2]) });
             }
         }
 
-        if (coords.length === 0) {
+        // 7. 最後的退路：如果還是少於 2 個點，手動 fetch 頁面內容解析
+        if (coords.length < 2) {
             const pageResp = await fetch(finalUrl, { headers: { 'User-Agent': 'Mozilla/5.0' } });
             const pageText = await pageResp.text();
-            const regex = /!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/g;
-            let match;
-            while ((match = regex.exec(pageText)) !== null) {
-                coords.push({ lat: parseFloat(match[1]), lng: parseFloat(match[2]) });
-            }
-            if (coords.length > 0) {
-                coords[0].type = 'origin';
-                coords[coords.length - 1].type = 'destination';
+            const textRegex = /(-?\d+\.\d+),(-?\d+\.\d+)/g; // 尋找任何 lat,lng 格式
+            let m;
+            while ((m = textRegex.exec(pageText)) !== null) {
+                const lat = parseFloat(m[1]), lng = parseFloat(m[2]);
+                if (lat > 21 && lat < 26 && lng > 118 && lng < 123) { // 限制在台灣範圍內避免誤判
+                    coords.push({ lat, lng });
+                }
             }
         }
 
-        if (coords.length < 2) {
-             throw new CliError('NO_DATA', `無法從網址解析出完整的起終點座標: ${finalUrl}`);
+        // 去重並標記起終點
+        const uniqueCoords = Array.from(new Set(coords.map(c => `${c.lat},${c.lng}`)))
+            .map(s => {
+                const [lat, lng] = s.split(',').map(Number);
+                return { lat, lng };
+            });
+
+        if (uniqueCoords.length < 2) {
+             throw new CliError('NO_DATA', `無法從網址解析出起終點座標。`);
         }
 
-        const origin = coords.find(c => c.type === 'origin') || coords[0];
-        const dest = coords.find(c => c.type === 'destination') || coords[coords.length - 1];
+        const origin = uniqueCoords[0];
+        const dest = uniqueCoords[uniqueCoords.length - 1];
 
         const directionsUrl = `https://maps.googleapis.com/maps/api/directions/json?origin=${origin.lat},${origin.lng}&destination=${dest.lat},${dest.lng}&key=${API_KEY}`;
         const dirResp = await fetch(directionsUrl);
@@ -183,55 +189,37 @@ cli({
         const polyline = dirData.routes[0].overview_polyline.points;
         const pathPoints = decodePolyline(polyline);
         
-        // 沿著路線每 ~2000m 取樣一個點
         const sampled = [];
         let lastP = null;
         for (const p of pathPoints) {
-            if (!lastP) {
-                sampled.push(p);
-                lastP = p;
-            } else {
+            if (!lastP) { sampled.push(p); lastP = p; }
+            else {
                 const d = getDistance(lastP.lat, lastP.lng, p.lat, p.lng);
-                if (d >= 2000) {
-                    sampled.push(p);
-                    lastP = p;
-                }
+                if (d >= 2000) { sampled.push(p); lastP = p; }
             }
         }
-        if (lastP && getDistance(lastP.lat, lastP.lng, pathPoints[pathPoints.length-1].lat, pathPoints[pathPoints.length-1].lng) > 2000) {
-            sampled.push(pathPoints[pathPoints.length-1]);
-        }
+        sampled.push(pathPoints[pathPoints.length-1]);
 
         const allStores = [
             ...loadStores(path.join(DATA_DIR, 'seven_eleven_stores.json'), '7-11'),
             ...loadStores(path.join(DATA_DIR, 'family_mart_stores.json'), 'FamilyMart')
         ];
 
-        // 找出沿路 (每個取樣點半徑 2000m 內) 的門市
         const routeStoresMap = new Map();
         for (const p of sampled) {
             for (const s of allStores) {
                 if (!routeStoresMap.has(s.storeNo)) {
                     const d = getDistance(p.lat, p.lng, s.lat, s.lng);
-                    if (d <= 2000) {
-                        routeStoresMap.set(s.storeNo, s);
-                    }
+                    if (d <= 2000) routeStoresMap.set(s.storeNo, s);
                 }
             }
         }
 
         const routeStores = Array.from(routeStoresMap.values());
-        if (routeStores.length === 0) {
-             throw new CliError('NO_DATA', '沿途找不到超商門市。');
-        }
+        if (routeStores.length === 0) throw new CliError('NO_DATA', '沿途找不到超商門市。');
 
-        // =====================================
-        // 開始依序爬取沿途門市的庫存商品
-        // =====================================
         const items = [];
         const queriedNames = new Set();
-        
-        // 預載全家區域庫存 (對每個路線取樣點都查一次，涵蓋整條路線的全家庫存)
         const fmStockCache = new Map();
         if (routeStores.some(s => s.brand === 'FamilyMart')) {
           for (const p of sampled) {
@@ -249,7 +237,6 @@ cli({
           }
         }
 
-        // 獲取 7-11 Token
         let sevenToken = null;
         if (routeStores.some(s => s.brand === '7-11')) {
           try { sevenToken = await getSevenToken(); } catch (e) {}
@@ -270,14 +257,7 @@ cli({
                     if (data.isSuccess && data.element?.StoreStockItem) {
                         for (const cat of data.element.StoreStockItem.CategoryStockItems || []) {
                             for (const item of cat.StockItems || []) {
-                                items.push({
-                                    brand: '7-11',
-                                    storeName: store.name,
-                                    category: cat.Name,
-                                    name: item.ItemName,
-                                    price: item.Price,
-                                    stock: item.RemainingQty
-                                });
+                                items.push({ brand: '7-11', storeName: store.name, category: cat.Name, name: item.ItemName, price: item.Price, stock: item.RemainingQty });
                                 if (items.length >= limit) break;
                             }
                             if (items.length >= limit) break;
@@ -291,27 +271,15 @@ cli({
                     for (const p of rawItems) {
                         let price = p.price || 0;
                         if (price === 0) price = "未標示";
-
-                        items.push({
-                            brand: 'FamilyMart',
-                            storeName: store.name,
-                            category: p.cat || p.kindName || '一般',
-                            name: p.name,
-                            price: price,
-                            stock: p.qty
-                        });
+                        items.push({ brand: 'FamilyMart', storeName: store.name, category: p.cat || p.kindName || '一般', name: p.name, price: price, stock: p.qty });
                         if (items.length >= limit) break;
                     }
                 }
             }
         }
 
-        if (items.length === 0) {
-            throw new CliError('NO_DATA', `已沿途巡查 ${Array.from(queriedNames).slice(0, 5).join(', ')} 等門市，目前都沒有折扣商品。`);
-        }
-
+        if (items.length === 0) throw new CliError('NO_DATA', `已巡查 ${Array.from(queriedNames).slice(0, 3).join(', ')} 等門市，暫無折扣品。`);
         return items;
-
     } catch (e) {
         if (e instanceof CliError) throw e;
         throw new CliError('API_ERROR', '路線解析錯誤：' + e.message);
