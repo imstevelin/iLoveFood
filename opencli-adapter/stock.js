@@ -76,13 +76,13 @@ cli({
   browser: false,
   args: [
     { name: 'keyword', type: 'string', positional: true, required: true, help: '搜尋目標 (例: 台中火車站 / 亞洲大學 / 大里)' },
-    { name: 'limit', type: 'int', default: 5, help: '商品回傳上限' },
+    { name: 'limit', type: 'int', default: 9999, help: '商品回傳上限' },
     { name: 'radius', type: 'int', default: 1200, help: '商圈搜尋半徑(m)' },
   ],
   columns: ['brand', 'storeName', 'dist', 'category', 'name', 'price', 'stock'],
   func: async (_page, args) => {
     const keyword = args.keyword;
-    const limit = parseInt(args.limit, 10) || 5;
+    const limit = parseInt(args.limit, 10) || 9999;
     const radius = parseInt(args.radius, 10) || 1200;
 
     const sevenStoresData = loadJSON('seven_eleven_stores.json');

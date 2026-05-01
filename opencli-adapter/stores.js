@@ -60,13 +60,13 @@ cli({
   browser: false,
   args: [
     { name: 'keyword', type: 'string', positional: true, default: '', help: '搜尋目標 (例: 台中火車站 / 亞洲大學 / 台北101)' },
-    { name: 'limit', type: 'int', default: 10, help: '返回數量' },
+    { name: 'limit', type: 'int', default: 9999, help: '返回數量' },
     { name: 'radius', type: 'int', default: 1500, help: '搜尋半徑(m)' },
   ],
   columns: ['brand', 'storeNo', 'name', 'address', 'distance_m'],
   func: async (_page, args) => {
     const keyword = args.keyword;
-    const limit = parseInt(args.limit, 10) || 10;
+    const limit = parseInt(args.limit, 10) || 9999;
     const radius = parseInt(args.radius, 10) || 1500;
     
     const allStores = [

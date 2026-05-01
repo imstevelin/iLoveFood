@@ -1527,7 +1527,7 @@ export class NewSearchComponent implements OnInit, OnDestroy {
       const finalPoint = finalLeg.end_location;
       if (lastSampledPoint) {
         const distToLast = (window as any).google.maps.geometry.spherical.computeDistanceBetween(lastSampledPoint, finalPoint);
-        if (distToLast > 500) {
+        if (distToLast > 2000) {
           sampledPoints.push({ lat: finalPoint.lat(), lng: finalPoint.lng() });
         }
       } else {

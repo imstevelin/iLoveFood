@@ -18,13 +18,13 @@ cli({
   args: [
     { name: 'keyword', type: 'string', positional: true, required: true, help: '搜尋關鍵字' },
     { name: 'brand', type: 'string', default: 'all', help: '品牌: all / 711 / fm' },
-    { name: 'limit', type: 'int', default: 20, help: '返回數量' },
+    { name: 'limit', type: 'int', default: 9999, help: '返回數量' },
   ],
   columns: ['brand', 'category', 'name', 'price', 'description'],
   func: async (_page, args) => {
     const keyword = args.keyword.toLowerCase();
     const brand = args.brand.toLowerCase();
-    const limit = args.limit || 20;
+    const limit = args.limit || 9999;
 
     const results = [];
 
