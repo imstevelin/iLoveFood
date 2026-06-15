@@ -249,7 +249,7 @@ def on_message(message, data):
     if message['type'] == 'send':
         payload = message['payload']
         if payload.get('type') == 'token_captured':
-            captured_data["token"] = payload['mid_v']
+            captured_data["token"] = payload['mid_v'].replace('\n', '')
             captured_data["updated_at"] = time.time()
 
 def adb_run(cmd):
