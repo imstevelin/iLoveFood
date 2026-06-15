@@ -245,6 +245,15 @@ PKG_NAME = "ecowork.seven"
 captured_data = {"token": None, "updated_at": 0}
 emulator_lock = threading.Lock()
 
+class TokenPool:
+    def __init__(self):
+        self.token = None
+        self.updated_at = 0
+        self.is_fetching = False
+        self.lock = threading.Lock()
+
+pool = TokenPool()
+
 def on_message(message, data):
     if message['type'] == 'send':
         payload = message['payload']
@@ -294,45 +303,79 @@ def init_frida():
         print(f"[!] Frida 初始化失敗: {e}")
         return False
 
+def fetch_token_job():
+    with emulator_lock:
+        print(f"\n[*] 開始預取 (Prefetch) Token... ({time.strftime('%H:%M:%S')})")
+        req_time = time.time()
+        
+        adb_run(["input", "tap", str(I_MAP_X), str(I_MAP_Y)])
+        
+        start_wait = time.time()
+        success = False
+        new_token = None
+        
+        while time.time() - start_wait < 20:
+            if captured_data["token"] and captured_data["updated_at"] > req_time:
+                new_token = captured_data["token"]
+                print(f"[+] 預取成功！耗時: {time.time() - start_wait:.2f} 秒")
+                success = True
+                break
+            time.sleep(0.5)
+            
+        adb_run(["input", "keyevent", "4"])
+        time.sleep(2)
+        
+        with pool.lock:
+            if success:
+                pool.token = new_token
+                pool.updated_at = time.time()
+            else:
+                print("[!] 預取超時，執行預防性重置...")
+                open_app_and_prepare()
+            pool.is_fetching = False
+
+def start_prefetch():
+    with pool.lock:
+        if not pool.is_fetching:
+            pool.is_fetching = True
+            threading.Thread(target=fetch_token_job, daemon=True).start()
+
+def maintain_pool():
+    while True:
+        needs_fetch = False
+        with pool.lock:
+            if pool.token is None:
+                needs_fetch = True
+            elif time.time() - pool.updated_at > 240:
+                print(f"[*] 快取 Token 已閒置超過 4 分鐘，準備重新抓取新鮮 Token... ({time.strftime('%H:%M:%S')})")
+                needs_fetch = True
+                
+        if needs_fetch:
+            start_prefetch()
+            
+        time.sleep(5)
+
 @app.route('/get_token', methods=['POST', 'OPTIONS'])
 def get_token():
     if request.method == 'OPTIONS':
         return jsonify({"status": "ok"}), 200
 
-    print(f"\n[!] 收到查詢請求 ({time.strftime('%H:%M:%S')})")
-    with emulator_lock:
-        request_time = time.time()
+    start_wait = time.time()
+    
+    while time.time() - start_wait < 25:
+        with pool.lock:
+            if pool.token is not None and (time.time() - pool.updated_at < 240):
+                t = pool.token
+                pool.token = None # 消耗掉
+                print(f"[!] 瞬間回傳 Token！({time.strftime('%H:%M:%S')})")
+                return jsonify({"status": "success", "mid_v": t})
+        time.sleep(0.5)
         
-        # 觸發抓取流程
-        print("[*] 點擊 i地圖 觸發 Token 產生...")
-        adb_run(["input", "tap", str(I_MAP_X), str(I_MAP_Y)])
-        
-        start_wait = time.time()
-        success = False
-        token = None
-        
-        while time.time() - start_wait < 20:
-            if captured_data["token"] and captured_data["updated_at"] > request_time:
-                token = captured_data["token"]
-                print(f"[+] 抓取成功！耗時: {time.time() - start_wait:.2f} 秒")
-                success = True
-                break
-            time.sleep(0.5)
-        
-        # 執行單次返回，停留在首頁待命
-        print("[*] 執行返回並回到待命狀態...")
-        adb_run(["input", "keyevent", "4"])
-        time.sleep(2)
-
-        if success:
-            return jsonify({"status": "success", "mid_v": token})
-        else:
-            print("[!] 抓取超時，執行預防性重置...")
-            open_app_and_prepare()
-            return jsonify({"status": "error", "message": "Timeout"}), 504
+    return jsonify({"status": "error", "message": "Timeout"}), 504
 
 if __name__ == '__main__':
     if init_frida():
+        threading.Thread(target=maintain_pool, daemon=True).start()
         print("[+] 啟動 Waitress 服務 (Port 5000)...")
         serve(app, host='0.0.0.0', port=5000, threads=4)
     else:
