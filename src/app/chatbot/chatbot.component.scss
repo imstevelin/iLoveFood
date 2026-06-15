@@ -7,14 +7,14 @@
     right: 1.5rem;
     width: 56px;
     height: 56px;
-    border-radius: 6px;
+    border-radius: 0px;
     background: var(--text-primary);
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    transition: transform 0.2s ease, background 0.2s ease;
-    border: none;
+    transition: all 0.2s ease;
+    border: 1px solid var(--border-default);
     
     :host-context(body.map-sheet-open) & {
         opacity: 0;
@@ -24,11 +24,12 @@
 
     &:hover {
         background: var(--accent);
-        transform: scale(1.05);
+        transform: none;
+        box-shadow: none;
     }
 
     &:active {
-        transform: scale(0.9) !important;
+        transform: scale(0.95) !important;
         transition-duration: 60ms;
     }
 }
@@ -43,12 +44,13 @@
     max-height: 85vh;
     background: var(--surface);
     border: 1px solid var(--border-default);
-    border-radius: 6px;
+    border-radius: 0px;
     display: flex;
     flex-direction: column;
     overflow: hidden;
     z-index: 1000;
     resize: vertical;
+    box-shadow: none;
     
     opacity: 0;
     visibility: hidden !important;
@@ -76,7 +78,7 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    border-radius: 6px 6px 0 0;
+    border-radius: 0;
     border-bottom: 1px solid var(--border-default);
     position: relative;
 }
@@ -90,19 +92,20 @@
 .toggle-btn {
     background: var(--surface);
     border: 1px solid var(--border-default);
-    color: var(--text-secondary);
+    color: var(--text-primary);
     width: 28px;
     height: 28px;
-    border-radius: 50%;
+    border-radius: 0px;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 14px;
-    transition: background 0.2s, border-color 0.2s;
+    transition: all 0.15s ease;
 
     &:hover {
         border-color: var(--accent);
+        background: var(--accent-light);
     }
 
     &:active {
@@ -136,11 +139,11 @@
     background: var(--text-primary);
     color: var(--bg);
     padding: 8px 14px;
-    border-radius: 4px;
+    border-radius: 0px;
     font-size: 14px;
     max-width: 80%;
     word-wrap: break-word;
-    border: none;
+    border: 1px solid var(--border-default);
 }
 
 /* Bot message bubble — Warm flat */
@@ -148,7 +151,7 @@
 .chatbot-body .bot > span {
     background: var(--bg);
     padding: 10px 14px;
-    border-radius: 4px;
+    border-radius: 0px;
     max-width: 85%;
     word-wrap: break-word;
     font-size: 14px;
@@ -210,7 +213,7 @@
     border-collapse: collapse;
     margin: 12px 0;
     font-size: 13px;
-    border-radius: 4px;
+    border-radius: 0px;
     overflow: hidden;
 }
 
@@ -240,7 +243,8 @@
     color: white;
     padding: 8px 16px;
     margin: 8px 0;
-    border-radius: 4px;
+    border-radius: 0px;
+    border: 1px solid var(--border-default);
     text-decoration: none;
     font-weight: 500;
     font-size: 14px;
@@ -287,7 +291,7 @@
 .chatbot-footer input {
     flex: 1;
     border: 1px solid var(--border-default);
-    border-radius: 6px;
+    border-radius: 0px;
     padding: 10px 14px;
     font-size: 14px;
     font-family: inherit;
@@ -308,9 +312,9 @@
 .chatbot-footer button {
     width: 40px;
     height: 40px;
-    border-radius: 6px;
+    border-radius: 0px;
+    border: 1px solid var(--border-default);
     background: var(--text-primary);
-    border: none;
     color: white;
     cursor: pointer;
     display: flex;
@@ -396,19 +400,21 @@
     right: 16px;
     width: 32px;
     height: 32px;
-    border-radius: 50%;
+    border-radius: 0px;
     background: var(--surface);
     border: 1px solid var(--border-default);
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    color: var(--accent);
+    color: var(--text-primary);
     z-index: 10;
-    transition: border-color 0.2s;
+    box-shadow: none;
+    transition: all 0.15s ease;
 
     &:hover {
         border-color: var(--accent);
+        box-shadow: none;
     }
 }
 
@@ -425,15 +431,17 @@
     border: 1px solid var(--border-default);
     color: var(--accent);
     padding: 6px 12px;
-    border-radius: 4px;
+    border-radius: 0px;
     font-size: 13px;
     cursor: pointer;
-    transition: background 0.2s, color 0.2s, border-color 0.2s;
+    transition: all 0.15s ease;
 
     &:hover {
         background: var(--accent);
         border-color: var(--accent);
         color: #FFFFFF;
+        box-shadow: none;
+        transform: none;
     }
 }
 
@@ -443,6 +451,7 @@
   .chatbot-container {
     background: var(--surface);
     border-color: var(--border-default);
+    box-shadow: none;
   }
 
   .chatbot-header {
@@ -458,10 +467,11 @@
   .toggle-btn {
     background: var(--surface);
     border-color: var(--border-default);
-    color: var(--text-secondary);
+    color: var(--text-primary);
 
     &:hover {
       border-color: var(--accent);
+      background: var(--accent-light);
     }
   }
 
@@ -520,25 +530,35 @@
 
     &:focus {
       border-color: var(--accent);
+      box-shadow: none;
     }
   }
 
   .chatbot-footer button {
     background: var(--accent);
+    border-left: 1px solid var(--border-default);
   }
 
   .scroll-bottom-btn {
     background: var(--surface);
     border-color: var(--border-default);
+    box-shadow: none;
 
     &:hover {
       border-color: var(--accent);
+      box-shadow: none;
     }
   }
 
   .preset-btn {
     background: var(--bg);
     border-color: var(--border-default);
+    
+    &:hover {
+      background: var(--accent);
+      border-color: var(--accent);
+      box-shadow: none;
+    }
   }
 
   .chatbot-mobile-backdrop {
@@ -547,5 +567,10 @@
 
   .chatbot-fab {
     background: var(--accent);
+    border-color: var(--border-default);
+    box-shadow: none;
+    &:hover {
+      box-shadow: none;
+    }
   }
 }

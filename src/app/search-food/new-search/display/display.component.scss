@@ -4,21 +4,19 @@
 /* ===== Product Card — Flat Border ===== */
 .product-card {
   position: relative;
-  border-radius: 6px;
+  border-radius: 0px;
   overflow: hidden;
   border: 1px solid var(--border-default);
   background: var(--surface);
-  transition: transform 0.2s ease,
-              border-color 0.2s ease;
+  transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
 
   &:hover {
-    transform: translateY(-2px);
     border-color: var(--accent);
+    box-shadow: none;
   }
 
   &:active {
-    transform: translateY(0) scale(0.99);
-    transition-duration: 80ms;
+    transform: scale(0.98);
   }
 }
 
@@ -36,6 +34,11 @@
   padding: 12px;
   min-height: 120px;
   background: var(--surface);
+
+  /* Monospace font for price slip style */
+  div.font-semibold {
+    font-family: var(--font-mono);
+  }
 }
 
 /* ===== Status Badges Container ===== */
@@ -51,10 +54,12 @@
 }
 
 .status-badge {
+  font-family: var(--font-mono);
   font-size: 11px;
   font-weight: 600;
   padding: 4px 10px;
-  border-radius: 4px;
+  border-radius: 0px;
+  border: 1px solid var(--border-default);
   white-space: nowrap;
 
   @media (min-width: 640px) {
@@ -66,26 +71,26 @@
 .badge-quantity {
   background: rgba(22, 101, 52, 0.08);
   color: #166534;
-  border: 1px solid rgba(22, 101, 52, 0.15);
+  border: 1px solid var(--border-default);
 }
 
 .badge-new {
   background: rgba(153, 27, 27, 0.08);
   color: #991b1b;
-  border: 1px solid rgba(153, 27, 27, 0.15);
+  border: 1px solid var(--border-default);
 }
 
 .badge-sale {
   background: rgba(133, 77, 14, 0.08);
   color: #854d0e;
-  border: 1px solid rgba(133, 77, 14, 0.15);
+  border: 1px solid var(--border-default);
 }
 
 /* ===== Product Image ===== */
 .product-img-wrapper {
   width: 96px;
   height: 96px;
-  border-radius: 4px;
+  border-radius: 0px;
   overflow: hidden;
   flex-shrink: 0;
   cursor: pointer;
@@ -141,7 +146,7 @@
   display: flex;
   flex-direction: column;
   gap: 1rem;
-  padding: 0;
+  padding: 0 0 40px 0;
   margin: 0;
   list-style: none;
 
@@ -282,6 +287,7 @@ mat-progress-spinner {
 
     &:hover {
       border-color: var(--accent) !important;
+      box-shadow: none !important;
     }
 
     h3 {
@@ -321,18 +327,18 @@ mat-progress-spinner {
   .badge-quantity {
     background: rgba(34, 197, 94, 0.12);
     color: #86efac;
-    border-color: rgba(34, 197, 94, 0.2);
+    border-color: var(--border-default) !important;
   }
 
   .badge-new {
     background: rgba(239, 68, 68, 0.12);
     color: #fca5a5;
-    border-color: rgba(239, 68, 68, 0.2);
+    border-color: var(--border-default) !important;
   }
 
   .badge-sale {
     background: rgba(245, 158, 11, 0.12);
     color: #fde68a;
-    border-color: rgba(245, 158, 11, 0.2);
+    border-color: var(--border-default) !important;
   }
 }

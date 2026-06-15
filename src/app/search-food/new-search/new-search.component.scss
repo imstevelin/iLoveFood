@@ -20,13 +20,14 @@
 
 /* ===== Search Input ===== */
 .search-input-glass {
-  background: var(--bg);
+  background: var(--surface);
   border: 1px solid var(--border-default);
-  border-radius: 6px;
-  transition: border-color var(--transition-spring);
+  border-radius: 0px;
+  transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
 
   &:focus-within {
     border-color: var(--accent);
+    box-shadow: none;
   }
 }
 
@@ -34,7 +35,7 @@
 .header-icon-btn {
   width: 44px;
   height: 44px;
-  border-radius: 6px;
+  border-radius: 0px;
   border: 1px solid var(--border-default);
   background: var(--surface);
   display: flex;
@@ -42,11 +43,12 @@
   justify-content: center;
   cursor: pointer;
   flex-shrink: 0;
-  transition: border-color var(--transition-snappy),
-    background var(--transition-snappy);
+  transition: all 0.2s ease;
 
   &:hover {
     border-color: var(--accent);
+    background: var(--bg);
+    box-shadow: none;
   }
 
   &:active {
@@ -96,7 +98,7 @@
   align-items: center;
   gap: 12px;
   padding: 10px 16px;
-  border-radius: 4px;
+  border-radius: 0px;
   cursor: pointer;
   text-decoration: none;
   color: inherit;
@@ -168,7 +170,7 @@
   right: 0;
   bottom: 0;
   background: #C4BFB5;
-  border-radius: 4px;
+  border-radius: 0px;
   transition: background var(--transition-snappy);
 
   &::before {
@@ -179,9 +181,9 @@
     left: 3px;
     bottom: 3px;
     background: white;
-    border-radius: 2px;
+    border-radius: 0px;
     transition: transform var(--transition-spring);
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
   }
 }
 
@@ -285,16 +287,18 @@ svg.transition-transform {
 .store-glass-card {
   background: var(--surface);
   border: 1px solid var(--border-default);
-  border-radius: 6px;
+  border-radius: 0px;
   padding: 16px;
-  margin-bottom: 12px;
+  margin-bottom: 16px;
   position: relative;
   overflow: hidden;
   scroll-margin-top: 84px;
-  transition: border-color var(--transition-spring);
+  transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
 
   &:hover {
-    border-color: var(--text-secondary);
+    border-color: var(--accent);
+    box-shadow: none;
+    transform: none;
   }
 }
 
@@ -317,19 +321,21 @@ svg.transition-transform {
 
 /* 7-11 Brand Card — Left border accent */
 .card-seven {
-  border-left: 3px solid #ff6b00;
+  border-left: 5px solid #ff6b00 !important;
 
   &:hover {
-    border-color: #ff6b00;
+    border-color: var(--fg) !important;
+    border-left-color: #ff6b00 !important;
   }
 }
 
 /* FamilyMart Brand Card — Left border accent */
 .card-family {
-  border-left: 3px solid #00b386;
+  border-left: 5px solid #00b386 !important;
 
   &:hover {
-    border-color: #00b386;
+    border-color: var(--fg) !important;
+    border-left-color: #00b386 !important;
   }
 }
 
@@ -355,7 +361,7 @@ svg.transition-transform {
 .store-icon-badge {
   width: 44px;
   height: 44px;
-  border-radius: 8px;
+  border-radius: 0px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -366,22 +372,22 @@ svg.transition-transform {
 
 .badge-seven {
   background: rgba(255, 107, 0, 0.06);
-  border-color: rgba(255, 107, 0, 0.2);
+  border-color: var(--border-default);
 }
 
 .badge-family {
   background: rgba(0, 179, 134, 0.06);
-  border-color: rgba(0, 179, 134, 0.2);
+  border-color: var(--border-default);
 }
 
 .badge-about {
   background: var(--accent-light);
-  border-color: rgba(217, 119, 87, 0.2);
+  border-color: var(--border-default);
 }
 
 .badge-location {
   background: rgba(239, 68, 68, 0.06);
-  border-color: rgba(239, 68, 68, 0.2);
+  border-color: var(--border-default);
 }
 
 /* ===== Distance Badge ===== */
@@ -390,11 +396,13 @@ svg.transition-transform {
   align-items: center;
   gap: 4px;
   font-size: 12px;
-  font-weight: 500;
-  color: var(--accent);
+  font-weight: 600;
+  font-family: var(--font-mono);
+  color: var(--text-primary);
   background: var(--accent-light);
   padding: 2px 10px;
-  border-radius: 100px;
+  border-radius: 0px;
+  border: 1px solid var(--border-default);
   animation: badgeIn var(--duration-normal) var(--spring) both;
 }
 
@@ -449,11 +457,13 @@ svg.transition-transform {
 /* ===== Qty Badge ===== */
 .qty-badge {
   font-size: 12px;
-  font-weight: 500;
+  font-weight: 600;
+  font-family: var(--font-mono);
   color: #c2410c;
   background: rgba(251, 146, 60, 0.08);
   padding: 2px 10px;
-  border-radius: 100px;
+  border-radius: 0px;
+  border: 1px solid var(--border-default);
   animation: badgeIn var(--duration-normal) var(--spring) both;
 }
 
@@ -466,7 +476,7 @@ svg.transition-transform {
 .store-nav-btn {
   width: 44px;
   height: 44px;
-  border-radius: 8px;
+  border-radius: 0px;
   background: var(--bg);
   border: 1px solid var(--border-default);
   display: flex;
@@ -475,15 +485,18 @@ svg.transition-transform {
   cursor: pointer;
   flex-shrink: 0;
   text-decoration: none;
-  transition: border-color 0.2s ease;
+  box-shadow: none;
+  transition: all 0.15s ease;
 
   &:hover {
     border-color: var(--accent);
+    background: var(--accent-light);
+    transform: none;
   }
 
   &:active {
-    transform: scale(0.92);
-    transition-duration: 60ms;
+    transform: translateY(0);
+    box-shadow: none;
   }
 }
 
@@ -518,7 +531,7 @@ svg.transition-transform {
   -webkit-user-select: none;
   z-index: 1;
   border: 1px solid var(--border-default);
-  border-radius: 6px;
+  border-radius: 0px;
   background: var(--surface);
   text-align: center;
   cursor: pointer;
@@ -561,7 +574,8 @@ svg.transition-transform {
   }
 
   &:hover {
-    border-color: var(--text-secondary);
+    border-color: var(--accent);
+    background: var(--accent-light);
   }
 
   &.selected {
@@ -578,11 +592,13 @@ svg.transition-transform {
 .category-qty-badge {
   display: inline-block;
   font-size: 11px;
-  font-weight: 600;
+  font-weight: 700;
+  font-family: var(--font-mono);
   background: rgba(251, 146, 60, 0.08);
   color: #c2410c;
   padding: 2px 8px;
-  border-radius: 20px;
+  border-radius: 0px;
+  border: 1px solid var(--border-default);
   pointer-events: none !important;
   user-select: none !important;
   -webkit-user-select: none !important;
@@ -643,36 +659,38 @@ svg.transition-transform {
   align-items: center;
   gap: 8px;
   padding: 10px 28px;
-  border-radius: 8px;
+  border-radius: 0px;
   background: var(--text-primary);
   color: var(--bg);
-  font-weight: 600;
+  font-weight: 700;
   font-size: 14px;
-  border: none;
+  border: 1px solid var(--border-default);
   cursor: pointer;
-  transition: background var(--transition-snappy);
+  box-shadow: none;
+  transition: all 0.15s ease;
 
   &:hover {
     background: var(--accent);
     color: white;
+    transform: none;
+    box-shadow: none;
   }
 
   &:active {
-    transform: scale(0.96);
-    transition-duration: 60ms;
+    transform: scale(0.95);
   }
 }
 
 /* ===== Result Header ===== */
 .result-header-glass {
   background: var(--bg);
-  border-radius: 100px;
+  border-radius: 0px;
   padding: 12px 24px;
   margin: 12px auto 16px;
   text-align: center;
-  font-weight: 500;
+  font-weight: 700;
   font-size: 14px;
-  color: var(--text-secondary);
+  color: var(--text-primary);
   border: 1px solid var(--border-default);
 }
 
@@ -690,23 +708,25 @@ svg.transition-transform {
   gap: 6px;
   margin-top: 8px;
   padding: 10px 24px;
-  border-radius: 8px;
+  border-radius: 0px;
   background: var(--text-primary);
   color: var(--bg);
-  font-weight: 600;
+  font-weight: 700;
   font-size: 14px;
-  border: none;
+  border: 1px solid var(--border-default);
   cursor: pointer;
-  transition: background var(--transition-snappy);
+  box-shadow: none;
+  transition: all 0.15s ease;
 
   &:hover {
     background: var(--accent);
     color: white;
+    transform: none;
+    box-shadow: none;
   }
 
   &:active {
-    transform: scale(0.94);
-    transition-duration: 60ms;
+    transform: scale(0.95);
   }
 }
 
@@ -756,7 +776,7 @@ a[href*="google.com/maps"] {
 
   .store-glass-card {
     padding: 12px;
-    border-radius: 10px;
+    border-radius: 0px;
   }
 
   .header-icon-btn {
@@ -804,6 +824,7 @@ a[href*="google.com/maps"] {
 
     &:focus-within {
       border-color: var(--accent);
+      box-shadow: none;
     }
 
     input {
@@ -815,15 +836,17 @@ a[href*="google.com/maps"] {
   .header-icon-btn {
     background: var(--surface);
     border-color: var(--border-default);
-    color: var(--text-secondary);
+    color: var(--text-primary);
+    box-shadow: none;
 
     svg {
-      fill: var(--text-secondary);
-      stroke: var(--text-secondary);
+      fill: var(--text-primary);
+      stroke: var(--text-primary);
     }
 
     &:hover {
       border-color: var(--accent);
+      box-shadow: none;
     }
 
     &.active {
@@ -868,67 +891,76 @@ a[href*="google.com/maps"] {
     border-color: var(--border-default);
 
     &:hover {
-      border-color: var(--text-secondary);
+      border-color: var(--accent);
+      box-shadow: none;
     }
   }
 
   /* Brand Cards — Dark variants */
   .card-seven {
-    border-left-color: #ff6b00;
+    border-left-color: #ff6b00 !important;
 
     &:hover {
-      border-color: #ff6b00;
+      border-color: var(--accent) !important;
+      border-left-color: #ff6b00 !important;
+      box-shadow: none;
     }
   }
 
   .card-family {
-    border-left-color: #00b386;
+    border-left-color: #00b386 !important;
 
     &:hover {
-      border-color: #00b386;
+      border-color: var(--accent) !important;
+      border-left-color: #00b386 !important;
+      box-shadow: none;
     }
   }
 
   .card-about {
-    border-left-color: var(--accent);
+    border-left-color: var(--accent) !important;
 
     &:hover {
-      border-color: var(--accent);
+      border-color: var(--accent) !important;
+      border-left-color: var(--accent) !important;
+      box-shadow: none;
     }
   }
 
   .card-location {
-    border-left-color: #ef4444;
+    border-left-color: #ef4444 !important;
 
     &:hover {
-      border-color: #ef4444;
+      border-color: var(--accent) !important;
+      border-left-color: #ef4444 !important;
+      box-shadow: none;
     }
   }
 
   /* --- Store Icon Badges --- */
   .store-icon-badge {
     background: var(--bg);
-    border-color: var(--border-subtle);
+    border-color: var(--border-default);
   }
 
   .badge-seven {
     background: rgba(255, 107, 0, 0.08);
-    border-color: rgba(255, 107, 0, 0.25);
+    border-color: var(--border-default);
   }
 
   .badge-family {
     background: rgba(0, 179, 134, 0.08);
-    border-color: rgba(0, 179, 134, 0.25);
+    border-color: var(--border-default);
   }
 
   .badge-about {
     background: var(--accent-light);
-    border-color: rgba(232, 150, 125, 0.25);
+    border-color: var(--border-default);
   }
 
   .badge-location {
     background: rgba(239, 68, 68, 0.08);
-    border-color: rgba(239, 68, 68, 0.25);
+    border-color: var(--border-default);
   }
 
   /* --- Store Card Header --- */
@@ -939,26 +971,35 @@ a[href*="google.com/maps"] {
   .store-nav-btn {
     background: var(--bg);
     border-color: var(--border-default);
+    box-shadow: none;
+    &:hover {
+      border-color: var(--accent);
+      box-shadow: none;
+    }
   }
 
   .qty-badge {
     color: #fb923c;
     background: rgba(251, 146, 60, 0.1);
+    border-color: var(--border-default) !important;
   }
 
   .qty-badge-family {
     color: #34d399;
     background: rgba(0, 179, 134, 0.1);
+    border-color: var(--border-default) !important;
   }
 
   .distance-badge {
-    color: var(--accent);
+    color: var(--text-primary);
     background: var(--accent-light);
+    border-color: var(--border-default) !important;
   }
 
   .badge-family-dist {
     color: #34d399;
     background: rgba(0, 179, 134, 0.08);
+    border-color: var(--border-default) !important;
   }
 
   /* --- Category Chips --- */
@@ -967,23 +1008,23 @@ a[href*="google.com/maps"] {
     border-color: var(--border-default);
     color: var(--text-primary);
 
-    &::before {
-      background: var(--accent-light);
-    }
-
     &:hover {
-      border-color: var(--text-secondary);
+      border-color: var(--accent);
+      background: var(--accent-light);
+      box-shadow: none;
     }
 
     &.selected {
       background: var(--accent-light);
       border-color: var(--accent);
+      box-shadow: none;
     }
   }
 
   .category-qty-badge {
     background: rgba(251, 146, 60, 0.12);
     color: #fb923c;
+    border-color: var(--border-default) !important;
   }
 
   /* --- Distance Badge --- */
@@ -999,7 +1040,7 @@ a[href*="google.com/maps"] {
   /* --- Result Header --- */
   .result-header-glass {
     background: var(--bg);
-    border-color: var(--border-default);
+    border-color: var(--fg);
   }
 
   /* --- Login Prompt --- */
@@ -1021,7 +1062,7 @@ a[href*="google.com/maps"] {
   cursor: pointer;
   padding: 4px;
   margin-left: 4px;
-  border-radius: 50%;
+  border-radius: 0px;
   transition: background 0.2s ease;
   display: flex;
   align-items: center;
@@ -1110,8 +1151,8 @@ a[href*="google.com/maps"] {
   display: flex;
   align-items: center;
   gap: 0;
-  padding: 4px;
-  border-radius: 6px;
+  padding: 3px;
+  border-radius: 0px;
   background: var(--surface);
   border: 1px solid var(--border-default);
   -webkit-tap-highlight-color: transparent;
@@ -1121,14 +1162,14 @@ a[href*="google.com/maps"] {
 /* Sliding indicator */
 .view-toggle-indicator {
   position: absolute;
-  top: 4px;
-  left: 4px;
-  width: calc(50% - 4px);
-  height: calc(100% - 8px);
-  border-radius: 4px;
+  top: 3px;
+  left: 3px;
+  width: calc(50% - 3px);
+  height: calc(100% - 6px);
+  border-radius: 0px;
   background: var(--bg);
   border: 1px solid var(--border-default);
-  transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transition: transform 0.25s cubic-bezier(0.2, 0, 0, 1);
   z-index: 0;
 
   &.map-active {
@@ -1148,7 +1189,7 @@ a[href*="google.com/maps"] {
   border: none;
   background: transparent;
   cursor: pointer;
-  border-radius: 100px;
+  border-radius: 0px;
   color: var(--text-secondary);
   font-size: 14px;
   font-weight: 600;
@@ -1311,8 +1352,8 @@ a[href*="google.com/maps"] {
 
   .view-toggle-pill {
     width: 100%;
-    padding: 4px;
-    border-radius: 6px;
+    padding: 3px;
+    border-radius: 0px;
     overflow: hidden;
     transition: width 0.35s cubic-bezier(0.32, 0.72, 0, 1),
                 height 0.35s cubic-bezier(0.32, 0.72, 0, 1),
@@ -1321,12 +1362,12 @@ a[href*="google.com/maps"] {
   }
 
   .view-toggle-indicator {
-    top: 4px;
-    left: 4px;
-    width: calc(50% - 4px);
-    height: calc(100% - 8px);
-    border-radius: 4px;
-    transition: transform 0.45s cubic-bezier(0.34, 1.56, 0.64, 1),
+    top: 3px;
+    left: 3px;
+    width: calc(50% - 3px);
+    height: calc(100% - 6px);
+    border-radius: 0px;
+    transition: transform 0.25s cubic-bezier(0.2, 0, 0, 1),
                 opacity 0.25s ease;
   }
 
@@ -1437,17 +1478,18 @@ input[type="search"]::-webkit-search-cancel-button {
   min-height: unset !important;
 }
 
-/* --- Individual Chip Pill — Warm accent --- */
+/* --- Individual Chip Pill — Brutalist --- */
 ::ng-deep .main-chip.mat-mdc-chip {
   height: 26px !important;
   min-height: 26px !important;
   max-height: 26px !important;
-  border-radius: 6px !important;
+  border-radius: 0px !important;
   font-size: 12.5px !important;
-  font-weight: 500 !important;
+  font-weight: 600 !important;
+  font-family: var(--font-mono);
   letter-spacing: 0.01em;
   background: var(--accent-light) !important;
-  border: 1px solid rgba(217, 119, 87, 0.2) !important;
+  border: 1px solid var(--border-default) !important;
   padding: 0 4px 0 8px !important;
   margin: 0 !important;
   flex-shrink: 0;
@@ -1479,13 +1521,12 @@ input[type="search"]::-webkit-search-cancel-button {
   .mdc-evolution-chip__text-label,
   .mat-mdc-chip-action-label,
   span {
-    color: var(--accent) !important;
+    color: var(--text-primary) !important;
     line-height: 1 !important;
   }
 
   &:hover {
     background: rgba(217, 119, 87, 0.15) !important;
-    border-color: rgba(217, 119, 87, 0.3) !important;
   }
 
   &:active {
@@ -1501,7 +1542,7 @@ input[type="search"]::-webkit-search-cancel-button {
   white-space: nowrap;
   display: block;
   max-width: 140px;
-  color: var(--accent);
+  color: var(--text-primary);
   font-size: 12.5px;
   line-height: 1;
 }
@@ -1518,8 +1559,8 @@ input[type="search"]::-webkit-search-cancel-button {
   margin-right: -2px !important;
   border: none !important;
   background: transparent !important;
-  border-radius: 50% !important;
-  color: rgba(217, 119, 87, 0.4) !important;
+  border-radius: 0px !important;
+  color: var(--text-secondary) !important;
   cursor: pointer !important;
   transition: color 0.15s ease, background 0.15s ease !important;
   flex-shrink: 0 !important;

@@ -1,13 +1,14 @@
-/* Sider Component — Warm Flat Edition — Claude/Anthropic-inspired */
+/* Sider Component — Brutalist style */
 
 .toolbar {
-    background-color: theme('colors.primary.light');
-    color: theme('colors.success');
+    background-color: var(--bg);
+    color: var(--text-primary);
     position: fixed;
     top: 0;
     left: 0;
     right: 0;
     z-index: 1000;
+    border-bottom: 1px solid var(--border-default);
 }
 
 .text-with-shadow {
@@ -21,12 +22,14 @@
   left: 0;
   width: 100%;
   height: 100%;
-  background-color: rgba(0, 0, 0, 0.5);
+  background-color: rgba(29, 28, 26, 0.45);
   z-index: 9998;
   opacity: 0;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
 }
 
-/* 側邊欄 */
+/* 側邊欄 — Brutalist flat slide-out panel */
 .sidebar {
   position: fixed;
   top: 0;
@@ -37,6 +40,8 @@
   background-color: var(--surface);
   z-index: 9999;
   overflow-y: auto;
+  border-right: 1px solid var(--border-default);
+  box-shadow: none;
 }
 
 /* 側邊欄標題 */
@@ -45,17 +50,18 @@
   justify-content: space-between;
   align-items: center;
   padding: 16px;
-  background-color: theme('colors.primary.light');
+  background-color: var(--bg);
+  border-bottom: 1px solid var(--border-default);
   
   h3 {
     margin: 0;
     font-size: 16px;
-    font-weight: bold;
-    color: theme('colors.success');
+    font-weight: 700;
+    color: var(--text-primary);
   }
   
   .close-btn {
-    color: theme('colors.primary.default');
+    color: var(--text-primary);
   }
 }
 
@@ -70,10 +76,10 @@
   align-items: center;
   padding: 12px 16px;
   cursor: pointer;
-  transition: background-color 0.2s ease;
+  transition: all 0.15s ease;
   
   &:hover {
-    background-color: theme('colors.primary.light');
+    background-color: var(--accent-light);
   }
   
   .store-icon {
@@ -85,13 +91,14 @@
   }
   
   .store-name {
-    color: theme('colors.primary.default');
+    color: var(--text-primary);
     font-size: 14px;
+    font-weight: 600;
     flex: 1;
   }
 }
 
-/* 登入區域 */
+/* 登入區域 — Brutalist black button */
 .login-section {
   padding: 16px;
   border-top: 1px solid var(--border-default);
@@ -100,17 +107,25 @@
   .login-btn {
     width: 100%;
     padding: 12px 16px;
-    background-color: theme('colors.primary.default');
+    background-color: var(--text-primary);
     color: white;
-    border: none;
-    border-radius: 6px;
+    border: 1px solid var(--border-default);
+    border-radius: 0px;
     font-size: 14px;
-    font-weight: bold;
+    font-weight: 700;
     cursor: pointer;
-    transition: background-color 0.2s ease;
+    box-shadow: none;
+    transition: all 0.15s ease;
     
     &:hover {
-      background-color: theme('colors.primary.dark');
+      background-color: var(--accent);
+      color: white;
+      transform: none;
+      box-shadow: none;
+    }
+
+    &:active {
+      transform: scale(0.96);
     }
   }
 }
@@ -127,13 +142,13 @@
   margin-bottom: 12px;
   
   .search-icon {
-    color: theme('colors.primary.default');
+    color: var(--text-primary);
     margin-right: 8px;
   }
   
   .search-title {
-    font-weight: bold;
-    color: theme('colors.primary.default');
+    font-weight: 700;
+    color: var(--text-primary);
     font-size: 14px;
   }
 }
@@ -145,12 +160,14 @@
     display: flex;
     align-items: center;
     border: 1px solid var(--border-default);
-    border-radius: 6px;
+    border-radius: 0px;
     overflow: hidden;
-    transition: border-color 0.2s ease;
+    transition: all 0.15s ease;
+    background: var(--bg);
     
     &:focus-within {
-      border-color: theme('colors.primary.default');
+      border-color: var(--accent);
+      box-shadow: none;
     }
     
     &:has(.search-input:disabled) {
@@ -167,6 +184,7 @@
     font-size: 14px;
     outline: none;
     background: transparent;
+    color: var(--text-primary);
     
     &:disabled {
       background-color: var(--bg);
@@ -180,14 +198,15 @@
     align-items: center;
     justify-content: center;
     padding: 8px 12px;
-    background-color: theme('colors.primary.default');
+    background-color: var(--text-primary);
     color: white;
     border: none;
+    border-left: 1px solid var(--border-default);
     cursor: pointer;
-    transition: background-color 0.2s ease;
+    transition: all 0.15s ease;
     
     &:hover:not(:disabled) {
-      background-color: theme('colors.primary.dark');
+      background-color: var(--accent);
     }
     
     &:disabled {
@@ -210,12 +229,13 @@
     
     .result-count {
       font-size: 12px;
+      font-weight: 600;
       color: var(--text-secondary);
     }
   }
   
   .result-list {
-    max-height: 200px;
+    max-height: 240px;
     overflow-y: auto;
   }
   
@@ -223,13 +243,18 @@
     display: flex;
     align-items: center;
     padding: 8px 12px;
-    border-radius: 6px;
+    border-radius: 0px;
+    border: 1px solid var(--border-default);
+    background: var(--surface);
     cursor: pointer;
-    transition: background-color 0.2s ease;
-    margin-bottom: 4px;
+    transition: all 0.15s ease;
+    margin-bottom: 8px;
     
     &:hover {
       background-color: var(--accent-light);
+      border-color: var(--accent);
+      box-shadow: none;
+      transform: none;
     }
     
     .result-info {
@@ -238,8 +263,8 @@
       flex-direction: column;
       
       .food-name {
-        font-weight: bold;
-        color: theme('colors.primary.default');
+        font-weight: 700;
+        color: var(--text-primary);
         font-size: 14px;
         margin-bottom: 4px;
       }
@@ -252,6 +277,7 @@
         .store-name {
           color: var(--text-secondary);
           font-size: 12px;
+          font-weight: 500;
           margin-bottom: 2px;
         }
         
@@ -264,9 +290,10 @@
         .store-distance {
           display: flex;
           align-items: center;
-          color: theme('colors.primary.default');
+          color: var(--text-primary);
           font-size: 11px;
-          font-weight: 500;
+          font-weight: 600;
+          font-family: var(--font-mono);
           
           .distance-icon {
             font-size: 14px;
@@ -294,7 +321,7 @@
     }
     
     .arrow-icon {
-      color: var(--border-default);
+      color: var(--text-primary);
       font-size: 16px;
     }
   }
@@ -342,13 +369,13 @@
   padding: 16px 16px 8px 16px;
   
   .favorites-icon {
-    color: theme('colors.primary.default');
+    color: var(--text-primary);
     margin-right: 8px;
   }
   
   .favorites-title {
-    font-weight: bold;
-    color: theme('colors.primary.default');
+    font-weight: 700;
+    color: var(--text-primary);
     font-size: 14px;
   }
 }
@@ -370,28 +397,16 @@
 :host-context([data-theme="dark"]) {
   .sidebar {
     background-color: var(--surface);
+    border-right-color: var(--border-default);
+    box-shadow: none;
   }
 
   .sidebar-header {
     background-color: var(--bg);
-
-    h3 {
-      color: var(--accent);
-    }
   }
 
   .sidebar-overlay {
-    background-color: rgba(0, 0, 0, 0.6);
-  }
-
-  .store-item {
-    &:hover {
-      background-color: var(--accent-light);
-    }
-
-    .store-name {
-      color: var(--text-secondary);
-    }
+    background-color: rgba(0, 0, 0, 0.65);
   }
 
   .login-section {
@@ -399,6 +414,16 @@
 
     .login-btn {
       background-color: var(--accent);
+      color: var(--bg);
+      border-color: var(--border-default);
+      box-shadow: none;
+
+      &:hover {
+        background-color: var(--text-primary);
+        color: var(--bg);
+        border-color: var(--accent);
+        box-shadow: none;
+      }
     }
   }
 
@@ -407,46 +432,30 @@
   }
 
   .search-input-wrapper {
-    border-color: var(--border-subtle);
+    border-color: var(--border-default);
 
     &:focus-within {
       border-color: var(--accent);
-    }
-
-    &:has(.search-input:disabled) {
-      background-color: var(--bg);
-      border-color: var(--border-default);
+      box-shadow: none;
     }
   }
 
-  .search-input {
-    color: var(--text-primary);
-
-    &:disabled {
-      background-color: var(--bg);
-      color: var(--text-secondary);
+  .search-button {
+    background-color: var(--accent);
+    color: var(--bg);
+    border-left-color: var(--border-default);
+    
+    &:hover:not(:disabled) {
+      background-color: var(--text-primary);
+      box-shadow: none;
     }
   }
 
   .result-item {
+    border-color: var(--border-default) !important;
     &:hover {
-      background-color: var(--accent-light);
+      border-color: var(--accent) !important;
+      box-shadow: none !important;
     }
-
-    .food-name {
-      color: var(--text-primary);
-    }
-
-    .store-name {
-      color: var(--text-secondary);
-    }
-  }
-
-  .no-results {
-    color: var(--text-secondary);
-  }
-
-  .searching {
-    color: var(--text-secondary);
   }
 }

@@ -24,37 +24,40 @@
   display: block;
 }
 
-/* Flat Warm Close Button */
+/* Flat Warm Close Button — Brutalist */
 .modern-close-btn {
   position: absolute;
   top: 1.5rem;
   right: 1.5rem;
   width: 44px;
   height: 44px;
-  border-radius: 50%;
-  border: none;
-  background: rgba(29, 28, 26, 0.8);
-  color: white;
+  border-radius: 0px;
+  border: 1px solid var(--border-default);
+  background: var(--surface);
+  color: var(--text-primary);
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.2s ease;
+  transition: all 0.15s ease;
   z-index: 100;
   padding: 0;
+  box-shadow: none;
 
   svg {
-    stroke: #ffffff;
+    stroke: var(--text-primary);
     transition: transform 0.2s ease;
   }
 
   &:hover {
-    background: rgba(29, 28, 26, 0.95);
-    transform: rotate(90deg) scale(1.1);
+    background: var(--accent-light);
+    border-color: var(--accent);
+    transform: none;
+    box-shadow: none;
   }
 
   &:active {
-    transform: rotate(90deg) scale(0.95);
+    transform: scale(0.95);
   }
 }
 
@@ -76,5 +79,21 @@
 
   .dialog-image {
     background: #ffffff;
+  }
+
+  .modern-close-btn {
+    background: var(--surface);
+    color: var(--text-primary);
+    border-color: var(--border-default);
+    box-shadow: none;
+
+    svg {
+      stroke: var(--text-primary);
+    }
+    &:hover {
+      background: var(--accent-light);
+      border-color: var(--accent);
+      box-shadow: none;
+    }
   }
 }

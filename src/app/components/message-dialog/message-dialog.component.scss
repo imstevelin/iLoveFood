@@ -1,4 +1,4 @@
-/* Message Dialog — Warm Flat Edition — Claude/Anthropic-inspired */
+/* Message Dialog — Brutalist style */
 
 .btn-success { background-color: #10b981 !important; color: #ffffff !important; }
 .btn-error { background-color: var(--text-primary) !important; color: #ffffff !important; }
@@ -7,19 +7,35 @@
 
 .dialog-button {
   background-color: var(--text-primary);
-  border: none;
+  border: 1px solid var(--border-default) !important;
+  border-radius: 0px !important;
   cursor: pointer;
-  transition: background-color 0.2s ease;
+  box-shadow: none;
+  transition: all 0.15s ease;
 
   &:hover {
     filter: brightness(1.1);
+    transform: none;
+    box-shadow: none;
+  }
+
+  &:active {
+    transform: scale(0.96);
   }
 }
 
 /* ===== Dark Mode Overrides ===== */
 :host-context([data-theme="dark"]) {
   .dialog-button {
-    background-color: var(--border-subtle);
+    background-color: var(--accent);
+    color: var(--bg) !important;
+    border-color: var(--border-default) !important;
+    box-shadow: none;
+
+    &:hover {
+      background-color: var(--text-primary);
+      box-shadow: none;
+    }
   }
 
   h2 {

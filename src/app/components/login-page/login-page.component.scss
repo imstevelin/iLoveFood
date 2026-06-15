@@ -1,50 +1,53 @@
-/* 友善超人 — Warm Flat Login Dialog — Claude/Anthropic-inspired */
+/* 友善超人 — Warm Flat Login Dialog — Brutalist style */
 
 .login-wrapper {
   padding: 24px 16px;
   position: relative;
 }
 
-/* 頂部 Icon 徽章 — Flat warm accent */
+/* 頂部 Icon 徽章 — Brutalist */
 .login-icon-badge {
   width: 44px;
   height: 44px;
-  border-radius: 6px;
+  border-radius: 0px;
   display: flex;
   align-items: center;
   justify-content: center;
   background: var(--accent-light);
   border: 1px solid var(--border-default);
   flex-shrink: 0;
+  box-shadow: none;
 }
 
-/* 關閉按鈕 */
+/* 關閉按鈕 — Brutalist square */
 .close-btn {
-  background: var(--bg);
-  border-radius: 50%;
-  transition: transform 0.2s ease,
-    background 0.2s ease;
+  background: var(--surface);
+  border: 1px solid var(--border-default);
+  border-radius: 0px;
+  transition: all 0.15s ease;
   display: flex;
   align-items: center;
   justify-content: center;
 
   &:hover {
-    background: var(--border-default);
+    background: var(--accent-light);
+    border-color: var(--accent);
+    transform: none;
+    box-shadow: none;
   }
 
   &:active {
-    transform: scale(0.85);
-    transition-duration: 60ms;
+    transform: scale(0.95);
   }
 }
 
-/* 輸入框 — Flat with border focus */
+/* 輸入框 — Brutalist with border focus */
 .input-field {
   background: var(--bg);
   border: 1px solid var(--border-default);
-  border-radius: 6px;
+  border-radius: 0px;
   color: var(--text-primary);
-  transition: border-color 0.2s ease;
+  transition: all 0.15s ease;
 
   &::placeholder {
     color: var(--text-secondary);
@@ -53,27 +56,29 @@
   &:focus {
     outline: none;
     border-color: var(--accent);
+    box-shadow: none;
     background: var(--surface);
   }
 }
 
-/* 登入主按鈕 — Flat dark with warm hover */
+/* 登入主按鈕 — Brutalist black button with offset shadow */
 .login-btn {
   background: var(--text-primary);
   color: white;
-  border: none;
-  border-radius: 4px;
-  transition: transform 0.2s ease,
-    background 0.2s ease;
+  border: 1px solid var(--border-default);
+  border-radius: 0px;
+  box-shadow: none;
+  transition: all 0.15s ease;
 
   &:hover {
     background: var(--accent);
-    transform: translateY(-1px);
+    color: white;
+    transform: none;
+    box-shadow: none;
   }
 
   &:active {
-    transform: scale(0.96) translateY(0);
-    transition-duration: 60ms;
+    transform: scale(0.96);
   }
 }
 
@@ -83,20 +88,16 @@
 }
 
 @keyframes shakeX {
-
   0%,
   100% {
     transform: translateX(0);
   }
-
   25% {
     transform: translateX(-4px);
   }
-
   50% {
     transform: translateX(4px);
   }
-
   75% {
     transform: translateX(-2px);
   }
@@ -104,37 +105,17 @@
 
 /* ===== Dark Mode Overrides ===== */
 :host-context([data-theme="dark"]) {
-
-  .close-btn {
-    background: var(--border-default);
-
-    &:hover {
-      background: var(--border-subtle);
-    }
-  }
-
-  .input-field {
-    background: var(--bg);
-    border-color: var(--border-default);
-    color: var(--text-primary);
-
-    &::placeholder {
-      color: var(--text-secondary);
-    }
-
-    &:focus {
-      border-color: var(--accent);
-      background: var(--surface);
-    }
-  }
-
-  .login-icon-badge {
-    background: var(--accent-light);
-    border-color: var(--border-default);
-  }
-
   .login-btn {
     background: var(--accent);
-    color: white;
+    color: var(--bg);
+    border-color: var(--border-default);
+    box-shadow: none;
+
+    &:hover {
+      background: var(--text-primary);
+      color: var(--bg);
+      border-color: var(--accent);
+      box-shadow: none;
+    }
   }
 }

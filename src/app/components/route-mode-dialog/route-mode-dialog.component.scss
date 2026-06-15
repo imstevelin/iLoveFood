@@ -1,50 +1,50 @@
-/* Route Mode Dialog — Warm Flat Edition — Claude/Anthropic-inspired */
+/* Route Mode Dialog — Brutalist style */
 
 .mode-btn {
-  border-radius: 6px;
+  border-radius: 0px;
   border: 1px solid var(--border-default);
   background-color: var(--surface);
-  transition: all 0.3s ease;
+  transition: all 0.15s ease;
   height: auto;
   
   &:hover {
     background-color: var(--accent-light);
     border-color: var(--accent);
-    transform: translateY(-2px);
+    transform: none;
+    box-shadow: none;
 
     .text-4xl {
-       transform: scale(1.1);
+       transform: scale(1.05);
     }
   }
   
   &:active {
     background-color: var(--bg);
-    transform: translateY(0) scale(0.96);
-    transition-duration: 0.1s;
+    transform: scale(0.96);
   }
 
   .text-4xl {
-    transition: transform 0.3s ease;
+    transition: transform 0.2s ease;
   }
 }
 
-/* ===== Route Search Box — Flat with border focus ===== */
+/* ===== Route Search Box — Brutalist ===== */
 .route-search-box {
   display: flex;
   align-items: flex-start;
   gap: 8px;
   background: var(--surface);
   border: 1px solid var(--border-default);
-  border-radius: 6px;
+  border-radius: 0px;
   padding: 8px 12px;
   min-height: 44px;
   width: 100%;
   box-sizing: border-box;
-  transition: border-color 0.2s ease,
-    background 0.2s ease;
+  transition: all 0.15s ease;
 
   &:focus-within {
     border-color: var(--accent);
+    box-shadow: none;
     background: var(--surface);
   }
 }
@@ -54,7 +54,7 @@
   width: 18px;
   height: 18px;
   margin-top: 10px;
-  color: var(--text-secondary);
+  color: var(--text-primary);
 }
 
 .route-search-chips-area {
@@ -71,18 +71,18 @@
   width: 100%;
 }
 
-/* ===== Chip Styling — Warm accent ===== */
+/* ===== Chip Styling — Brutalist receipt badge ===== */
 ::ng-deep .route-chip.mat-mdc-chip {
   max-width: calc(100% - 4px) !important;
   height: 28px !important;
-  border-radius: 4px !important;
+  border-radius: 0px !important;
   font-size: 13px !important;
-  font-weight: 500 !important;
+  font-weight: 600 !important;
   letter-spacing: 0.02em;
   background: var(--accent-light) !important;
-  border: 1px solid rgba(217, 119, 87, 0.18) !important;
+  border: 1px solid var(--border-default) !important;
   padding: 0 6px !important;
-  transition: background 0.2s ease, border-color 0.2s ease;
+  transition: all 0.15s ease;
 
   .mdc-evolution-chip__cell--primary,
   .mat-mdc-chip-action-label {
@@ -97,11 +97,12 @@
   .mdc-evolution-chip__text-label,
   .mat-mdc-chip-action-label,
   span {
-    color: var(--accent) !important;
+    color: var(--text-primary) !important;
   }
 
   &:hover {
-    background: rgba(217, 119, 87, 0.15) !important;
+    background: var(--bg) !important;
+    box-shadow: none !important;
   }
 }
 
@@ -111,14 +112,14 @@
   white-space: nowrap;
   display: block;
   max-width: 160px;
-  color: var(--accent);
+  color: var(--text-primary);
 }
 
 ::ng-deep .route-chip-remove-icon.mat-icon {
   font-size: 16px !important;
   width: 16px !important;
   height: 16px !important;
-  color: rgba(217, 119, 87, 0.45) !important;
+  color: var(--text-secondary) !important;
   flex-shrink: 0;
 
   &:hover {
@@ -142,9 +143,9 @@
   }
 }
 
-/* ===== Autocomplete Panel — Flat with border ===== */
+/* ===== Autocomplete Panel — Brutalist ===== */
 ::ng-deep .route-autocomplete-panel {
-  border-radius: 6px !important;
+  border-radius: 0px !important;
   box-shadow: none !important;
   border: 1px solid var(--border-default) !important;
   margin-top: 6px !important;
@@ -162,106 +163,42 @@
    ========================================== */
 :host-context([data-theme="dark"]) {
   .mode-btn {
-    background-color: var(--surface);
     border-color: var(--border-default);
 
-    color: var(--text-primary) !important;
-
-    span {
-      color: var(--text-primary) !important;
-    }
-
-    .mat-mdc-button-persistent-ripple,
-    .mdc-button__label {
-      color: var(--text-primary) !important;
-    }
-
     &:hover {
-      background-color: var(--accent-light);
       border-color: var(--accent);
-    }
-
-    &:active {
-      background-color: var(--border-default);
-    }
-  }
-
-  h2 {
-    color: var(--text-primary) !important;
-  }
-
-  p {
-    color: var(--text-secondary) !important;
-  }
-
-  .dialog-cancel-btn {
-    color: var(--text-secondary) !important;
-
-    &:hover {
-      color: var(--text-primary) !important;
+      box-shadow: none;
     }
   }
 
   /* --- Route Search Box (Dark) --- */
   .route-search-box {
-    background: var(--surface);
     border-color: var(--border-default);
 
     &:focus-within {
       border-color: var(--accent);
-      background: var(--surface);
-    }
-  }
-
-  .route-search-icon {
-    color: var(--text-secondary);
-  }
-
-  .route-search-input {
-    color: var(--text-primary);
-
-    &::placeholder {
-      color: var(--text-secondary);
+      box-shadow: none;
     }
   }
 
   /* --- Chip (Dark) --- */
   ::ng-deep .route-chip.mat-mdc-chip {
-    background: rgba(232, 150, 125, 0.12) !important;
-    border-color: rgba(232, 150, 125, 0.22) !important;
+    border-color: var(--border-default) !important;
 
     .mdc-evolution-chip__text-label,
     .mat-mdc-chip-action-label,
     span {
-      color: var(--accent) !important;
+      color: var(--text-primary) !important;
     }
   }
 
   .route-chip-text {
-    color: var(--accent) !important;
-  }
-
-  ::ng-deep .route-chip-remove-icon.mat-icon {
-    color: rgba(232, 150, 125, 0.45) !important;
-
-    &:hover {
-      color: var(--accent) !important;
-    }
+    color: var(--text-primary) !important;
   }
 
   /* --- Autocomplete (Dark) --- */
   ::ng-deep .route-autocomplete-panel {
-    background: var(--surface) !important;
     border-color: var(--border-default) !important;
     box-shadow: none !important;
-
-    .mat-mdc-option {
-      color: var(--text-primary) !important;
-
-      &:hover,
-      &.mat-mdc-option-active {
-        background: var(--accent-light) !important;
-      }
-    }
   }
 }

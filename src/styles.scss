@@ -4,7 +4,7 @@
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;500;600;700;900&display=swap');
 
 :root {
   /* ===== Claude-Inspired Warm Color System ===== */
@@ -30,7 +30,7 @@
   --border-subtle: #ECE8DF;
 
   /* Card — Flat, no glass */
-  --card-radius: 6px;
+  --card-radius: 0px;
 
   /* Status */
   --success: #10B981;
@@ -38,6 +38,7 @@
 
   /* Text — Deep Charcoal */
   --text-primary: #1D1C1A;
+  --fg: #1D1C1A;
   --text-secondary: #6B6964;
 
   /* Surfaces */
@@ -45,7 +46,7 @@
   --glass-border: #E6E1D6;
   --glass-shadow: none;
   --glass-blur: 0;
-  --glass-radius: 6px;
+  --glass-radius: 0px;
 
   /* No glow effects */
   --glow-primary: none;
@@ -57,8 +58,8 @@
   --family-gradient: linear-gradient(135deg, #00b386, #34d399);
 
   /* Typography */
-  --font-display: 'Iowan Old Style', 'Charter', 'Georgia', serif;
-  --font-body: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  --font-display: 'Noto Serif TC', 'Iowan Old Style', 'Charter', 'Georgia', 'Songti TC', 'STSong', 'PMingLiU', serif;
+  --font-body: 'Noto Serif TC', 'Georgia', 'Songti TC', 'STSong', 'PMingLiU', serif;
   --font-mono: 'JetBrains Mono', 'IBM Plex Mono', monospace;
 
   /* ===== Simplified Animation Tokens ===== */
@@ -100,6 +101,7 @@
   --success-light: rgba(16, 185, 129, 0.15);
 
   --text-primary: #E8E5E0;
+  --fg: #E8E5E0;
   --text-secondary: #9C9890;
 
   --surface: #2A2826;
@@ -113,15 +115,38 @@
   --glow-warm: none;
 }
 
+.mat-typography,
 html,
 body {
   height: 100%;
   margin: 0;
-  font-family: var(--font-body);
+  font-family: var(--font-body) !important;
   background-color: var(--bg);
   color: var(--text-primary);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+input,
+button,
+select,
+textarea {
+  font-family: var(--font-body) !important;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+.font-display {
+  font-family: var(--font-display) !important;
+}
+
+.font-mono,
+[class*="font-mono"] {
+  font-family: var(--font-mono) !important;
 }
 
 html {
@@ -202,7 +227,7 @@ body.map-active-lock {
 /* ===== Override Angular Material for warm flat aesthetic ===== */
 .mat-mdc-autocomplete-panel {
   background: var(--surface) !important;
-  border-radius: 6px !important;
+  border-radius: 0px !important;
   border: 1px solid var(--border-default) !important;
   box-shadow: none !important;
   margin-top: 4px !important;
@@ -228,7 +253,7 @@ body.map-active-lock {
 }
 
 .mat-mdc-option {
-  border-radius: 4px !important;
+  border-radius: 0px !important;
   margin: 2px 4px !important;
   transition: background var(--duration-fast) ease !important;
 }
@@ -264,7 +289,7 @@ body.map-active-lock {
   .mdc-dialog__surface,
   .mat-mdc-dialog-surface {
     background: var(--surface) !important;
-    border-radius: 6px !important;
+    border-radius: 0px !important;
     border: 1px solid var(--border-default) !important;
     overflow: hidden !important;
     box-shadow: none !important;
@@ -300,7 +325,7 @@ body.map-active-lock {
   .mdc-dialog__surface,
   .mat-mdc-dialog-surface {
     background: #ffffff !important;
-    border-radius: 6px !important;
+    border-radius: 0 !important;
     border: 1px solid var(--border-default) !important;
     overflow: hidden !important;
     box-shadow: none !important;
