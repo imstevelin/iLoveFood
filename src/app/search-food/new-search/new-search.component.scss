@@ -22,7 +22,7 @@
 .search-input-glass {
   background: var(--bg);
   border: 1px solid var(--border-default);
-  border-radius: 8px;
+  border-radius: 6px;
   transition: border-color var(--transition-spring);
 
   &:focus-within {
@@ -34,7 +34,7 @@
 .header-icon-btn {
   width: 44px;
   height: 44px;
-  border-radius: 8px;
+  border-radius: 6px;
   border: 1px solid var(--border-default);
   background: var(--surface);
   display: flex;
@@ -96,7 +96,7 @@
   align-items: center;
   gap: 12px;
   padding: 10px 16px;
-  border-radius: 8px;
+  border-radius: 4px;
   cursor: pointer;
   text-decoration: none;
   color: inherit;
@@ -168,7 +168,7 @@
   right: 0;
   bottom: 0;
   background: #C4BFB5;
-  border-radius: 24px;
+  border-radius: 4px;
   transition: background var(--transition-snappy);
 
   &::before {
@@ -179,7 +179,7 @@
     left: 3px;
     bottom: 3px;
     background: white;
-    border-radius: 50%;
+    border-radius: 2px;
     transition: transform var(--transition-spring);
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
   }
@@ -285,7 +285,7 @@ svg.transition-transform {
 .store-glass-card {
   background: var(--surface);
   border: 1px solid var(--border-default);
-  border-radius: 12px;
+  border-radius: 6px;
   padding: 16px;
   margin-bottom: 12px;
   position: relative;
@@ -518,7 +518,7 @@ svg.transition-transform {
   -webkit-user-select: none;
   z-index: 1;
   border: 1px solid var(--border-default);
-  border-radius: 10px;
+  border-radius: 6px;
   background: var(--surface);
   text-align: center;
   cursor: pointer;
@@ -1096,11 +1096,11 @@ a[href*="google.com/maps"] {
   position: absolute;
   inset: -30px;
   
-  backdrop-filter: blur(16px) saturate(120%);
-  -webkit-backdrop-filter: blur(16px) saturate(120%);
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
   
-  mask-image: radial-gradient(ellipse at center, black 15%, transparent 70%);
-  -webkit-mask-image: radial-gradient(ellipse at center, black 15%, transparent 70%);
+  mask-image: none;
+  -webkit-mask-image: none;
   
   z-index: -1;
   pointer-events: none;
@@ -1111,7 +1111,7 @@ a[href*="google.com/maps"] {
   align-items: center;
   gap: 0;
   padding: 4px;
-  border-radius: 100px;
+  border-radius: 6px;
   background: var(--surface);
   border: 1px solid var(--border-default);
   -webkit-tap-highlight-color: transparent;
@@ -1125,7 +1125,7 @@ a[href*="google.com/maps"] {
   left: 4px;
   width: calc(50% - 4px);
   height: calc(100% - 8px);
-  border-radius: 100px;
+  border-radius: 4px;
   background: var(--bg);
   border: 1px solid var(--border-default);
   transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -1302,19 +1302,17 @@ a[href*="google.com/maps"] {
 
   .view-toggle-mist {
     inset: -30px;
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    mask-image: radial-gradient(ellipse at center, black 30%, transparent 80%);
-    -webkit-mask-image: radial-gradient(ellipse at center, black 30%, transparent 80%);
-    transition: inset 0.35s cubic-bezier(0.32, 0.72, 0, 1),
-                mask-image 0.35s cubic-bezier(0.32, 0.72, 0, 1),
-                -webkit-mask-image 0.35s cubic-bezier(0.32, 0.72, 0, 1);
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    mask-image: none;
+    -webkit-mask-image: none;
+    transition: none;
   }
 
   .view-toggle-pill {
     width: 100%;
     padding: 4px;
-    border-radius: 100px;
+    border-radius: 6px;
     overflow: hidden;
     transition: width 0.35s cubic-bezier(0.32, 0.72, 0, 1),
                 height 0.35s cubic-bezier(0.32, 0.72, 0, 1),
@@ -1327,7 +1325,7 @@ a[href*="google.com/maps"] {
     left: 4px;
     width: calc(50% - 4px);
     height: calc(100% - 8px);
-    border-radius: 100px;
+    border-radius: 4px;
     transition: transform 0.45s cubic-bezier(0.34, 1.56, 0.64, 1),
                 opacity 0.25s ease;
   }

@@ -30,7 +30,7 @@
   --border-subtle: #ECE8DF;
 
   /* Card — Flat, no glass */
-  --card-radius: 12px;
+  --card-radius: 6px;
 
   /* Status */
   --success: #10B981;
@@ -45,7 +45,7 @@
   --glass-border: #E6E1D6;
   --glass-shadow: none;
   --glass-blur: 0;
-  --glass-radius: 12px;
+  --glass-radius: 6px;
 
   /* No glow effects */
   --glow-primary: none;
@@ -202,9 +202,9 @@ body.map-active-lock {
 /* ===== Override Angular Material for warm flat aesthetic ===== */
 .mat-mdc-autocomplete-panel {
   background: var(--surface) !important;
-  border-radius: 12px !important;
+  border-radius: 6px !important;
   border: 1px solid var(--border-default) !important;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08) !important;
+  box-shadow: none !important;
   margin-top: 4px !important;
   animation: dropdownIn var(--duration-normal) var(--spring-gentle) both !important;
 }
@@ -212,7 +212,7 @@ body.map-active-lock {
 [data-theme="dark"] .mat-mdc-autocomplete-panel {
   background: var(--surface) !important;
   border: 1px solid var(--border-default) !important;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3) !important;
+  box-shadow: none !important;
 }
 
 @keyframes dropdownIn {
@@ -228,7 +228,7 @@ body.map-active-lock {
 }
 
 .mat-mdc-option {
-  border-radius: 8px !important;
+  border-radius: 4px !important;
   margin: 2px 4px !important;
   transition: background var(--duration-fast) ease !important;
 }
@@ -264,9 +264,10 @@ body.map-active-lock {
   .mdc-dialog__surface,
   .mat-mdc-dialog-surface {
     background: var(--surface) !important;
-    border-radius: 16px !important;
+    border-radius: 6px !important;
     border: 1px solid var(--border-default) !important;
     overflow: hidden !important;
+    box-shadow: none !important;
   }
 }
 
@@ -275,18 +276,21 @@ body.map-active-lock {
   .mat-mdc-dialog-surface {
     background: var(--surface) !important;
     border: 1px solid var(--border-default) !important;
+    box-shadow: none !important;
   }
 }
 
-/* Backdrop — Warm tint */
+/* Backdrop — Warm tint, no blur */
 .cdk-overlay-backdrop-showing {
-  background: rgba(29, 28, 26, 0.15) !important;
-  backdrop-filter: blur(4px) !important;
-  -webkit-backdrop-filter: blur(4px) !important;
+  background: rgba(29, 28, 26, 0.45) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
 }
 
 [data-theme="dark"] .cdk-overlay-backdrop-showing {
-  background: rgba(0, 0, 0, 0.4) !important;
+  background: rgba(0, 0, 0, 0.65) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
 }
 
 /* 純白背景商品圖片視窗 */
@@ -296,9 +300,10 @@ body.map-active-lock {
   .mdc-dialog__surface,
   .mat-mdc-dialog-surface {
     background: #ffffff !important;
-    border-radius: 16px !important;
+    border-radius: 6px !important;
+    border: 1px solid var(--border-default) !important;
     overflow: hidden !important;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12) !important;
+    box-shadow: none !important;
     padding: 0 !important;
   }
 }
@@ -307,7 +312,8 @@ body.map-active-lock {
   .mdc-dialog__surface,
   .mat-mdc-dialog-surface {
     background: var(--surface) !important;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4) !important;
+    border: 1px solid var(--border-default) !important;
+    box-shadow: none !important;
   }
 }
 

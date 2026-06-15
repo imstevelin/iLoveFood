@@ -7,7 +7,7 @@
     right: 1.5rem;
     width: 56px;
     height: 56px;
-    border-radius: 50%;
+    border-radius: 6px;
     background: var(--text-primary);
     display: flex;
     align-items: center;
@@ -43,7 +43,7 @@
     max-height: 85vh;
     background: var(--surface);
     border: 1px solid var(--border-default);
-    border-radius: 12px;
+    border-radius: 6px;
     display: flex;
     flex-direction: column;
     overflow: hidden;
@@ -76,7 +76,7 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    border-radius: 12px 12px 0 0;
+    border-radius: 6px 6px 0 0;
     border-bottom: 1px solid var(--border-default);
     position: relative;
 }
@@ -136,7 +136,7 @@
     background: var(--text-primary);
     color: var(--bg);
     padding: 8px 14px;
-    border-radius: 12px 12px 4px 12px;
+    border-radius: 4px;
     font-size: 14px;
     max-width: 80%;
     word-wrap: break-word;
@@ -148,7 +148,7 @@
 .chatbot-body .bot > span {
     background: var(--bg);
     padding: 10px 14px;
-    border-radius: 12px 12px 12px 4px;
+    border-radius: 4px;
     max-width: 85%;
     word-wrap: break-word;
     font-size: 14px;
@@ -210,7 +210,7 @@
     border-collapse: collapse;
     margin: 12px 0;
     font-size: 13px;
-    border-radius: 8px;
+    border-radius: 4px;
     overflow: hidden;
 }
 
@@ -240,7 +240,7 @@
     color: white;
     padding: 8px 16px;
     margin: 8px 0;
-    border-radius: 8px;
+    border-radius: 4px;
     text-decoration: none;
     font-weight: 500;
     font-size: 14px;
@@ -287,7 +287,7 @@
 .chatbot-footer input {
     flex: 1;
     border: 1px solid var(--border-default);
-    border-radius: 8px;
+    border-radius: 6px;
     padding: 10px 14px;
     font-size: 14px;
     font-family: inherit;
@@ -308,7 +308,7 @@
 .chatbot-footer button {
     width: 40px;
     height: 40px;
-    border-radius: 8px;
+    border-radius: 6px;
     background: var(--text-primary);
     border: none;
     color: white;
@@ -425,7 +425,7 @@
     border: 1px solid var(--border-default);
     color: var(--accent);
     padding: 6px 12px;
-    border-radius: 8px;
+    border-radius: 4px;
     font-size: 13px;
     cursor: pointer;
     transition: background 0.2s, color 0.2s, border-color 0.2s;

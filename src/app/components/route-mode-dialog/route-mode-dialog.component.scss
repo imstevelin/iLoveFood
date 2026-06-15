@@ -1,7 +1,7 @@
 /* Route Mode Dialog — Warm Flat Edition — Claude/Anthropic-inspired */
 
 .mode-btn {
-  border-radius: 12px;
+  border-radius: 6px;
   border: 1px solid var(--border-default);
   background-color: var(--surface);
   transition: all 0.3s ease;
@@ -35,7 +35,7 @@
   gap: 8px;
   background: var(--surface);
   border: 1px solid var(--border-default);
-  border-radius: 10px;
+  border-radius: 6px;
   padding: 8px 12px;
   min-height: 44px;
   width: 100%;
@@ -75,7 +75,7 @@
 ::ng-deep .route-chip.mat-mdc-chip {
   max-width: calc(100% - 4px) !important;
   height: 28px !important;
-  border-radius: 8px !important;
+  border-radius: 4px !important;
   font-size: 13px !important;
   font-weight: 500 !important;
   letter-spacing: 0.02em;
@@ -144,8 +144,8 @@
 
 /* ===== Autocomplete Panel — Flat with border ===== */
 ::ng-deep .route-autocomplete-panel {
-  border-radius: 10px !important;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08) !important;
+  border-radius: 6px !important;
+  box-shadow: none !important;
   border: 1px solid var(--border-default) !important;
   margin-top: 6px !important;
 
@@ -253,7 +253,7 @@
   ::ng-deep .route-autocomplete-panel {
     background: var(--surface) !important;
     border-color: var(--border-default) !important;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2) !important;
+    box-shadow: none !important;
 
     .mat-mdc-option {
       color: var(--text-primary) !important;

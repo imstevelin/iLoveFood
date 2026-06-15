@@ -4,7 +4,7 @@
 /* ===== Product Card — Flat Border ===== */
 .product-card {
   position: relative;
-  border-radius: 10px;
+  border-radius: 6px;
   overflow: hidden;
   border: 1px solid var(--border-default);
   background: var(--surface);
@@ -22,19 +22,8 @@
   }
 }
 
-/* Blurred background layer — kept as decorative touch */
 .product-card-bg {
-  position: absolute;
-  inset: 0;
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
-  filter: saturate(8) blur(24px);
-  transform: scale(2.5);
-  opacity: 0.18;
-  z-index: 0;
-  mix-blend-mode: normal;
-  contain: strict;
+  display: none !important;
 }
 
 /* Content layer */
@@ -65,7 +54,7 @@
   font-size: 11px;
   font-weight: 600;
   padding: 4px 10px;
-  border-radius: 9999px;
+  border-radius: 4px;
   white-space: nowrap;
 
   @media (min-width: 640px) {
@@ -96,7 +85,7 @@
 .product-img-wrapper {
   width: 96px;
   height: 96px;
-  border-radius: 8px;
+  border-radius: 4px;
   overflow: hidden;
   flex-shrink: 0;
   cursor: pointer;
@@ -313,8 +302,7 @@ mat-progress-spinner {
   }
 
   .product-card-bg {
-    opacity: 0.5;
-    filter: blur(20px) brightness(0.85) saturate(1.5);
+    display: none !important;
   }
 
   .product-card-content {

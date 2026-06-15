@@ -35,7 +35,7 @@
   position: absolute; top: 16px; left: 50%;
   transform: translateX(-50%);
   display: inline-flex; align-items: center; gap: 6px;
-  padding: 10px 24px; border-radius: 100px;
+  padding: 10px 24px; border-radius: 6px;
   background: var(--surface);
   border: 1px solid var(--border-default);
   font-size: 14px; font-weight: 600;
@@ -57,7 +57,7 @@
 .area-too-large-msg {
   position: absolute; top: 16px; left: 50%;
   transform: translateX(-50%);
-  padding: 10px 24px; border-radius: 100px;
+  padding: 10px 24px; border-radius: 6px;
   background: var(--surface);
   border: 1px solid rgba(251, 146, 60, 0.3);
   font-size: 13px; font-weight: 500;
@@ -70,7 +70,7 @@
 .custom-zoom-controls {
   position: absolute; top: 16px; right: 16px;
   display: flex; align-items: center;
-  border-radius: 8px;
+  border-radius: 6px;
   background: var(--surface);
   border: 1px solid var(--border-default);
   overflow: hidden; z-index: 10;
@@ -104,7 +104,7 @@
 }
 
 .recenter-btn {
-  width: 44px; height: 44px; border-radius: 8px;
+  width: 44px; height: 44px; border-radius: 6px;
   background: var(--surface);
   border: 1px solid var(--border-default);
   display: flex; align-items: center; justify-content: center;
@@ -121,7 +121,7 @@
   bottom: 0; left: 0; right: 0;
   max-height: 55vh;
   background: var(--surface);
-  border-radius: 16px 16px 0 0;
+  border-radius: 6px 6px 0 0;
   border-top: 1px solid var(--border-default);
   padding: 0 20px calc(80px + env(safe-area-inset-bottom, 16px));
   z-index: 50;
@@ -145,11 +145,11 @@
 }
 
 .sheet-handle { display: flex; justify-content: center; padding: 10px 0 6px; cursor: grab; }
-.sheet-handle-bar { width: 36px; height: 5px; border-radius: 99px; background: rgba(0,0,0,0.1); }
+.sheet-handle-bar { width: 36px; height: 5px; border-radius: 2px; background: rgba(0,0,0,0.1); }
 .sheet-header { display: flex; align-items: center; gap: 12px; padding: 4px 0 12px; }
 
 .sheet-store-icon {
-  width: 44px; height: 44px; border-radius: 10px;
+  width: 44px; height: 44px; border-radius: 6px;
   display: flex; align-items: center; justify-content: center;
   background: var(--bg);
   border: 1px solid var(--border-default);
@@ -161,11 +161,11 @@
 .sheet-store-info { flex: 1; min-width: 0; }
 .sheet-store-name { font-size: 15px; font-weight: 600; color: var(--text-primary); margin: 0 0 4px; line-height: 1.3; }
 .sheet-store-meta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-.sheet-distance-badge { display: inline-flex; align-items: center; gap: 3px; font-size: 12px; font-weight: 500; color: var(--accent); background: var(--accent-light); padding: 2px 10px; border-radius: 100px; }
-.sheet-qty-badge { font-size: 12px; font-weight: 500; color: #c2410c; background: rgba(251, 146, 60, 0.1); padding: 2px 10px; border-radius: 100px; }
+.sheet-distance-badge { display: inline-flex; align-items: center; gap: 3px; font-size: 12px; font-weight: 500; color: var(--accent); background: var(--accent-light); padding: 2px 10px; border-radius: 4px; }
+.sheet-qty-badge { font-size: 12px; font-weight: 500; color: #c2410c; background: rgba(251, 146, 60, 0.1); padding: 2px 10px; border-radius: 4px; }
 
 .sheet-nav-btn {
-  width: 44px; height: 44px; border-radius: 8px;
+  width: 44px; height: 44px; border-radius: 6px;
   background: var(--bg);
   border: 1px solid var(--border-default);
   display: flex; align-items: center; justify-content: center;
@@ -188,7 +188,7 @@
 .sheet-category-chip {
   appearance: none; -webkit-appearance: none;
   display: flex; flex-direction: column; align-items: center;
-  padding: 8px 4px; border-radius: 10px;
+  padding: 8px 4px; border-radius: 6px;
   background: var(--bg);
   border: 1px solid var(--border-default);
   cursor: pointer;
@@ -222,7 +222,7 @@
 }
 
 .sheet-cat-name { font-size: 11px; font-weight: 500; color: var(--text-secondary); line-height: 1.2; text-align: center; }
-.sheet-cat-qty { display: inline-block; font-size: 10px; font-weight: 600; background: rgba(251, 146, 60, 0.1); color: #c2410c; padding: 1px 8px; border-radius: 100px; margin-top: 2px; }
+.sheet-cat-qty { display: inline-block; font-size: 10px; font-weight: 600; background: rgba(251, 146, 60, 0.1); color: #c2410c; padding: 1px 8px; border-radius: 4px; margin-top: 2px; }
 
 .sheet-detail-wrapper {
   max-height: 0; opacity: 0; overflow: hidden;
@@ -241,7 +241,7 @@
 
 @media (min-width: 769px) {
   .bottom-sheet {
-    left: 50%; right: auto; width: 480px; border-radius: 12px 12px 0 0;
+    left: 50%; right: auto; width: 480px; border-radius: 6px 6px 0 0;
     transform: translateX(-50%) translateY(100%);
     &.open { transform: translateX(-50%) translateY(0); }
   }
