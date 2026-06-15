@@ -6,14 +6,14 @@ module.exports = {
     extend: {
       colors: {
         primary: {
-          light: '#F4EFE6',
-          default: '#A18249',
-          dark: '#1C160C',
+          light: '#F5F2ED',
+          default: '#D97757',
+          dark: '#1D1C1A',
         },
-        success: '#019863',
+        success: '#10B981',
         white: '#FFFFFF',
         orange: {
-          100: '#FFEDD5', // 添加 Tailwind 預設的淺橘色
+          100: '#FFEDD5',
           200: '#FED7AA',
           500: '#F97316',
           900: '#7C2D12',
@@ -23,5 +23,3 @@ module.exports = {
   },
   plugins: [],
 };
-
-

@@ -1,3 +1,5 @@
+/* Image Dialog — Warm Flat Edition — Claude/Anthropic-inspired */
+
 .dialog-container {
   position: relative;
   display: flex;
@@ -22,7 +24,7 @@
   display: block;
 }
 
-/* Modern Dark Glassmorphism Close Button */
+/* Flat Warm Close Button */
 .modern-close-btn {
   position: absolute;
   top: 1.5rem;
@@ -30,30 +32,25 @@
   width: 44px;
   height: 44px;
   border-radius: 50%;
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  background: rgba(60, 60, 60, 0.8); /* Neutral dark background */
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  border: none;
+  background: rgba(29, 28, 26, 0.8);
   color: white;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.25);
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.2s ease;
   z-index: 100;
   padding: 0;
 
   svg {
     stroke: #ffffff;
-    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.5));
-    transition: transform 0.3s ease;
+    transition: transform 0.2s ease;
   }
 
   &:hover {
-    background: rgba(40, 40, 40, 0.95); /* Even darker on hover */
+    background: rgba(29, 28, 26, 0.95);
     transform: rotate(90deg) scale(1.1);
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
   }
 
   &:active {

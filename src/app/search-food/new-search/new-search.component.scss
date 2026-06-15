@@ -1,5 +1,5 @@
-/* 友善超人 — Premium Gradient Glass Animation System */
-/* All transitions use spring physics, are interruptible, and non-linear */
+/* 友善超人 — Claude-Inspired Warm Flat Design */
+/* Clean, tactile, border-based separation with warm color palette */
 
 /* ===== Fixed Search Bar ===== */
 .search-bar-fixed {
@@ -8,38 +8,25 @@
   left: 0;
   right: 0;
   z-index: 100;
-  background: rgba(255, 255, 255, 0.72);
-  backdrop-filter: blur(24px) saturate(180%);
-  -webkit-backdrop-filter: blur(24px) saturate(180%);
-  border-bottom: 1px solid rgba(91, 127, 255, 0.08);
-  box-shadow: 0 1px 12px rgba(0, 0, 0, 0.04),
-    0 1px 0 rgba(91, 127, 255, 0.04);
+  background: var(--surface);
+  border-bottom: 1px solid var(--border-default);
   padding: 12px 16px;
-  transition: background var(--transition-gentle),
-    box-shadow var(--transition-gentle);
+  transition: background var(--transition-gentle);
 }
 
 .search-bar-spacer {
   height: 68px;
 }
 
-/* ===== Search Input Glass ===== */
+/* ===== Search Input ===== */
 .search-input-glass {
-  background: rgba(255, 255, 255, 0.65);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1.5px solid rgba(91, 127, 255, 0.12);
-  border-radius: 100px;
-  transition: border-color var(--transition-spring),
-    box-shadow var(--transition-spring),
-    background var(--transition-spring);
+  background: var(--bg);
+  border: 1px solid var(--border-default);
+  border-radius: 8px;
+  transition: border-color var(--transition-spring);
 
   &:focus-within {
-    border-color: rgba(91, 127, 255, 0.45);
-    box-shadow: 0 0 0 4px rgba(91, 127, 255, 0.1),
-      0 0 20px rgba(91, 127, 255, 0.12),
-      0 2px 12px rgba(91, 127, 255, 0.06);
-    background: rgba(255, 255, 255, 0.88);
+    border-color: var(--accent);
   }
 }
 
@@ -47,38 +34,29 @@
 .header-icon-btn {
   width: 44px;
   height: 44px;
-  border-radius: 14px;
-  border: 1px solid rgba(91, 127, 255, 0.1);
-  background: rgba(255, 255, 255, 0.65);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  border-radius: 8px;
+  border: 1px solid var(--border-default);
+  background: var(--surface);
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   flex-shrink: 0;
-  transition: transform var(--transition-snappy),
-    background var(--transition-snappy),
-    border-color var(--transition-snappy),
-    box-shadow var(--transition-snappy);
-  will-change: transform;
+  transition: border-color var(--transition-snappy),
+    background var(--transition-snappy);
 
   &:hover {
-    background: rgba(255, 255, 255, 0.9);
-    box-shadow: 0 2px 12px rgba(91, 127, 255, 0.1);
-    border-color: rgba(91, 127, 255, 0.2);
+    border-color: var(--accent);
   }
 
   &:active {
-    transform: scale(0.88);
+    transform: scale(0.92);
     transition-duration: 60ms;
   }
 
   &.active {
     background: var(--accent-light);
-    border-color: rgba(91, 127, 255, 0.3);
-    box-shadow: 0 0 0 2px rgba(91, 127, 255, 0.08),
-      var(--glow-primary);
+    border-color: var(--accent);
   }
 }
 
@@ -118,14 +96,13 @@
   align-items: center;
   gap: 12px;
   padding: 10px 16px;
-  border-radius: 14px;
+  border-radius: 8px;
   cursor: pointer;
   text-decoration: none;
   color: inherit;
   font-size: 14px;
   position: relative;
-  transition: background var(--transition-snappy),
-    transform var(--transition-snappy);
+  transition: background var(--transition-snappy);
 
   &:hover {
     background: var(--accent-light);
@@ -143,7 +120,7 @@
 
 .menu-divider {
   height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(91, 127, 255, 0.12), transparent);
+  background: var(--border-default);
   margin: 6px 16px;
 }
 
@@ -169,7 +146,7 @@
   padding-left: 44px;
 }
 
-/* ===== Toggle Switch — Apple-style with glow ===== */
+/* ===== Toggle Switch — Warm accent ===== */
 .toggle-switch {
   position: relative;
   display: inline-block;
@@ -190,10 +167,9 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: #cbd5e1;
+  background: #C4BFB5;
   border-radius: 24px;
-  transition: background var(--transition-snappy),
-    box-shadow var(--transition-snappy);
+  transition: background var(--transition-snappy);
 
   &::before {
     content: '';
@@ -205,14 +181,12 @@
     background: white;
     border-radius: 50%;
     transition: transform var(--transition-spring);
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15),
-      0 0 1px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
   }
 }
 
 .toggle-switch input:checked+.toggle-slider {
   background: var(--accent);
-  box-shadow: 0 0 12px rgba(91, 127, 255, 0.35);
 }
 
 .toggle-switch input:checked+.toggle-slider::before {
@@ -264,26 +238,23 @@ svg.transition-transform {
 }
 
 .category-chip {
-  transition: transform var(--transition-snappy),
-    background var(--transition-snappy),
-    border-color var(--transition-snappy),
-    box-shadow var(--transition-snappy);
+  transition: border-color var(--transition-snappy),
+    background var(--transition-snappy);
 }
 
-/* ===== Premium CSS Spinner — Gradient ===== */
+/* ===== Spinner — Warm accent ===== */
 .premium-spinner {
   border-radius: 50%;
   padding: 3px;
   background: conic-gradient(
     from 0deg at 50% 50%,
-    rgba(91, 127, 255, 0) 0deg,
-    rgba(91, 127, 255, 0.3) 180deg,
+    rgba(217, 119, 87, 0) 0deg,
+    rgba(217, 119, 87, 0.3) 180deg,
     var(--accent) 360deg
   );
   -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #fff calc(100% - 3px + 0.5px));
   mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #fff calc(100% - 3px + 0.5px));
   animation: premiumSpin 1.0s cubic-bezier(0.5, 0.1, 0.5, 0.9) infinite;
-  will-change: transform;
 }
 
 .spinner-sm {
@@ -310,35 +281,20 @@ svg.transition-transform {
   100% { transform: rotate(360deg); }
 }
 
-/* ===== Store Card — Gradient Glass ===== */
+/* ===== Store Card — Flat with border ===== */
 .store-glass-card {
-  background: rgba(255, 255, 255, 0.6);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(91, 127, 255, 0.08);
-  border-radius: 20px;
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.05),
-    0 1px 4px rgba(0, 0, 0, 0.02);
+  background: var(--surface);
+  border: 1px solid var(--border-default);
+  border-radius: 12px;
   padding: 16px;
   margin-bottom: 12px;
   position: relative;
   overflow: hidden;
   scroll-margin-top: 84px;
-  transition: transform var(--transition-spring),
-    box-shadow var(--transition-spring),
-    border-color var(--transition-spring),
-    opacity var(--transition-spring);
+  transition: border-color var(--transition-spring);
 
   &:hover {
-    transform: translateY(-2px);
-    border-color: rgba(91, 127, 255, 0.18);
-    box-shadow: 0 8px 32px rgba(91, 127, 255, 0.08),
-      0 2px 8px rgba(0, 0, 0, 0.04);
-  }
-
-  &:active {
-    transform: translateY(0) scale(0.99);
-    transition-duration: 80ms;
+    border-color: var(--text-secondary);
   }
 }
 
@@ -350,110 +306,48 @@ svg.transition-transform {
 @keyframes cardSpringIn {
   0% {
     opacity: 0;
-    transform: translateY(24px) scale(0.96);
+    transform: translateY(16px);
   }
 
   100% {
     opacity: 1;
-    transform: translateY(0) scale(1);
+    transform: translateY(0);
   }
 }
 
-/* 7-11 Brand Card — Warm gradient */
+/* 7-11 Brand Card — Left border accent */
 .card-seven {
-  background: radial-gradient(ellipse at 50% 0%, rgba(255, 127, 36, 0.08) 0%, rgba(255, 169, 64, 0.03) 40%, rgba(255, 255, 255, 0.02) 60%),
-    rgba(255, 255, 255, 0.62);
-  border: 1px solid rgba(255, 147, 66, 0.12);
-
-  &::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 2px;
-    background: linear-gradient(90deg, transparent, rgba(255, 107, 0, 0.5), transparent);
-    border-radius: 2px;
-  }
+  border-left: 3px solid #ff6b00;
 
   &:hover {
-    border-color: rgba(255, 107, 0, 0.22);
-    box-shadow: 0 10px 40px rgba(255, 107, 0, 0.08),
-      0 0 20px rgba(255, 107, 0, 0.04),
-      0 2px 12px rgba(0, 0, 0, 0.04);
+    border-color: #ff6b00;
   }
 }
 
-/* FamilyMart Brand Card — Cool gradient */
+/* FamilyMart Brand Card — Left border accent */
 .card-family {
-  background: radial-gradient(ellipse at 50% 0%, rgba(0, 179, 134, 0.08) 0%, rgba(52, 211, 153, 0.03) 40%, rgba(255, 255, 255, 0.02) 60%),
-    rgba(255, 255, 255, 0.62);
-  border: 1px solid rgba(0, 179, 134, 0.12);
-
-  &::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 2px;
-    background: linear-gradient(90deg, transparent, rgba(0, 179, 134, 0.5), transparent);
-    border-radius: 2px;
-  }
+  border-left: 3px solid #00b386;
 
   &:hover {
-    border-color: rgba(0, 179, 134, 0.22);
-    box-shadow: 0 10px 40px rgba(0, 179, 134, 0.08),
-      0 0 20px rgba(0, 179, 134, 0.04),
-      0 2px 12px rgba(0, 0, 0, 0.04);
+    border-color: #00b386;
   }
 }
 
 /* About Section Inline Card */
 .card-about {
-  background: radial-gradient(ellipse at 50% 0%, rgba(91, 127, 255, 0.08) 0%, rgba(255, 255, 255, 0.02) 60%),
-    rgba(255, 255, 255, 0.62);
-  border: 1px solid rgba(91, 127, 255, 0.15);
-
-  &::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 2px;
-    background: linear-gradient(90deg, transparent, rgba(91, 127, 255, 0.45), transparent);
-    border-radius: 2px;
-  }
+  border-left: 3px solid var(--accent);
 
   &:hover {
-    box-shadow: 0 10px 40px rgba(91, 127, 255, 0.1),
-      var(--glow-primary),
-      0 2px 12px rgba(0, 0, 0, 0.04);
+    border-color: var(--accent);
   }
 }
 
 /* Location Permission Inline Card */
 .card-location {
-  background: radial-gradient(ellipse at 50% 0%, rgba(239, 68, 68, 0.08) 0%, rgba(255, 255, 255, 0.02) 60%),
-    rgba(255, 255, 255, 0.62);
-  border: 1px solid rgba(239, 68, 68, 0.15);
-
-  &::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 2px;
-    background: linear-gradient(90deg, transparent, rgba(239, 68, 68, 0.5), transparent);
-    border-radius: 2px;
-  }
+  border-left: 3px solid #ef4444;
 
   &:hover {
-    box-shadow: 0 10px 40px rgba(239, 68, 68, 0.1),
-      0 0 20px rgba(239, 68, 68, 0.08),
-      0 2px 12px rgba(0, 0, 0, 0.04);
+    border-color: #ef4444;
   }
 }
 
@@ -461,39 +355,33 @@ svg.transition-transform {
 .store-icon-badge {
   width: 44px;
   height: 44px;
-  border-radius: 14px;
+  border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(255, 255, 255, 0.7);
-  border: 1px solid rgba(226, 232, 240, 0.3);
+  background: var(--bg);
+  border: 1px solid var(--border-default);
   flex-shrink: 0;
-  transition: transform var(--transition-snappy),
-    box-shadow var(--transition-snappy);
 }
 
 .badge-seven {
-  background: rgba(255, 107, 0, 0.08);
-  border-color: rgba(255, 107, 0, 0.18);
-  box-shadow: inset 0 1px 2px rgba(255, 107, 0, 0.06);
+  background: rgba(255, 107, 0, 0.06);
+  border-color: rgba(255, 107, 0, 0.2);
 }
 
 .badge-family {
-  background: rgba(0, 179, 134, 0.08);
-  border-color: rgba(0, 179, 134, 0.18);
-  box-shadow: inset 0 1px 2px rgba(0, 179, 134, 0.06);
+  background: rgba(0, 179, 134, 0.06);
+  border-color: rgba(0, 179, 134, 0.2);
 }
 
 .badge-about {
-  background: rgba(91, 127, 255, 0.08);
-  border-color: rgba(91, 127, 255, 0.2);
-  box-shadow: inset 0 1px 2px rgba(91, 127, 255, 0.06);
+  background: var(--accent-light);
+  border-color: rgba(217, 119, 87, 0.2);
 }
 
 .badge-location {
-  background: rgba(239, 68, 68, 0.08);
+  background: rgba(239, 68, 68, 0.06);
   border-color: rgba(239, 68, 68, 0.2);
-  box-shadow: inset 0 1px 2px rgba(239, 68, 68, 0.06);
 }
 
 /* ===== Distance Badge ===== */
@@ -524,7 +412,7 @@ svg.transition-transform {
 
 .badge-family-dist {
   color: #059669;
-  background: rgba(0, 179, 134, 0.1);
+  background: rgba(0, 179, 134, 0.08);
 }
 
 /* ===== Store Card Header ===== */
@@ -543,7 +431,7 @@ svg.transition-transform {
 .store-card-name {
   font-size: 15px;
   font-weight: 600;
-  color: var(--text-primary, #1e293b);
+  color: var(--text-primary);
   margin: 0 0 4px;
   line-height: 1.3;
   white-space: nowrap;
@@ -563,7 +451,7 @@ svg.transition-transform {
   font-size: 12px;
   font-weight: 500;
   color: #c2410c;
-  background: rgba(251, 146, 60, 0.1);
+  background: rgba(251, 146, 60, 0.08);
   padding: 2px 10px;
   border-radius: 100px;
   animation: badgeIn var(--duration-normal) var(--spring) both;
@@ -571,28 +459,26 @@ svg.transition-transform {
 
 .qty-badge-family {
   color: #059669;
-  background: rgba(0, 179, 134, 0.08);
+  background: rgba(0, 179, 134, 0.06);
 }
 
 /* ===== Store Nav Button (Google Maps) ===== */
 .store-nav-btn {
   width: 44px;
   height: 44px;
-  border-radius: 14px;
-  background: rgba(91, 127, 255, 0.06);
-  border: 1px solid rgba(91, 127, 255, 0.1);
+  border-radius: 8px;
+  background: var(--bg);
+  border: 1px solid var(--border-default);
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   flex-shrink: 0;
   text-decoration: none;
-  transition: transform 0.2s, background 0.2s, box-shadow 0.2s;
+  transition: border-color 0.2s ease;
 
   &:hover {
-    background: rgba(91, 127, 255, 0.12);
-    transform: scale(1.05);
-    box-shadow: 0 2px 8px rgba(91, 127, 255, 0.12);
+    border-color: var(--accent);
   }
 
   &:active {
@@ -609,7 +495,6 @@ svg.transition-transform {
   border: none;
   cursor: pointer;
   transition: transform var(--transition-spring);
-  will-change: transform;
 
   &:active {
     transform: scale(0.75);
@@ -621,7 +506,7 @@ svg.transition-transform {
   }
 }
 
-/* ===== Category Grid — Gradient Chip Interactions ===== */
+/* ===== Category Grid — Flat Chip Interactions ===== */
 .category-chip {
   appearance: none;
   -webkit-appearance: none;
@@ -632,16 +517,14 @@ svg.transition-transform {
   user-select: none;
   -webkit-user-select: none;
   z-index: 1;
-  border: 1px solid rgba(91, 127, 255, 0.08);
-  border-radius: 16px;
-  background: rgba(255, 255, 255, 0.5);
+  border: 1px solid var(--border-default);
+  border-radius: 10px;
+  background: var(--surface);
   text-align: center;
   cursor: pointer;
   padding: 8px;
-  transition: transform var(--transition-spring),
-    background var(--transition-snappy),
-    border-color var(--transition-snappy),
-    box-shadow var(--transition-snappy);
+  transition: border-color var(--transition-snappy),
+    background var(--transition-snappy);
   -webkit-tap-highlight-color: transparent;
   -webkit-touch-callout: none;
 
@@ -653,6 +536,7 @@ svg.transition-transform {
     pointer-events: none;
   }
 
+  /* Loading fill animation — warm accent */
   &::before {
     content: '';
     position: absolute;
@@ -660,7 +544,7 @@ svg.transition-transform {
     left: 0;
     width: 100%;
     height: 0%;
-    background: linear-gradient(180deg, rgba(91, 127, 255, 0.12) 0%, rgba(91, 127, 255, 0.15) 100%);
+    background: var(--accent-light);
     z-index: 0;
     pointer-events: none !important;
     transition: height 0.4s ease-out;
@@ -677,23 +561,16 @@ svg.transition-transform {
   }
 
   &:hover {
-    background: rgba(255, 255, 255, 0.78);
-    border-color: rgba(91, 127, 255, 0.15);
-    box-shadow: 0 2px 10px rgba(91, 127, 255, 0.08);
-    transform: scale(1.04);
+    border-color: var(--text-secondary);
   }
 
   &.selected {
     background: var(--accent-light);
-    border-color: rgba(91, 127, 255, 0.25);
-    transform: scale(1.02);
-    box-shadow: 0 0 0 2px rgba(91, 127, 255, 0.08),
-      0 4px 16px rgba(91, 127, 255, 0.08),
-      var(--glow-primary);
+    border-color: var(--accent);
   }
 
   &:active {
-    transform: scale(0.92);
+    transform: scale(0.94);
     transition-duration: 60ms;
   }
 }
@@ -702,14 +579,13 @@ svg.transition-transform {
   display: inline-block;
   font-size: 11px;
   font-weight: 600;
-  background: linear-gradient(135deg, rgba(251, 146, 60, 0.12), rgba(239, 68, 68, 0.08));
+  background: rgba(251, 146, 60, 0.08);
   color: #c2410c;
   padding: 2px 8px;
   border-radius: 20px;
   pointer-events: none !important;
   user-select: none !important;
   -webkit-user-select: none !important;
-  transition: transform var(--transition-snappy);
 }
 
 /* ===== Category Expand Animation ===== */
@@ -721,7 +597,6 @@ svg.transition-transform {
               opacity 300ms cubic-bezier(0.2, 0, 0, 1),
               margin-top 300ms cubic-bezier(0.2, 0, 0, 1);
   margin-top: 0;
-  will-change: max-height, opacity, margin-top;
 
   &.expanded {
     max-height: 8000px;
@@ -762,41 +637,35 @@ svg.transition-transform {
   animation: fadeInUp var(--duration-slow) var(--spring-gentle) both;
 }
 
-/* ===== Buttons — Gradient style ===== */
+/* ===== Buttons — Flat dark style ===== */
 .resume-search-btn {
   display: inline-flex;
   align-items: center;
   gap: 8px;
   padding: 10px 28px;
-  border-radius: 100px;
-  background: var(--accent-gradient);
-  color: white;
+  border-radius: 8px;
+  background: var(--text-primary);
+  color: var(--bg);
   font-weight: 600;
   font-size: 14px;
   border: none;
   cursor: pointer;
-  transition: transform var(--transition-spring),
-    box-shadow var(--transition-spring),
-    filter var(--transition-snappy);
-  will-change: transform;
+  transition: background var(--transition-snappy);
 
   &:hover {
-    filter: brightness(1.08);
-    box-shadow: 0 4px 20px rgba(91, 127, 255, 0.3),
-      0 0 30px rgba(91, 127, 255, 0.15);
+    background: var(--accent);
+    color: white;
   }
 
   &:active {
-    transform: scale(0.94);
+    transform: scale(0.96);
     transition-duration: 60ms;
   }
 }
 
 /* ===== Result Header ===== */
 .result-header-glass {
-  background: rgba(255, 255, 255, 0.5);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  background: var(--bg);
   border-radius: 100px;
   padding: 12px 24px;
   margin: 12px auto 16px;
@@ -804,7 +673,7 @@ svg.transition-transform {
   font-weight: 500;
   font-size: 14px;
   color: var(--text-secondary);
-  border: 1px solid rgba(91, 127, 255, 0.08);
+  border: 1px solid var(--border-default);
 }
 
 /* ===== Login Prompt ===== */
@@ -821,22 +690,18 @@ svg.transition-transform {
   gap: 6px;
   margin-top: 8px;
   padding: 10px 24px;
-  border-radius: 100px;
-  background: var(--accent-gradient);
-  color: white;
+  border-radius: 8px;
+  background: var(--text-primary);
+  color: var(--bg);
   font-weight: 600;
   font-size: 14px;
   border: none;
   cursor: pointer;
-  transition: transform var(--transition-spring),
-    box-shadow var(--transition-spring),
-    filter var(--transition-snappy);
-  will-change: transform;
+  transition: background var(--transition-snappy);
 
   &:hover {
-    filter: brightness(1.08);
-    box-shadow: 0 4px 20px rgba(91, 127, 255, 0.3),
-      0 0 30px rgba(91, 127, 255, 0.15);
+    background: var(--accent);
+    color: white;
   }
 
   &:active {
@@ -848,7 +713,6 @@ svg.transition-transform {
 /* ===== Favorite Button ===== */
 button[class*="shrink-0"] {
   transition: transform var(--transition-spring);
-  will-change: transform;
 
   &:active {
     transform: scale(0.75);
@@ -875,7 +739,7 @@ a[href*="google.com/maps"] {
   transition: transform var(--transition-snappy);
 
   &:hover {
-    transform: scale(1.15);
+    transform: scale(1.08);
   }
 
   &:active {
@@ -892,13 +756,12 @@ a[href*="google.com/maps"] {
 
   .store-glass-card {
     padding: 12px;
-    border-radius: 18px;
+    border-radius: 10px;
   }
 
   .header-icon-btn {
     width: 38px;
     height: 38px;
-    border-radius: 12px;
   }
 
   /* === Mobile Performance Optimizations === */
@@ -906,8 +769,7 @@ a[href*="google.com/maps"] {
     transition: none;
 
     &:hover {
-      transform: none;
-      box-shadow: 0 4px 24px rgba(0, 0, 0, 0.05);
+      border-color: var(--border-default);
     }
   }
 
@@ -916,8 +778,7 @@ a[href*="google.com/maps"] {
   }
 
   .category-chip {
-    transition: transform 150ms ease-out,
-      background 150ms ease-out,
+    transition: background 150ms ease-out,
       border-color 150ms ease-out;
   }
 }
@@ -932,23 +793,17 @@ a[href*="google.com/maps"] {
 
   /* --- Fixed Search Bar --- */
   .search-bar-fixed {
-    background: rgba(18, 18, 22, 0.88);
-    border-bottom-color: rgba(123, 159, 255, 0.08);
-    box-shadow: 0 1px 12px rgba(0, 0, 0, 0.3),
-      0 1px 0 rgba(123, 159, 255, 0.04);
+    background: var(--surface);
+    border-bottom-color: var(--border-default);
   }
 
-  /* --- Search Input Glass --- */
+  /* --- Search Input --- */
   .search-input-glass {
-    background: rgba(35, 35, 42, 0.75);
-    border-color: rgba(123, 159, 255, 0.1);
+    background: var(--bg);
+    border-color: var(--border-default);
 
     &:focus-within {
-      border-color: rgba(123, 159, 255, 0.4);
-      box-shadow: 0 0 0 4px rgba(123, 159, 255, 0.1),
-        0 0 20px rgba(123, 159, 255, 0.1),
-        0 2px 12px rgba(123, 159, 255, 0.05);
-      background: rgba(40, 40, 48, 0.92);
+      border-color: var(--accent);
     }
 
     input {
@@ -958,30 +813,28 @@ a[href*="google.com/maps"] {
 
   /* --- Header Icon Buttons --- */
   .header-icon-btn {
-    background: rgba(40, 40, 48, 0.75);
-    border-color: rgba(123, 159, 255, 0.08);
-    color: #d4d4d8;
+    background: var(--surface);
+    border-color: var(--border-default);
+    color: var(--text-secondary);
 
     svg {
-      fill: #d4d4d8;
-      stroke: #d4d4d8;
+      fill: var(--text-secondary);
+      stroke: var(--text-secondary);
     }
 
     &:hover {
-      background: rgba(50, 50, 58, 0.9);
-      box-shadow: 0 2px 12px rgba(123, 159, 255, 0.08);
-      border-color: rgba(123, 159, 255, 0.15);
+      border-color: var(--accent);
     }
 
     &.active {
       background: var(--accent-light);
-      border-color: rgba(123, 159, 255, 0.25);
+      border-color: var(--accent);
     }
   }
 
   /* --- Menu Panel --- */
   .menu-divider {
-    background: linear-gradient(90deg, transparent, rgba(123, 159, 255, 0.1), transparent);
+    background: var(--border-default);
   }
 
   .menu-link-item {
@@ -994,11 +847,7 @@ a[href*="google.com/maps"] {
 
   /* --- Toggle Switch --- */
   .toggle-slider {
-    background: rgba(82, 82, 82, 0.6);
-  }
-
-  .toggle-switch input:checked+.toggle-slider {
-    box-shadow: 0 0 12px rgba(123, 159, 255, 0.3);
+    background: var(--border-subtle);
   }
 
   /* --- Loading --- */
@@ -1013,138 +862,133 @@ a[href*="google.com/maps"] {
     -webkit-text-fill-color: transparent;
   }
 
-  /* --- Store Glass Cards --- */
+  /* --- Store Cards --- */
   .store-glass-card {
-    background: rgba(30, 30, 38, 0.65);
-    border-color: rgba(123, 159, 255, 0.06);
-    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.25),
-      0 1px 4px rgba(0, 0, 0, 0.15);
+    background: var(--surface);
+    border-color: var(--border-default);
 
     &:hover {
-      border-color: rgba(123, 159, 255, 0.12);
-      box-shadow: 0 8px 32px rgba(123, 159, 255, 0.06),
-        0 2px 8px rgba(0, 0, 0, 0.2);
+      border-color: var(--text-secondary);
     }
   }
 
   /* Brand Cards — Dark variants */
   .card-seven {
-    background: radial-gradient(ellipse at 50% 0%, rgba(255, 127, 36, 0.1) 0%, rgba(30, 30, 38, 0.02) 60%),
-      rgba(30, 30, 38, 0.65);
-    border-color: rgba(255, 147, 66, 0.15);
-
-    &::before {
-      opacity: 0.45;
-    }
+    border-left-color: #ff6b00;
 
     &:hover {
-      border-color: rgba(255, 107, 0, 0.22);
-      box-shadow: 0 10px 40px rgba(255, 107, 0, 0.08),
-        0 0 20px rgba(255, 107, 0, 0.04),
-        0 2px 12px rgba(0, 0, 0, 0.2);
+      border-color: #ff6b00;
     }
   }
 
   .card-family {
-    background: radial-gradient(ellipse at 50% 0%, rgba(0, 179, 134, 0.1) 0%, rgba(30, 30, 38, 0.02) 60%),
-      rgba(30, 30, 38, 0.65);
-    border-color: rgba(0, 179, 134, 0.15);
-
-    &::before {
-      opacity: 0.45;
-    }
+    border-left-color: #00b386;
 
     &:hover {
-      border-color: rgba(0, 179, 134, 0.22);
-      box-shadow: 0 10px 40px rgba(0, 179, 134, 0.08),
-        0 0 20px rgba(0, 179, 134, 0.04),
-        0 2px 12px rgba(0, 0, 0, 0.2);
+      border-color: #00b386;
     }
   }
 
   .card-about {
-    background: radial-gradient(ellipse at 50% 0%, rgba(123, 159, 255, 0.1) 0%, rgba(30, 30, 38, 0.02) 60%),
-      rgba(30, 30, 38, 0.65);
-    border-color: rgba(123, 159, 255, 0.15);
-
-    &::before {
-      opacity: 0.45;
-    }
+    border-left-color: var(--accent);
 
     &:hover {
-      box-shadow: 0 10px 40px rgba(123, 159, 255, 0.1),
-        var(--glow-primary),
-        0 2px 12px rgba(0, 0, 0, 0.2);
+      border-color: var(--accent);
     }
   }
 
   .card-location {
-    background: radial-gradient(ellipse at 50% 0%, rgba(239, 68, 68, 0.1) 0%, rgba(30, 30, 38, 0.02) 60%),
-      rgba(30, 30, 38, 0.65);
-    border-color: rgba(239, 68, 68, 0.18);
-
-    &::before {
-      background: linear-gradient(90deg, transparent, rgba(239, 68, 68, 0.35), transparent);
-    }
+    border-left-color: #ef4444;
 
     &:hover {
-      box-shadow: 0 10px 40px rgba(239, 68, 68, 0.1),
-        0 0 20px rgba(239, 68, 68, 0.06),
-        0 2px 12px rgba(0, 0, 0, 0.2);
+      border-color: #ef4444;
     }
   }
 
   /* --- Store Icon Badges --- */
   .store-icon-badge {
-    background: rgba(40, 40, 48, 0.7);
+    background: var(--bg);
     border-color: var(--border-subtle);
   }
 
   .badge-seven {
-    background: rgba(255, 107, 0, 0.1);
-    border-color: rgba(255, 107, 0, 0.22);
-    box-shadow: inset 0 1px 2px rgba(255, 107, 0, 0.08);
+    background: rgba(255, 107, 0, 0.08);
+    border-color: rgba(255, 107, 0, 0.25);
   }
 
   .badge-family {
-    background: rgba(0, 179, 134, 0.1);
-    border-color: rgba(0, 179, 134, 0.22);
-    box-shadow: inset 0 1px 2px rgba(0, 179, 134, 0.08);
+    background: rgba(0, 179, 134, 0.08);
+    border-color: rgba(0, 179, 134, 0.25);
   }
 
   .badge-about {
-    background: rgba(123, 159, 255, 0.1);
-    border-color: rgba(123, 159, 255, 0.25);
+    background: var(--accent-light);
+    border-color: rgba(232, 150, 125, 0.25);
   }
 
   .badge-location {
-    background: rgba(239, 68, 68, 0.1);
+    background: rgba(239, 68, 68, 0.08);
     border-color: rgba(239, 68, 68, 0.25);
   }
 
   /* --- Store Card Header --- */
   .store-card-name {
-    color: var(--text-primary, #e4e4e7);
+    color: var(--text-primary);
   }
 
   .store-nav-btn {
-    background: rgba(123, 159, 255, 0.08);
-    border-color: rgba(123, 159, 255, 0.12);
+    background: var(--bg);
+    border-color: var(--border-default);
   }
 
   .qty-badge {
     color: #fb923c;
-    background: rgba(251, 146, 60, 0.12);
+    background: rgba(251, 146, 60, 0.1);
   }
 
   .qty-badge-family {
     color: #34d399;
-    background: rgba(0, 179, 134, 0.12);
+    background: rgba(0, 179, 134, 0.1);
   }
 
   .distance-badge {
     color: var(--accent);
-    background: rgba(123, 159, 255, 0.1);
+    background: var(--accent-light);
+  }
+
+  .badge-family-dist {
+    color: #34d399;
+    background: rgba(0, 179, 134, 0.08);
+  }
+
+  /* --- Category Chips --- */
+  .category-chip {
+    background: var(--bg);
+    border-color: var(--border-default);
+    color: var(--text-primary);
+
+    &::before {
+      background: var(--accent-light);
+    }
+
+    &:hover {
+      border-color: var(--text-secondary);
+    }
+
+    &.selected {
+      background: var(--accent-light);
+      border-color: var(--accent);
+    }
+  }
+
+  .category-qty-badge {
+    background: rgba(251, 146, 60, 0.12);
+    color: #fb923c;
+  }
+
+  /* --- Distance Badge --- */
+  .distance-badge {
+    background: var(--accent-light);
   }
 
   .badge-family-dist {
@@ -1152,50 +996,10 @@ a[href*="google.com/maps"] {
     background: rgba(0, 179, 134, 0.1);
   }
 
-  /* --- Category Chips --- */
-  .category-chip {
-    background: rgba(35, 35, 42, 0.55);
-    border-color: rgba(123, 159, 255, 0.06);
-    color: #d4d4d8;
-
-    &::before {
-      background: linear-gradient(180deg, rgba(123, 159, 255, 0.12) 0%, rgba(123, 159, 255, 0.1) 100%);
-    }
-
-    &:hover {
-      background: rgba(45, 45, 52, 0.75);
-      border-color: rgba(123, 159, 255, 0.12);
-      box-shadow: 0 2px 10px rgba(123, 159, 255, 0.06);
-    }
-
-    &.selected {
-      background: var(--accent-light);
-      border-color: rgba(123, 159, 255, 0.22);
-      box-shadow: 0 0 0 2px rgba(123, 159, 255, 0.08),
-        0 4px 16px rgba(123, 159, 255, 0.08),
-        var(--glow-primary);
-    }
-  }
-
-  .category-qty-badge {
-    background: linear-gradient(135deg, rgba(251, 146, 60, 0.15), rgba(239, 68, 68, 0.1));
-    color: #fb923c;
-  }
-
-  /* --- Distance Badge --- */
-  .distance-badge {
-    background: rgba(123, 159, 255, 0.12);
-  }
-
-  .badge-family-dist {
-    color: #34d399;
-    background: rgba(0, 179, 134, 0.12);
-  }
-
   /* --- Result Header --- */
   .result-header-glass {
-    background: rgba(30, 30, 38, 0.55);
-    border-color: rgba(123, 159, 255, 0.08);
+    background: var(--bg);
+    border-color: var(--border-default);
   }
 
   /* --- Login Prompt --- */
@@ -1205,7 +1009,7 @@ a[href*="google.com/maps"] {
 
   /* --- Chatbot Buttons Dark Mode --- */
   .chatbot-inline-btn:hover {
-    background: rgba(255, 255, 255, 0.1);
+    background: var(--accent-light);
   }
 }
 
@@ -1218,14 +1022,13 @@ a[href*="google.com/maps"] {
   padding: 4px;
   margin-left: 4px;
   border-radius: 50%;
-  transition: transform 0.2s, background 0.2s;
+  transition: background 0.2s ease;
   display: flex;
   align-items: center;
   justify-content: center;
 
   &:hover {
-    background: rgba(91, 127, 255, 0.08);
-    transform: scale(1.1);
+    background: var(--accent-light);
   }
   &:active {
     transform: scale(0.9);
@@ -1240,9 +1043,9 @@ a[href*="google.com/maps"] {
 
 .view-face {
   opacity: 0;
-  transform: translateY(12px) scale(0.98);
-  transition: opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1),
-              transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  transform: translateY(8px);
+  transition: opacity 0.3s ease,
+              transform 0.3s ease;
   pointer-events: none;
   position: absolute;
   top: 0;
@@ -1252,7 +1055,7 @@ a[href*="google.com/maps"] {
 
   &.view-active {
     opacity: 1;
-    transform: translateY(0) scale(1);
+    transform: translateY(0);
     pointer-events: auto;
     position: relative;
   }
@@ -1260,17 +1063,17 @@ a[href*="google.com/maps"] {
 
 .view-face-list {
   &:not(.view-active) {
-    transform: translateY(16px) scale(0.97);
+    transform: translateY(12px);
   }
 }
 
 .view-face-map {
   &:not(.view-active) {
-    transform: translateY(16px) scale(0.97);
+    transform: translateY(12px);
   }
 }
 
-/* ===== View Toggle Pill — Gradient Glass ===== */
+/* ===== View Toggle Pill — Flat Warm ===== */
 .view-toggle-container {
   position: fixed;
   bottom: 1.5rem;
@@ -1279,9 +1082,9 @@ a[href*="google.com/maps"] {
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: opacity 0.4s cubic-bezier(0.32, 0.72, 0, 1),
-              transform 0.4s cubic-bezier(0.32, 0.72, 0, 1),
-              visibility 0s linear 0.4s;
+  transition: opacity 0.3s ease,
+              transform 0.3s ease,
+              visibility 0s linear 0.3s;
   pointer-events: none;
 
   > * {
@@ -1291,10 +1094,10 @@ a[href*="google.com/maps"] {
 
 .view-toggle-mist {
   position: absolute;
-  inset: -40px;
+  inset: -30px;
   
-  backdrop-filter: blur(24px) saturate(120%);
-  -webkit-backdrop-filter: blur(24px) saturate(120%);
+  backdrop-filter: blur(16px) saturate(120%);
+  -webkit-backdrop-filter: blur(16px) saturate(120%);
   
   mask-image: radial-gradient(ellipse at center, black 15%, transparent 70%);
   -webkit-mask-image: radial-gradient(ellipse at center, black 15%, transparent 70%);
@@ -1307,15 +1110,10 @@ a[href*="google.com/maps"] {
   display: flex;
   align-items: center;
   gap: 0;
-  padding: 5px;
+  padding: 4px;
   border-radius: 100px;
-  background: rgba(255, 255, 255, 0.82);
-  backdrop-filter: blur(24px) saturate(180%);
-  -webkit-backdrop-filter: blur(24px) saturate(180%);
-  border: 1px solid rgba(91, 127, 255, 0.1);
-  box-shadow: 0 4px 32px rgba(0, 0, 0, 0.08),
-              0 1px 6px rgba(0, 0, 0, 0.04),
-              0 0 0 1px rgba(91, 127, 255, 0.04);
+  background: var(--surface);
+  border: 1px solid var(--border-default);
   -webkit-tap-highlight-color: transparent;
   position: relative;
 }
@@ -1323,15 +1121,14 @@ a[href*="google.com/maps"] {
 /* Sliding indicator */
 .view-toggle-indicator {
   position: absolute;
-  top: 5px;
-  left: 5px;
-  width: calc(50% - 5px);
-  height: calc(100% - 10px);
+  top: 4px;
+  left: 4px;
+  width: calc(50% - 4px);
+  height: calc(100% - 8px);
   border-radius: 100px;
-  background: #ffffff;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08),
-              0 0.5px 3px rgba(0, 0, 0, 0.04);
-  transition: transform 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+  background: var(--bg);
+  border: 1px solid var(--border-default);
+  transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
   z-index: 0;
 
   &.map-active {
@@ -1352,19 +1149,19 @@ a[href*="google.com/maps"] {
   background: transparent;
   cursor: pointer;
   border-radius: 100px;
-  color: #94a3b8;
+  color: var(--text-secondary);
   font-size: 14px;
   font-weight: 600;
   letter-spacing: 0.2px;
   -webkit-tap-highlight-color: transparent;
-  transition: color 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: color 0.2s ease;
   white-space: nowrap;
   
   svg {
     width: 20px;
     height: 20px;
     flex-shrink: 0;
-    transition: stroke 0.3s;
+    transition: stroke 0.2s;
   }
 
   &.active {
@@ -1376,7 +1173,7 @@ a[href*="google.com/maps"] {
   }
 
   &:not(.active):hover {
-    color: #64748b;
+    color: var(--text-primary);
   }
 
   &:active {
@@ -1387,26 +1184,18 @@ a[href*="google.com/maps"] {
 
 /* ===== Dark Mode Overrides for View Toggle ===== */
 :host-context([data-theme="dark"]) {
-  .view-toggle-mist {
-    backdrop-filter: blur(24px) saturate(100%);
-    -webkit-backdrop-filter: blur(24px) saturate(100%);
-  }
-
   .view-toggle-pill {
-    background: rgba(30, 30, 38, 0.85);
-    border-color: rgba(123, 159, 255, 0.1);
-    box-shadow: 0 4px 32px rgba(0, 0, 0, 0.45),
-                0 1px 6px rgba(0, 0, 0, 0.25),
-                0 0 0 1px rgba(123, 159, 255, 0.06);
+    background: var(--surface);
+    border-color: var(--border-default);
   }
 
   .view-toggle-indicator {
-    background: rgba(50, 50, 60, 0.95);
-    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.35);
+    background: var(--bg);
+    border-color: var(--border-subtle);
   }
 
   .view-toggle-segment {
-    color: #71717a;
+    color: var(--text-secondary);
 
     &.active {
       color: var(--accent);
@@ -1417,7 +1206,7 @@ a[href*="google.com/maps"] {
     }
 
     &:not(.active):hover {
-      color: #a1a1aa;
+      color: var(--text-primary);
     }
   }
 }
@@ -1446,8 +1235,6 @@ a[href*="google.com/maps"] {
         height: 64px;
         padding: 0;
         border-radius: 50%;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15),
-          0 0 20px rgba(91, 127, 255, 0.08);
       }
 
       .view-toggle-indicator {
@@ -1519,7 +1306,6 @@ a[href*="google.com/maps"] {
     -webkit-backdrop-filter: blur(16px);
     mask-image: radial-gradient(ellipse at center, black 30%, transparent 80%);
     -webkit-mask-image: radial-gradient(ellipse at center, black 30%, transparent 80%);
-    will-change: inset;
     transition: inset 0.35s cubic-bezier(0.32, 0.72, 0, 1),
                 mask-image 0.35s cubic-bezier(0.32, 0.72, 0, 1),
                 -webkit-mask-image 0.35s cubic-bezier(0.32, 0.72, 0, 1);
@@ -1530,12 +1316,10 @@ a[href*="google.com/maps"] {
     padding: 4px;
     border-radius: 100px;
     overflow: hidden;
-    will-change: width, height, border-radius;
     transition: width 0.35s cubic-bezier(0.32, 0.72, 0, 1),
                 height 0.35s cubic-bezier(0.32, 0.72, 0, 1),
                 padding 0.35s cubic-bezier(0.32, 0.72, 0, 1),
-                border-radius 0.35s cubic-bezier(0.32, 0.72, 0, 1),
-                box-shadow 0.35s ease;
+                border-radius 0.35s cubic-bezier(0.32, 0.72, 0, 1);
   }
 
   .view-toggle-indicator {
@@ -1580,7 +1364,7 @@ input[type="search"]::-webkit-search-cancel-button {
   appearance: none;
 }
 
-/* ===== Main Search Chips — Liquid Glass Pill System ===== */
+/* ===== Main Search Chips — Flat Warm Pill System ===== */
 
 /* Outer wrapper: positions the gradient fade masks */
 .main-search-chips-wrapper {
@@ -1592,7 +1376,7 @@ input[type="search"]::-webkit-search-cancel-button {
   height: 100%;
 }
 
-/* Gradient fade masks — soften the edge transitions */
+/* Gradient fade masks */
 .main-search-chips-fade {
   position: absolute;
   top: 0;
@@ -1610,12 +1394,12 @@ input[type="search"]::-webkit-search-cancel-button {
 
 .main-search-chips-fade--left {
   left: 0;
-  background: linear-gradient(to right, rgba(255, 255, 255, 0.85) 0%, transparent 100%);
+  background: linear-gradient(to right, var(--bg) 0%, transparent 100%);
 }
 
 .main-search-chips-fade--right {
   right: 0;
-  background: linear-gradient(to left, rgba(255, 255, 255, 0.85) 0%, transparent 100%);
+  background: linear-gradient(to left, var(--bg) 0%, transparent 100%);
 }
 
 /* Scrollable inner area */
@@ -1627,7 +1411,7 @@ input[type="search"]::-webkit-search-cancel-button {
   display: flex;
   align-items: center;
   height: 100%;
-  margin-left: -2px; /* Pull text slightly closer to search icon */
+  margin-left: -2px;
   scroll-behavior: smooth;
 
   /* Hide scrollbar across all browsers */
@@ -1655,23 +1439,22 @@ input[type="search"]::-webkit-search-cancel-button {
   min-height: unset !important;
 }
 
-/* --- Individual Chip Pill — Liquid Glass accent --- */
+/* --- Individual Chip Pill — Warm accent --- */
 ::ng-deep .main-chip.mat-mdc-chip {
   height: 26px !important;
   min-height: 26px !important;
   max-height: 26px !important;
-  border-radius: 13px !important;
+  border-radius: 6px !important;
   font-size: 12.5px !important;
   font-weight: 500 !important;
   letter-spacing: 0.01em;
-  background: rgba(91, 127, 255, 0.10) !important;
-  border: 1px solid rgba(91, 127, 255, 0.20) !important;
+  background: var(--accent-light) !important;
+  border: 1px solid rgba(217, 119, 87, 0.2) !important;
   padding: 0 4px 0 8px !important;
   margin: 0 !important;
   flex-shrink: 0;
-  transition: background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+  transition: background 0.2s ease, border-color 0.2s ease;
   cursor: default;
-  box-shadow: 0 1px 3px rgba(91, 127, 255, 0.06);
 
   /* Reset internal cell layout */
   .mdc-evolution-chip__cell--primary,
@@ -1686,7 +1469,6 @@ input[type="search"]::-webkit-search-cancel-button {
     flex-shrink: 0 !important;
   }
 
-  /* Strip Material's internal action padding to compact the chip */
   .mdc-evolution-chip__action--primary {
     padding: 0 !important;
   }
@@ -1699,14 +1481,13 @@ input[type="search"]::-webkit-search-cancel-button {
   .mdc-evolution-chip__text-label,
   .mat-mdc-chip-action-label,
   span {
-    color: rgba(60, 80, 180, 0.85) !important;
+    color: var(--accent) !important;
     line-height: 1 !important;
   }
 
   &:hover {
-    background: rgba(91, 127, 255, 0.18) !important;
-    border-color: rgba(91, 127, 255, 0.30) !important;
-    box-shadow: 0 2px 8px rgba(91, 127, 255, 0.10);
+    background: rgba(217, 119, 87, 0.15) !important;
+    border-color: rgba(217, 119, 87, 0.3) !important;
   }
 
   &:active {
@@ -1722,7 +1503,7 @@ input[type="search"]::-webkit-search-cancel-button {
   white-space: nowrap;
   display: block;
   max-width: 140px;
-  color: rgba(60, 80, 180, 0.85);
+  color: var(--accent);
   font-size: 12.5px;
   line-height: 1;
 }
@@ -1740,7 +1521,7 @@ input[type="search"]::-webkit-search-cancel-button {
   border: none !important;
   background: transparent !important;
   border-radius: 50% !important;
-  color: rgba(91, 127, 255, 0.40) !important;
+  color: rgba(217, 119, 87, 0.4) !important;
   cursor: pointer !important;
   transition: color 0.15s ease, background 0.15s ease !important;
   flex-shrink: 0 !important;
@@ -1751,8 +1532,8 @@ input[type="search"]::-webkit-search-cancel-button {
   }
 
   &:hover {
-    color: rgba(91, 127, 255, 0.80) !important;
-    background: rgba(91, 127, 255, 0.08) !important;
+    color: var(--accent) !important;
+    background: var(--accent-light) !important;
   }
 }
 
@@ -1770,12 +1551,12 @@ input[type="search"]::-webkit-search-cancel-button {
   outline: none;
   background: transparent;
   font-size: 14px;
-  color: #334155;
+  color: var(--text-primary);
   padding: 0;
-  line-height: 44px; /* Match the search bar height for perfect vertical centering */
+  line-height: 44px;
 
   &::placeholder {
-    color: #94a3b8;
+    color: var(--text-secondary);
     font-size: 14px;
   }
 }
@@ -1783,50 +1564,48 @@ input[type="search"]::-webkit-search-cancel-button {
 /* ===== Dark Mode — Main Chips ===== */
 :host-context([data-theme="dark"]) {
   .main-search-chips-fade--left {
-    background: linear-gradient(to right, rgba(24, 24, 32, 0.9) 0%, transparent 100%);
+    background: linear-gradient(to right, var(--surface) 0%, transparent 100%);
   }
 
   .main-search-chips-fade--right {
-    background: linear-gradient(to left, rgba(24, 24, 32, 0.9) 0%, transparent 100%);
+    background: linear-gradient(to left, var(--surface) 0%, transparent 100%);
   }
 
   ::ng-deep .main-chip.mat-mdc-chip {
-    background: rgba(123, 159, 255, 0.14) !important;
-    border-color: rgba(123, 159, 255, 0.22) !important;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+    background: var(--accent-light) !important;
+    border-color: rgba(232, 150, 125, 0.2) !important;
 
     .mdc-evolution-chip__text-label,
     .mat-mdc-chip-action-label,
     span {
-      color: #c7d2fe !important;
+      color: var(--accent) !important;
     }
 
     &:hover {
-      background: rgba(123, 159, 255, 0.22) !important;
-      border-color: rgba(123, 159, 255, 0.35) !important;
+      background: rgba(232, 150, 125, 0.18) !important;
+      border-color: rgba(232, 150, 125, 0.3) !important;
     }
   }
 
   .main-chip-text {
-    color: #c7d2fe !important;
+    color: var(--accent) !important;
   }
 
   .main-chip-remove,
   ::ng-deep .main-chip button[matChipRemove] {
-    color: rgba(199, 210, 254, 0.40) !important;
+    color: rgba(232, 150, 125, 0.4) !important;
 
     &:hover {
-      color: #c7d2fe !important;
-      background: rgba(123, 159, 255, 0.12) !important;
+      color: var(--accent) !important;
+      background: var(--accent-light) !important;
     }
   }
 
   .main-chip-input {
-    color: #e4e4e7;
+    color: var(--text-primary);
 
     &::placeholder {
-      color: #52525b;
+      color: var(--text-secondary);
     }
   }
 }
-
