@@ -352,6 +352,12 @@ export class NewSearchComponent implements OnInit, OnDestroy {
       catchError((error) => {
         // 錯誤處理邏輯
         console.error('Error:', error);
+        this.dialog.open(MessageDialogComponent, {
+          data: {
+            title: '系統忙碌中',
+            message: '目前無法取得超商憑證，請稍後重新整理頁面。'
+          }
+        });
         return of([]); // 在出錯時返回空陣列，防止應用崩潰
       })
     ).subscribe(

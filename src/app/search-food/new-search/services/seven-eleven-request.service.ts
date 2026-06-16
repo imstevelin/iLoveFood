@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { Observable, BehaviorSubject, throwError, defer } from 'rxjs';
-import { catchError, filter, take, switchMap, map } from 'rxjs/operators';
+import { catchError, filter, take, switchMap, map, timeout, retry } from 'rxjs/operators';
 import { HttpClient } from '@angular/common/http';
 
 import { environment } from 'src/environments/environment';
@@ -30,12 +30,14 @@ export class SevenElevenRequestService {
 
   private fetchNewMidV(): Observable<string> {
     return this.http.post<any>('https://ilovefood-api.imstevelin.com/get_token', {}).pipe(
+      timeout(30000), // 超時保護
       map(res => {
         if (res && res.status === 'success' && res.mid_v) {
           return res.mid_v;
         }
         throw new Error('Failed to fetch new mid_v');
-      })
+      }),
+      retry(2) // 遇到 504 或網路錯誤自動重試 2 次
     );
   }
 
@@ -81,6 +83,8 @@ export class SevenElevenRequestService {
         catchError(refreshErr => {
           this.isRefreshing = false;
           this.loadingService.hide();
+          this.refreshTokenSubject.error(refreshErr); // 解除其他正在等待的請求
+          this.refreshTokenSubject = new BehaviorSubject<string | null>(null); // 重置以供下次使用
           return throwError(() => refreshErr);
         })
       );
