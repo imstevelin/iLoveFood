@@ -3,14 +3,21 @@
 本指南將引導您從零開始，在無圖形介面 (Headless) 的 Linux 伺服器上部署 7-ELEVEN Token (`mid_v`) 自動化抓取系統。
 此版本特別針對 **4GB RAM 伺服器** 進行了極致優化，解決了 App 閃退、虛擬機掉線、系統彈窗阻撓及連續抓取失敗等痛點。
 
-> **更新紀錄 (2026-06-15)**：本文件已根據實際部署經驗全面修訂。主要變更包括：
+> **更新紀錄 (2026-06-16)**：本文件已根據實際部署與除蟲經驗全面修訂。主要變更包括：
+> - **Frida 附加策略**：由名稱搜尋改為 **PID 附加** (`adb shell pidof`)，徹底修復 `timeout was reached` 的連線超時問題
+> - **首頁座標修正**：`HOME_TAB` 從第一個標籤 `(32,607)` 修正為底部選單**中間按鈕** `(160,607)`
+> - **Frida Server 自癒機制**：新增 `ensure_frida_server()` 函數，每次初始化時自動偵測並重啟已假死的 Frida Server
+> - **APP 強制停止**：`open_app_and_prepare()` 加入 `am force-stop` 指令，清除 ANR (應用程式無回應) 狀態
+> - **防死鎖保護**：`fetch_token_job()` 以 `try/finally` 包裹，確保 `is_fetching` 旗標絕對會被釋放
+> - **預取池架構**：採用 `TokenPool` + 背景 `maintain_pool` 執行緒，API 回應延遲從 6~8 秒降至 **0.00 秒**
+>
+> **先前更新 (2026-06-15)**：
 > - App 由 OpenPoint 改為 **7-ELEVEN** (`ecowork.seven`)，i地圖位於底部選單**第二項**
 > - Java 版本由 11 升級至 **17** (最新 Android SDK cmdline-tools 不相容 Java 11)
 > - 新增 `platform-tools` 與 `emulator` 的顯式安裝步驟
 > - 新增 `ANDROID_SDK_ROOT` 環境變數設定 (模擬器啟動必需)
 > - 首次啟動模擬器改為 `-no-window` Headless 模式，搭配 SSH 隧道 + scrcpy 進行遠端操作
 > - 強化 Frida Server 推送後的完整性驗證步驟
-> - 更新所有 UI 操作座標以符合 7-ELEVEN App 的實際 UI 佈局
 
 ---
 
@@ -222,7 +229,7 @@ EOF
 ```
 
 ### 2. `reactive_farmer.py`
-重構後的 Python 服務，採用「五步智慧 UI 操作鏈」，已針對 7-ELEVEN App 調整座標。
+核心 Python 服務，採用「預取池 (Token Pool)」架構搭配 PID 附加 Frida，實現 **0 延遲回應** 與 **自動故障恢復**。
 ```bash
 cat << 'EOF' > ~/op-farmer/reactive_farmer.py
 # ~/op-farmer/reactive_farmer.py
@@ -236,6 +243,12 @@ CORS(app)
 
 # 7-ELEVEN App 穩定版座標設定 (MDPI 120-160 適用)
 # 座標基於 uiautomator dump 分析，螢幕解析度 320x640
+# 底部選單共 5 個標籤，由左至右依序為：
+#   第1個 [0,575][64,640]    → (32,607)
+#   第2個 [64,575][128,640]  → (96,607)  ← i地圖
+#   第3個 [128,575][192,640] → (160,607) ← 首頁 (中間)
+#   第4個 [192,575][256,640] → (224,607)
+#   第5個 [256,575][320,640] → (288,607)
 SAFE_BLANK_X, SAFE_BLANK_Y = 10, 50     # 點擊空白處關廣告
 HOME_TAB_X, HOME_TAB_Y = 160, 607       # 底部首頁選單 (第三個標籤/中間，bounds [128,575][192,640])
 I_MAP_X, I_MAP_Y = 96, 607              # 底部 i地圖按鈕 (第二個標籤，bounds [64,575][128,640])
@@ -426,7 +439,7 @@ EOF
 ```
 
 ### 3. `start_farmer.sh`
-包含「進程深度清理」的啟動守護腳本。
+包含「進程深度清理」與「Frida Server 健康檢查」的啟動守護腳本。
 ```bash
 cat << 'EOF' > ~/op-farmer/start_farmer.sh
 #!/bin/bash
@@ -455,7 +468,8 @@ sleep 5
 
 echo "[3/4] 啟動 Frida Server..."
 adb root && adb wait-for-device
-adb shell 'setenforce 0; nohup /data/local/tmp/asdf -l 0.0.0.0:12345 >/dev/null 2>&1 &'
+# 【重要】必須設定 LD_LIBRARY_PATH，否則 Frida Server 可能因缺少共享庫而靜默失敗
+adb shell 'setenforce 0; export LD_LIBRARY_PATH=/apex/com.android.runtime/lib64:/apex/com.android.art/lib64:/system/lib64:/vendor/lib64; nohup /data/local/tmp/asdf -l 0.0.0.0:12345 >/dev/null 2>&1 &'
 sleep 3
 
 # 驗證 Frida Server 是否正在運行
@@ -508,9 +522,53 @@ curl -X POST http://server_ip:5000/get_token
 }
 ```
 
+> **效能指標**：在預取池有庫存的情況下，API 回應時間為 **0.00 秒**；若池中無庫存，系統會即時觸發抓取，約需 **6~17 秒**。
+
 ---
 
 ## 五、 疑難排解
+
+### Frida 附加超時 (timeout was reached)
+此問題通常發生在 Frida Server 無法透過進程名稱列舉 APP 時。本版已改用 **PID 附加** (`adb shell pidof ecowork.seven`) 作為預設策略，徹底避免此問題。若仍然出現超時：
+```bash
+# 1. 確認 Frida Server 是否存活
+adb shell ps | grep asdf
+
+# 2. 確認 APP 是否在運行
+adb shell pidof ecowork.seven
+
+# 3. 手動重啟 Frida Server
+adb root && adb wait-for-device
+adb shell 'setenforce 0; export LD_LIBRARY_PATH=/apex/com.android.runtime/lib64:/apex/com.android.art/lib64:/system/lib64:/vendor/lib64; nohup /data/local/tmp/asdf -l 0.0.0.0:12345 >/dev/null 2>&1 &'
+
+# 4. 驗證 Python 能否透過 PID 附加
+cd ~/op-farmer && source venv/bin/activate
+python3 -c "
+import frida
+device = frida.get_device_manager().add_remote_device('127.0.0.1:12345')
+import subprocess
+pid = int(subprocess.run(['adb','shell','pidof','ecowork.seven'], capture_output=True, text=True).stdout.strip())
+session = device.attach(pid)
+print(f'成功附加 PID {pid}')
+"
+```
+
+### APP 當機 (7-ELEVEN isn't responding / ANR)
+當模擬器資源不足時，APP 可能會因 ANR (Application Not Responding) 而彈出「isn't responding」的系統錯誤視窗。本版已在 `open_app_and_prepare()` 中加入 `am force-stop` 指令來清除此狀態。若 APP 頻繁當機：
+```bash
+# 增加模擬器記憶體 (在 start_farmer.sh 中調整 -memory 參數)
+# 4GB 主機建議 1280M，8GB 主機可用 2560M
+
+# 檢查目前的 UI 畫面狀態
+adb shell uiautomator dump /data/local/tmp/ui.xml
+adb shell cat /data/local/tmp/ui.xml | grep -i "responding\|error\|crash"
+```
+
+### 連續查詢卡死 (Waitress 線程耗盡)
+若多個 API 請求同時湧入，且池中無 Token，所有 Waitress 線程會被阻塞等待。本版透過以下機制防範：
+- `emulator_lock`：確保同一時間只有一個執行緒操作模擬器
+- `try/finally`：確保 `is_fetching` 旗標絕對會被釋放，避免死鎖
+- 25 秒超時：即使抓取失敗，API 也會在 25 秒後回傳 `504 Timeout`
 
 ### Frida Server 啟動失敗 (Segmentation fault)
 如果 Frida Server 執行時出現 `Segmentation fault`，代表 binary 在傳輸過程中損壞。請重新下載：
@@ -544,8 +602,52 @@ export ANDROID_SDK_ROOT=$HOME/android_sdk
 
 ---
 
-## 六、 運作原理與優化重點 (Why It Works)
-*   **不被系統彈窗阻撓**：過去在抓取完成、執行返回鍵時，容易觸發 App 的「是否退出APP」對話框。本版利用 Frida 從底層攔截了帶有 `Exit/Quit` 標籤的 `Dialog.show()`，讓 UI 單純執行「返回」指令而無後顧之憂。
-*   **五步閉環操作**：每次收到 `curl`，系統必定強制從頭執行 **「1. 確保在前台 -> 2. 點擊空白關廣告 -> 3. 點擊首頁標籤待命 -> 4. 點擊 i地圖 -> 5. 等待回傳後按一次返回」**，消除了多次查詢產生的狀態偏移與不可控因素。
-*   **記憶體容錯**：`config.ini` 中的 `vm.heapSize=512M` 與啟動腳本中的限制，達到了在廉價/低配伺服器上長期生存的最佳平衡點。
-*   **Headless 友善**：全程使用 `-no-window` 模式，不依賴 X11 顯示服務，可在任何無 GUI 的伺服器上穩定運行。
+## 六、 架構與運作原理
+
+### 系統架構圖
+```
+                   ┌──────────────────────────────────────────────┐
+                   │              Linux Server                    │
+                   │                                              │
+  HTTP POST        │  ┌──────────────┐     ┌──────────────────┐  │
+  /get_token ──────┼─▶│   Waitress   │────▶│   TokenPool      │  │
+                   │  │  (4 threads) │     │  ┌────────────┐  │  │
+                   │  └──────────────┘     │  │ token: ... │  │  │
+                   │                       │  │ updated_at │  │  │
+                   │  ┌──────────────┐     │  │ is_fetching│  │  │
+                   │  │ maintain_pool│────▶│  └────────────┘  │  │
+                   │  │  (每5秒檢查)  │     └──────────────────┘  │
+                   │  └──────────────┘              │              │
+                   │         │                      ▼              │
+                   │  ┌──────────────┐     ┌──────────────────┐  │
+                   │  │fetch_token   │     │  Android Emulator │  │
+                   │  │   _job()     │────▶│  ┌────────────┐  │  │
+                   │  │              │ ADB │  │ 7-ELEVEN   │  │  │
+                   │  └──────────────┘     │  │   APP      │  │  │
+                   │         ▲             │  └────────────┘  │  │
+                   │         │             │  ┌────────────┐  │  │
+                   │  ┌──────────────┐     │  │Frida Server│  │  │
+                   │  │  Frida Hook  │◀────│  │(asdf:12345)│  │  │
+                   │  │ (hook_mid.js)│     │  └────────────┘  │  │
+                   │  └──────────────┘     └──────────────────┘  │
+                   └──────────────────────────────────────────────┘
+```
+
+### 核心機制
+
+1.  **預取池 (Token Pool)**：系統在背景預先抓取 Token 並快取於記憶體中。當 API 請求進來時，直接從池中取出並回傳，實現 **0 延遲** 回應。池子被消耗後，背景執行緒會立刻啟動新的預取任務。
+
+2.  **PID 附加策略**：Frida 的 `device.enumerate_processes()` 在某些環境下無法正確列舉進程名稱。本版改用 `adb shell pidof ecowork.seven` 取得精確的 PID 後，再以 `device.attach(pid)` 附加，穩定性大幅提升。
+
+3.  **自癒恢復機制**：
+    - `ensure_frida_server()`：每次初始化時自動偵測 Frida Server 是否存活，若已死亡則自動重啟
+    - `am force-stop`：每次重新準備 APP 時先強制停止，清除 ANR 或畫面卡死的殘留狀態
+    - `try/finally`：所有預取操作都以安全鎖包裹，確保即使發生例外，`is_fetching` 旗標也一定會被釋放
+
+4.  **UI 操作策略**：
+    - 使用精準座標點擊底部「首頁」標籤 `(160,607)` 取代不穩定的實體返回鍵 (`keyevent 4`)
+    - 每次點擊 i地圖後等待 1.5 秒動畫緩衝，避免過快切換導致 APP 的 UI 狀態錯亂
+
+5.  **記憶體容錯**：`config.ini` 中的 `vm.heapSize=512M` 與啟動腳本中的限制，達到了在廉價/低配伺服器上長期生存的最佳平衡點。
+
+6.  **Headless 友善**：全程使用 `-no-window` 模式，不依賴 X11 顯示服務，可在任何無 GUI 的伺服器上穩定運行。
