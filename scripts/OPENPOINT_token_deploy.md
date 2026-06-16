@@ -237,7 +237,7 @@ CORS(app)
 # 7-ELEVEN App 穩定版座標設定 (MDPI 120-160 適用)
 # 座標基於 uiautomator dump 分析，螢幕解析度 320x640
 SAFE_BLANK_X, SAFE_BLANK_Y = 10, 50     # 點擊空白處關廣告
-HOME_TAB_X, HOME_TAB_Y = 32, 607        # 底部首頁選單 (第一個標籤，bounds [0,575][64,640])
+HOME_TAB_X, HOME_TAB_Y = 160, 607       # 底部首頁選單 (第三個標籤/中間，bounds [128,575][192,640])
 I_MAP_X, I_MAP_Y = 96, 607              # 底部 i地圖按鈕 (第二個標籤，bounds [64,575][128,640])
 APP_NAME = "7-ELEVEN"
 PKG_NAME = "ecowork.seven"
@@ -282,6 +282,21 @@ def open_app_and_prepare():
 frida_session = None
 frida_script = None
 
+FRIDA_SERVER_CMD = "setenforce 0; export LD_LIBRARY_PATH=/apex/com.android.runtime/lib64:/apex/com.android.art/lib64:/system/lib64:/vendor/lib64; nohup /data/local/tmp/asdf -l 0.0.0.0:12345 >/dev/null 2>&1 &"
+
+def ensure_frida_server():
+    """確認 Frida Server 是否存活，若無則重新啟動"""
+    result = subprocess.run(["adb", "shell", "ps | grep asdf"], capture_output=True, text=True)
+    if "asdf" not in result.stdout:
+        print("[*] Frida Server 未運行，正在重新啟動...")
+        subprocess.run(["adb", "root"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        subprocess.run(["adb", "wait-for-device"])
+        subprocess.run(["adb", "shell", FRIDA_SERVER_CMD], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        time.sleep(3)
+        print("[+] Frida Server 已重新啟動")
+    else:
+        print("[+] Frida Server 運行中")
+
 def init_frida():
     global frida_session, frida_script
     try:
@@ -290,13 +305,25 @@ def init_frida():
         subprocess.run(["adb", "forward", "tcp:12345", "tcp:12345"])
         
         open_app_and_prepare()
-        device = frida.get_device_manager().add_remote_device("127.0.0.1:12345")
+        ensure_frida_server()
         
-        try:
-            frida_session = device.attach(APP_NAME)
-        except Exception:
-            print(f"[!] 找不到進程 {APP_NAME}，嘗試使用包名附加...")
-            frida_session = device.attach(PKG_NAME)
+        # 透過 ADB 取得 APP 的 PID，再用 PID 附加 Frida（名稱搜尋不穩定）
+        result = subprocess.run(["adb", "shell", "pidof", PKG_NAME], capture_output=True, text=True)
+        pid_str = result.stdout.strip()
+        if not pid_str:
+            print(f"[!] 找不到 {PKG_NAME} 的進程，嘗試重新啟動 APP...")
+            adb_run(["am", "force-stop", PKG_NAME])
+            time.sleep(1)
+            subprocess.run(["adb", "shell", "monkey", "-p", PKG_NAME, "-c", "android.intent.category.LAUNCHER", "1"], stdout=subprocess.DEVNULL)
+            time.sleep(8)
+            result = subprocess.run(["adb", "shell", "pidof", PKG_NAME], capture_output=True, text=True)
+            pid_str = result.stdout.strip()
+        
+        app_pid = int(pid_str.split()[0])
+        print(f"[+] 找到 {PKG_NAME} PID: {app_pid}")
+        
+        device = frida.get_device_manager().add_remote_device("127.0.0.1:12345")
+        frida_session = device.attach(app_pid)
         
         with open("hook_mid.js", "r", encoding="utf-8") as f:
             frida_script = frida_session.create_script(f.read())
