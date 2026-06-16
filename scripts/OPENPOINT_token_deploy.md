@@ -265,7 +265,9 @@ def adb_run(cmd):
     return subprocess.run(["adb", "shell"] + cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
 def open_app_and_prepare():
-    print(f"[*] 啟動 {APP_NAME}...")
+    print(f"[*] 強制停止並啟動 {APP_NAME}...")
+    adb_run(["am", "force-stop", PKG_NAME])
+    time.sleep(2)
     subprocess.run(["adb", "shell", "monkey", "-p", PKG_NAME, "-c", "android.intent.category.LAUNCHER", "1"], stdout=subprocess.DEVNULL)
     time.sleep(10)
 
@@ -277,7 +279,11 @@ def open_app_and_prepare():
     adb_run(["input", "tap", str(HOME_TAB_X), str(HOME_TAB_Y)])
     time.sleep(3)
 
+frida_session = None
+frida_script = None
+
 def init_frida():
+    global frida_session, frida_script
     try:
         print("\n====================================")
         subprocess.run(["adb", "wait-for-device"])
@@ -287,15 +293,15 @@ def init_frida():
         device = frida.get_device_manager().add_remote_device("127.0.0.1:12345")
         
         try:
-            session = device.attach(APP_NAME)
+            frida_session = device.attach(APP_NAME)
         except Exception:
             print(f"[!] 找不到進程 {APP_NAME}，嘗試使用包名附加...")
-            session = device.attach(PKG_NAME)
+            frida_session = device.attach(PKG_NAME)
         
         with open("hook_mid.js", "r", encoding="utf-8") as f:
-            script = session.create_script(f.read())
-        script.on('message', on_message)
-        script.load()
+            frida_script = frida_session.create_script(f.read())
+        frida_script.on('message', on_message)
+        frida_script.load()
         print(f"[+] Frida 注入成功，系統就緒！")
         print("====================================\n")
         return True
@@ -305,34 +311,42 @@ def init_frida():
 
 def fetch_token_job():
     with emulator_lock:
-        print(f"\n[*] 開始預取 (Prefetch) Token... ({time.strftime('%H:%M:%S')})")
-        req_time = time.time()
-        
-        adb_run(["input", "tap", str(I_MAP_X), str(I_MAP_Y)])
-        
-        start_wait = time.time()
-        success = False
-        new_token = None
-        
-        while time.time() - start_wait < 20:
-            if captured_data["token"] and captured_data["updated_at"] > req_time:
-                new_token = captured_data["token"]
-                print(f"[+] 預取成功！耗時: {time.time() - start_wait:.2f} 秒")
-                success = True
-                break
-            time.sleep(0.5)
+        try:
+            print(f"\n[*] 開始預取 (Prefetch) Token... ({time.strftime('%H:%M:%S')})")
+            req_time = time.time()
             
-        adb_run(["input", "keyevent", "4"])
-        time.sleep(2)
-        
-        with pool.lock:
-            if success:
-                pool.token = new_token
-                pool.updated_at = time.time()
-            else:
-                print("[!] 預取超時，執行預防性重置...")
-                open_app_and_prepare()
-            pool.is_fetching = False
+            adb_run(["input", "tap", str(I_MAP_X), str(I_MAP_Y)])
+            
+            start_wait = time.time()
+            success = False
+            new_token = None
+            
+            while time.time() - start_wait < 20:
+                if captured_data["token"] and captured_data["updated_at"] > req_time:
+                    new_token = captured_data["token"]
+                    print(f"[+] 預取成功！耗時: {time.time() - start_wait:.2f} 秒")
+                    success = True
+                    break
+                time.sleep(0.5)
+                
+            # 等待 i地圖頁面或任何動畫加載完畢，避免太快切換導致 UI 卡死
+            time.sleep(1.5)
+            # 使用精準點擊底部「首頁」標籤，取代不穩定的實體返回鍵 (keyevent 4)
+            adb_run(["input", "tap", str(HOME_TAB_X), str(HOME_TAB_Y)])
+            time.sleep(2)
+            
+            with pool.lock:
+                if success:
+                    pool.token = new_token
+                    pool.updated_at = time.time()
+                else:
+                    print("[!] 預取超時，執行預防性重置...")
+                    init_frida()
+        except Exception as e:
+            print(f"[!] 預取過程發生錯誤: {e}")
+        finally:
+            with pool.lock:
+                pool.is_fetching = False
 
 def start_prefetch():
     with pool.lock:
