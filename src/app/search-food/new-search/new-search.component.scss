@@ -115,6 +115,10 @@
     transition-duration: 60ms;
   }
 
+  &.favorite-store-item {
+    gap: 6px;
+  }
+
   span {
     font-weight: 500;
   }

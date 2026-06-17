@@ -48,8 +48,8 @@
   <ng-container *ngIf="selectedStore">
     <div class="sheet-header">
       <div class="sheet-store-icon" [ngClass]="{'badge-seven': selectedStore.label === '7-11', 'badge-family': selectedStore.label === '全家'}">
-        <img *ngIf="selectedStore.label === '7-11'" [src]="sevenElevenIconUrl" alt="7-11" width="22" height="22" />
-        <img *ngIf="selectedStore.label === '全家'" [src]="familyMartIconUrl" alt="全家" width="22" height="22" />
+        <img *ngIf="selectedStore.label === '7-11'" [src]="sevenElevenIconUrl" alt="7-11" class="w-[80%] h-auto object-contain" />
+        <img *ngIf="selectedStore.label === '全家'" [src]="familyMartIconUrl" alt="全家" class="w-[80%] h-auto object-contain" />
       </div>
       <div class="sheet-store-info">
         <h3 class="sheet-store-name">{{ selectedStore.storeName }}</h3>
@@ -74,7 +74,7 @@
         </svg>
       </button>
       <button class="sheet-nav-btn" (click)="openNavigation(selectedStore)" aria-label="導航">
-        <img src="assets/GoogleMap_icon.png" alt="導航" width="24" height="24" />
+        <img src="assets/GoogleMap_icon.webp" alt="導航" width="24" height="24" />
       </button>
     </div>
 

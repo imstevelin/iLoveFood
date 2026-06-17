@@ -287,7 +287,7 @@ export class ChatbotComponent implements OnInit, OnDestroy {
                        .trim();
         let enc = '';
         try { enc = encodeURIComponent(name); } catch { enc = ''; }
-        return `${line} <a href="https://www.google.com/maps/search/${enc}" target="_blank" class="map-link"><img src="assets/GoogleMap_icon.png" alt="地圖" class="map-icon"></a>`;
+        return `${line} <a href="https://www.google.com/maps/search/${enc}" target="_blank" class="map-link"><img src="assets/GoogleMap_icon.webp" alt="地圖" class="map-icon"></a>`;
       }
       return line;
     }).join('\n');

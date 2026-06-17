@@ -83,8 +83,9 @@
   }
   
   .store-icon {
-    width: 20px;
+    width: auto;
     height: 20px;
+    object-fit: contain;
     margin-right: 12px;
     display: inline-block;
     vertical-align: middle;
