@@ -3,15 +3,17 @@
 本指南將引導您從零開始，在無圖形介面 (Headless) 的 Linux 伺服器上部署 7-ELEVEN Token (`mid_v`) 自動化抓取系統。
 此版本特別針對 **4GB RAM 伺服器** 進行了極致優化，解決了 App 閃退、虛擬機掉線、系統彈窗阻撓及連續抓取失敗等痛點。
 
-> **更新紀錄 (2026-06-16)**：本文件已根據實際部署與除蟲經驗全面修訂。主要變更包括：
-> - **Frida 附加策略**：由名稱搜尋改為 **PID 附加** (`adb shell pidof`)，徹底修復 `timeout was reached` 的連線超時問題
-> - **首頁座標修正**：`HOME_TAB` 從第一個標籤 `(32,607)` 修正為底部選單**中間按鈕** `(160,607)`
+> **更新紀錄 (2026-06-17)**：本文件已根據實際部署與除蟲經驗全面修訂。主要變更包括：
+> - **ADB 防死鎖保護**：全面導入 `safe_subprocess_run` (Timeout=15)，防止模擬器或 ADB 卡死造成的 Waitress 耗盡阻塞
+> - **精準 UI 座標修正**：
+>   - 關閉廣告座標定位為 `(288, 139)` (原本 `(10,50)` 會點擊無效遮罩導致廣告殘留)
+>   - 底部標籤 Y 座標由 `607` 修正為 `583`，完美避開系統導覽列誤觸退回背景
+> - **Frida 附加策略**：由名稱搜尋改為 **PID 附加** (`adb shell pidof`)，修復連線超時問題
 > - **Frida Server 自癒機制**：新增 `ensure_frida_server()` 函數，每次初始化時自動偵測並重啟已假死的 Frida Server
-> - **APP 強制停止**：`open_app_and_prepare()` 加入 `am force-stop` 指令，清除 ANR (應用程式無回應) 狀態
-> - **防死鎖保護**：`fetch_token_job()` 以 `try/finally` 包裹，確保 `is_fetching` 旗標絕對會被釋放
-> - **預取池架構**：採用 `TokenPool` + 背景 `maintain_pool` 執行緒，API 回應延遲從 6~8 秒降至 **0.00 秒**
+> - **APP 強制停止**：`open_app_and_prepare()` 加入 `am force-stop` 指令，清除 ANR 狀態
+> - **預取池架構**：採用 `TokenPool` + 背景 `maintain_pool` 執行緒，API 回應延遲降至 **0.00 秒**
 >
-> **先前更新 (2026-06-15)**：
+> **先前更新 (2026-06-16)**：
 > - App 由 OpenPoint 改為 **7-ELEVEN** (`ecowork.seven`)，i地圖位於底部選單**第二項**
 > - Java 版本由 11 升級至 **17** (最新 Android SDK cmdline-tools 不相容 Java 11)
 > - 新增 `platform-tools` 與 `emulator` 的顯式安裝步驟
@@ -233,27 +235,34 @@ EOF
 ```bash
 cat << 'EOF' > ~/op-farmer/reactive_farmer.py
 # ~/op-farmer/reactive_farmer.py
-import frida, time, subprocess, threading
+import subprocess
+import time
+import frida
+import threading
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 from waitress import serve
 
+def safe_subprocess_run(*args, **kwargs):
+    kwargs.setdefault('timeout', 15)
+    try:
+        return subprocess.run(*args, **kwargs)
+    except subprocess.TimeoutExpired:
+        print(f"[!] subprocess.run 超時 (args={args})")
+        raise
+
 app = Flask(__name__)
 CORS(app)
 
-# 7-ELEVEN App 穩定版座標設定 (MDPI 120-160 適用)
-# 座標基於 uiautomator dump 分析，螢幕解析度 320x640
-# 底部選單共 5 個標籤，由左至右依序為：
-#   第1個 [0,575][64,640]    → (32,607)
-#   第2個 [64,575][128,640]  → (96,607)  ← i地圖
-#   第3個 [128,575][192,640] → (160,607) ← 首頁 (中間)
-#   第4個 [192,575][256,640] → (224,607)
-#   第5個 [256,575][320,640] → (288,607)
-SAFE_BLANK_X, SAFE_BLANK_Y = 10, 50     # 點擊空白處關廣告
-HOME_TAB_X, HOME_TAB_Y = 160, 607       # 底部首頁選單 (第三個標籤/中間，bounds [128,575][192,640])
-I_MAP_X, I_MAP_Y = 96, 607              # 底部 i地圖按鈕 (第二個標籤，bounds [64,575][128,640])
-APP_NAME = "7-ELEVEN"
+# ===== 模擬器與 UI 設定 =====
+EMULATOR_SERIAL = "emulator-5554"
 PKG_NAME = "ecowork.seven"
+APP_NAME = "7-ELEVEN"
+
+# UI 座標
+SAFE_BLANK_X, SAFE_BLANK_Y = 288, 139     # 點擊關閉廣告彈窗的 X 按鈕 (ivCloseBanner bounds: [271,122][305,156])
+HOME_TAB_X, HOME_TAB_Y = 160, 583         # 底部首頁選單 (y=583 避開系統導覽列)
+I_MAP_X, I_MAP_Y = 96, 583                # 底部 i地圖按鈕 (y=583 避開系統導覽列)
 
 captured_data = {"token": None, "updated_at": 0}
 emulator_lock = threading.Lock()
@@ -274,14 +283,21 @@ def on_message(message, data):
             captured_data["token"] = payload['mid_v'].replace('\n', '')
             captured_data["updated_at"] = time.time()
 
-def adb_run(cmd):
-    return subprocess.run(["adb", "shell"] + cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+def adb_run(cmd, timeout=10):
+    try:
+        return safe_subprocess_run(["adb", "shell"] + cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=timeout)
+    except subprocess.TimeoutExpired:
+        print(f"[!] ADB 指令執行超時 ({timeout}s): {cmd}")
+        raise
 
 def open_app_and_prepare():
     print(f"[*] 強制停止並啟動 {APP_NAME}...")
     adb_run(["am", "force-stop", PKG_NAME])
     time.sleep(2)
-    subprocess.run(["adb", "shell", "monkey", "-p", PKG_NAME, "-c", "android.intent.category.LAUNCHER", "1"], stdout=subprocess.DEVNULL)
+    try:
+        safe_subprocess_run(["adb", "shell", "monkey", "-p", PKG_NAME, "-c", "android.intent.category.LAUNCHER", "1"], stdout=subprocess.DEVNULL, timeout=15)
+    except subprocess.TimeoutExpired:
+        print("[!] 開啟 APP 時 ADB 超時")
     time.sleep(10)
 
     print("[*] 關閉可能存在的廣告彈窗...")
@@ -299,12 +315,12 @@ FRIDA_SERVER_CMD = "setenforce 0; export LD_LIBRARY_PATH=/apex/com.android.runti
 
 def ensure_frida_server():
     """確認 Frida Server 是否存活，若無則重新啟動"""
-    result = subprocess.run(["adb", "shell", "ps | grep asdf"], capture_output=True, text=True)
+    result = safe_subprocess_run(["adb", "shell", "ps | grep asdf"], capture_output=True, text=True)
     if "asdf" not in result.stdout:
         print("[*] Frida Server 未運行，正在重新啟動...")
-        subprocess.run(["adb", "root"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        subprocess.run(["adb", "wait-for-device"])
-        subprocess.run(["adb", "shell", FRIDA_SERVER_CMD], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        safe_subprocess_run(["adb", "root"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        safe_subprocess_run(["adb", "wait-for-device"])
+        safe_subprocess_run(["adb", "shell", FRIDA_SERVER_CMD], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         time.sleep(3)
         print("[+] Frida Server 已重新啟動")
     else:
@@ -314,22 +330,22 @@ def init_frida():
     global frida_session, frida_script
     try:
         print("\n====================================")
-        subprocess.run(["adb", "wait-for-device"])
-        subprocess.run(["adb", "forward", "tcp:12345", "tcp:12345"])
+        safe_subprocess_run(["adb", "wait-for-device"])
+        safe_subprocess_run(["adb", "forward", "tcp:12345", "tcp:12345"])
         
         open_app_and_prepare()
         ensure_frida_server()
         
         # 透過 ADB 取得 APP 的 PID，再用 PID 附加 Frida（名稱搜尋不穩定）
-        result = subprocess.run(["adb", "shell", "pidof", PKG_NAME], capture_output=True, text=True)
+        result = safe_subprocess_run(["adb", "shell", "pidof", PKG_NAME], capture_output=True, text=True)
         pid_str = result.stdout.strip()
         if not pid_str:
             print(f"[!] 找不到 {PKG_NAME} 的進程，嘗試重新啟動 APP...")
             adb_run(["am", "force-stop", PKG_NAME])
             time.sleep(1)
-            subprocess.run(["adb", "shell", "monkey", "-p", PKG_NAME, "-c", "android.intent.category.LAUNCHER", "1"], stdout=subprocess.DEVNULL)
+            safe_subprocess_run(["adb", "shell", "monkey", "-p", PKG_NAME, "-c", "android.intent.category.LAUNCHER", "1"], stdout=subprocess.DEVNULL)
             time.sleep(8)
-            result = subprocess.run(["adb", "shell", "pidof", PKG_NAME], capture_output=True, text=True)
+            result = safe_subprocess_run(["adb", "shell", "pidof", PKG_NAME], capture_output=True, text=True)
             pid_str = result.stdout.strip()
         
         app_pid = int(pid_str.split()[0])
@@ -384,6 +400,8 @@ def fetch_token_job():
                     init_frida()
         except Exception as e:
             print(f"[!] 預取過程發生錯誤: {e}")
+            print("[!] 觸發預防性重置...")
+            init_frida()
         finally:
             with pool.lock:
                 pool.is_fetching = False
