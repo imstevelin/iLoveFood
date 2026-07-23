@@ -7,20 +7,27 @@ from bs4 import BeautifulSoup
 # Configuration
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 ASSETS_DIR = os.path.join(BASE_DIR, 'docs', 'assets')
+SRC_ASSETS_DIR = os.path.join(BASE_DIR, 'src', 'assets')
 SEVEN_ELEVEN_JSON = os.path.join(ASSETS_DIR, "seven_eleven_products.json")
 FAMILY_MART_JSON = os.path.join(ASSETS_DIR, "family_mart_products.json")
+SEVEN_ELEVEN_SRC = os.path.join(SRC_ASSETS_DIR, "seven_eleven_products.json")
+FAMILY_MART_SRC = os.path.join(SRC_ASSETS_DIR, "family_mart_products.json")
 
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36"
 }
 
-def load_json(filepath):
+def load_json(filepath, fallback_path=None):
     if os.path.exists(filepath):
         with open(filepath, "r", encoding="utf-8") as f:
+            return json.load(f)
+    if fallback_path and os.path.exists(fallback_path):
+        with open(fallback_path, "r", encoding="utf-8") as f:
             return json.load(f)
     return []
 
 def save_json(filepath, data):
+    os.makedirs(os.path.dirname(filepath), exist_ok=True)
     with open(filepath, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=4)
 
@@ -141,11 +148,11 @@ def report_diff(old_data, new_data, store_name, name_key="name"):
 
 def main():
     print("正在取得 7-Eleven 最新資料...")
-    old_711 = load_json(SEVEN_ELEVEN_JSON)
+    old_711 = load_json(SEVEN_ELEVEN_JSON, SEVEN_ELEVEN_SRC)
     new_711 = crawl_711()
     
     print("正在取得 全家 最新資料...")
-    old_fm = load_json(FAMILY_MART_JSON)
+    old_fm = load_json(FAMILY_MART_JSON, FAMILY_MART_SRC)
     new_fm = crawl_family_mart()
     
     print("正在取得 全家 鮮食新活動資料...")
@@ -187,13 +194,11 @@ def main():
 
     print("\n正在更新 JSON 檔案...")
     # Update both docs/assets and src/assets
-    SRC_ASSETS_DIR = os.path.join(BASE_DIR, 'src', 'assets')
-    
     save_json(SEVEN_ELEVEN_JSON, merged_711)
-    save_json(os.path.join(SRC_ASSETS_DIR, "seven_eleven_products.json"), merged_711)
+    save_json(SEVEN_ELEVEN_SRC, merged_711)
     
     save_json(FAMILY_MART_JSON, merged_fm)
-    save_json(os.path.join(SRC_ASSETS_DIR, "family_mart_products.json"), merged_fm)
+    save_json(FAMILY_MART_SRC, merged_fm)
     
     print(f"更新完成！已將新商品加入清單並保留舊商品（同步更新 docs/ 與 src/）。報告已儲存至 {report_file}")
 

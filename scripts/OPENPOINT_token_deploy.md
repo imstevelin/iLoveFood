@@ -3,11 +3,16 @@
 本指南將引導您從零開始，在無圖形介面 (Headless) 的 Linux 伺服器上部署 7-ELEVEN Token (`mid_v`) 自動化抓取系統。
 此版本特別針對 **4GB RAM 伺服器** 進行了極致優化，解決了 App 閃退、虛擬機掉線、系統彈窗阻撓及連續抓取失敗等痛點。
 
-> **更新紀錄 (2026-06-17)**：本文件已根據實際部署與除蟲經驗全面修訂。主要變更包括：
+> **更新紀錄 (2026-07-18)**：本文件已根據實際部署與除蟲經驗全面修訂。主要變更包括：
+> - **KVM 硬體加速權限修復**：新增 `sudo usermod -aG kvm $USER`，確保伺服器重啟後 SSH 登入仍能穩定使用硬體加速，避免模擬器退化為軟體渲染 (TCG) 導致嚴重超時。
+> - **系統開機自動啟動**：新增 Crontab `@reboot` 設定，讓農場在伺服器整機重啟後能自動無縫恢復運作。
+> 
+> **先前更新 (2026-06-22)**：
+> - **全系統自癒重啟 (Emulator Auto-Recovery)**：當偵測到 `adb wait-for-device` 嚴重超時且設備離線 (模擬器崩潰或 QEMU OOM) 時，腳本會自動觸發 `start_farmer.sh` 進行全系統冷啟動，實現真正的無人值守。
+> 
+> **先前更新 (2026-06-17)**：
 > - **ADB 防死鎖保護**：全面導入 `safe_subprocess_run` (Timeout=15)，防止模擬器或 ADB 卡死造成的 Waitress 耗盡阻塞
-> - **精準 UI 座標修正**：
->   - 關閉廣告座標定位為 `(288, 139)` (原本 `(10,50)` 會點擊無效遮罩導致廣告殘留)
->   - 底部標籤 Y 座標由 `607` 修正為 `583`，完美避開系統導覽列誤觸退回背景
+> - **精準 UI 座標修正**：關閉廣告座標定位為 `(288, 139)`；底部標籤 Y 座標由 `607` 修正為 `583`，完美避開系統導覽列誤觸退回背景
 > - **Frida 附加策略**：由名稱搜尋改為 **PID 附加** (`adb shell pidof`)，修復連線超時問題
 > - **Frida Server 自癒機制**：新增 `ensure_frida_server()` 函數，每次初始化時自動偵測並重啟已假死的 Frida Server
 > - **APP 強制停止**：`open_app_and_prepare()` 加入 `am force-stop` 指令，清除 ANR 狀態
@@ -46,6 +51,9 @@ sudo systemctl enable --now ssh
 sudo apt update
 # 【重要】必須使用 Java 17，Java 11 不相容最新的 Android SDK cmdline-tools
 sudo apt install -y openjdk-17-jdk bridge-utils cpu-checker libvirt-clients libvirt-daemon-system qemu-kvm virt-manager adb nmap python3-pip python3-venv psmisc wget unzip scrcpy
+
+# 【關鍵步驟】將當前使用者加入 kvm 群組，確保硬體加速權限永遠生效 (免除圖形介面 ACL 依賴)
+sudo usermod -aG kvm $USER
 
 # 下載並配置 Android SDK
 mkdir -p ~/android_sdk/cmdline-tools
@@ -239,6 +247,8 @@ import subprocess
 import time
 import frida
 import threading
+import os
+import sys
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 from waitress import serve
@@ -326,11 +336,24 @@ def ensure_frida_server():
     else:
         print("[+] Frida Server 運行中")
 
+def recover_emulator():
+    print("[!] 偵測到模擬器崩潰或離線，正在執行全系統重啟...")
+    os.system("nohup ./start_farmer.sh > farmer_live.log 2>&1 < /dev/null &")
+    sys.exit(1)
+
 def init_frida():
     global frida_session, frida_script
     try:
         print("\n====================================")
-        safe_subprocess_run(["adb", "wait-for-device"])
+        try:
+            safe_subprocess_run(["adb", "wait-for-device"], timeout=15)
+        except subprocess.TimeoutExpired:
+            print("[!] ADB 連線超時，檢查設備狀態...")
+            result = subprocess.run(["adb", "devices"], capture_output=True, text=True)
+            if "device" not in result.stdout.split():
+                recover_emulator()
+            raise
+        
         safe_subprocess_run(["adb", "forward", "tcp:12345", "tcp:12345"])
         
         open_app_and_prepare()
@@ -517,6 +540,12 @@ chmod +x ~/op-farmer/start_farmer.sh
 ```bash
 cd ~/op-farmer
 nohup ./start_farmer.sh > farmer_live.log 2>&1 &
+```
+
+**設定開機自動啟動 (強烈建議)**：
+為了讓伺服器重啟後農場能自動復活，請設定 Crontab：
+```bash
+(crontab -l 2>/dev/null; echo '@reboot sleep 30 && bash -c "cd '$HOME'/op-farmer && ./start_farmer.sh > '$HOME'/op-farmer/farmer_live.log 2>&1"') | crontab -
 ```
 
 > **注意**：首次啟動需要約 1-2 分鐘等待模擬器開機及 App 預熱。您可以透過 `tail -f farmer_live.log` 觀察進度，直到看見 `啟動 Waitress 服務 (Port 5000)` 表示就緒。
