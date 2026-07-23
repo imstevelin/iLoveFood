@@ -3,12 +3,17 @@
 本指南將引導您從零開始，在無圖形介面 (Headless) 的 Linux 伺服器上部署 7-ELEVEN Token (`mid_v`) 自動化抓取系統。
 此版本特別針對 **4GB RAM 伺服器** 進行了極致優化，解決了 App 閃退、虛擬機掉線、系統彈窗阻撓及連續抓取失敗等痛點。
 
-> **更新紀錄 (2026-07-18)**：本文件已根據實際部署與除蟲經驗全面修訂。主要變更包括：
-> - **KVM 硬體加速權限修復**：新增 `sudo usermod -aG kvm $USER`，確保伺服器重啟後 SSH 登入仍能穩定使用硬體加速，避免模擬器退化為軟體渲染 (TCG) 導致嚴重超時。
+> **更新紀錄 (2026-07-24)**：本文件已根據實際部署與除蟲經驗全面修訂。主要變更包括：
+> - **自癒重啟機制修正 (exec 替換)**：`recover_emulator()` 改用 `os.execv()` 直接替換當前進程，徹底解決舊版 `os.system(nohup)` 造成的日誌檔損壞、多進程競寫、以及 `pkill -f` 自殺競態等問題。
+> - **初始化重試機制**：主程序新增 3 次重試遏輯，連續失敗才觸發全系統重啟，避免瞄時網路抖動造成不必要的重啟。
+> - **start_farmer.sh 前台執行模式**：改用 `exec python` 前台執行，日誌統一由呼叫方 (nohup/crontab) 控制，徹底消滅日誌 null bytes 損壞問題。
+> 
+> **先前更新 (2026-07-18)**：
+> - **KVM 硬體加速權限修復**：新增 `sudo usermod -aG kvm $USER`，確保伺服器重啟後 SSH 登入仍能穩定使用硬體加速。
 > - **系統開機自動啟動**：新增 Crontab `@reboot` 設定，讓農場在伺服器整機重啟後能自動無縫恢復運作。
 > 
 > **先前更新 (2026-06-22)**：
-> - **全系統自癒重啟 (Emulator Auto-Recovery)**：當偵測到 `adb wait-for-device` 嚴重超時且設備離線 (模擬器崩潰或 QEMU OOM) 時，腳本會自動觸發 `start_farmer.sh` 進行全系統冷啟動，實現真正的無人值守。
+> - **全系統自癒重啟 (Emulator Auto-Recovery)**：當偵測到 `adb wait-for-device` 嚴重超時且設備離線時，腳本會自動觸發 `start_farmer.sh` 進行全系統冷啟動。
 > 
 > **先前更新 (2026-06-17)**：
 > - **ADB 防死鎖保護**：全面導入 `safe_subprocess_run` (Timeout=15)，防止模擬器或 ADB 卡死造成的 Waitress 耗盡阻塞
@@ -337,9 +342,13 @@ def ensure_frida_server():
         print("[+] Frida Server 運行中")
 
 def recover_emulator():
+    """完全替換當前進程為 start_farmer.sh，避免日誌衝突與自殺競態"""
     print("[!] 偵測到模擬器崩潰或離線，正在執行全系統重啟...")
-    os.system("nohup ./start_farmer.sh > farmer_live.log 2>&1 < /dev/null &")
-    sys.exit(1)
+    sys.stdout.flush()
+    sys.stderr.flush()
+    # 使用 exec 替換當前進程，而非在背景啟動新進程
+    # 這樣日誌輸出由呼叫方 (nohup) 統一管理，不會出現多個進程同時寫同一個日誌文件
+    os.execv('/bin/bash', ['bash', './start_farmer.sh'])
 
 def init_frida():
     global frida_session, frida_script
@@ -469,13 +478,21 @@ def get_token():
     return jsonify({"status": "error", "message": "Timeout"}), 504
 
 if __name__ == '__main__':
-    if init_frida():
-        threading.Thread(target=maintain_pool, daemon=True).start()
-        print("[+] 啟動 Waitress 服務 (Port 5000)...")
-        serve(app, host='0.0.0.0', port=5000, threads=4)
-    else:
-        print("[!] 系統異常，啟動失敗。")
-        exit(1)
+    MAX_INIT_RETRIES = 3
+    for attempt in range(1, MAX_INIT_RETRIES + 1):
+        print(f"[*] 初始化嘗試 {attempt}/{MAX_INIT_RETRIES}...")
+        if init_frida():
+            threading.Thread(target=maintain_pool, daemon=True).start()
+            print("[+] 啟動 Waitress 服務 (Port 5000)...")
+            serve(app, host='0.0.0.0', port=5000, threads=4)
+            break
+        else:
+            if attempt < MAX_INIT_RETRIES:
+                print(f"[!] 初始化失敗，30秒後重試...")
+                time.sleep(30)
+            else:
+                print("[!] 連續初始化失敗，觸發全系統重啟...")
+                recover_emulator()
 EOF
 ```
 
@@ -494,6 +511,7 @@ echo "[1/4] 清理殘留程序並釋放端口..."
 pkill -9 qemu-system || true
 pkill -9 emulator || true
 pkill -f reactive_farmer.py || true
+sleep 2
 adb kill-server > /dev/null 2>&1
 fuser -k 5000/tcp > /dev/null 2>&1
 rm -f $HOME/.android/avd/token_farmer.avd/*.lock
@@ -525,7 +543,9 @@ echo "[4/4] 啟動農場 API 服務..."
 cd $HOME/op-farmer
 source venv/bin/activate
 adb forward tcp:12345 tcp:12345
-python -u reactive_farmer.py
+# 【關鍵】前台執行 python，讓 nohup 或 crontab 控制本腳本的生命週期
+# 日誌由呼叫方 (nohup ./start_farmer.sh > farmer_live.log) 統一管理
+exec python -u reactive_farmer.py
 EOF
 
 chmod +x ~/op-farmer/start_farmer.sh
