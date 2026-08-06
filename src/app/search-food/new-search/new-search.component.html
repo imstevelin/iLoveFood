@@ -3,24 +3,28 @@
 <!-- ===== Fixed Search Bar ===== -->
 <div class="search-bar-fixed">
   <div class="max-w-3xl mx-auto">
-    <div class="flex items-center gap-2 md:gap-3">
+    <div class="header-layout">
 
       <!-- Logo Banner -->
-      <div class="shrink-0 flex items-center" (click)="goHome()" style="cursor: pointer;">
+      <button type="button" class="header-brand" (click)="goHome()" aria-label="回到附近門市">
         <!-- 電腦版：深色模式顯示 dark banner -->
         <img [src]="darkModeEnabled && isDarkSystemTheme ? 'assets/banner-dark.webp' : 'assets/banner.webp'" alt="珍食超人"
           class="hidden md:block h-10 w-auto object-contain drop-shadow-sm transition-transform hover:scale-105 active:scale-95" />
         <!-- 手機版顯示正方形 Icon -->
         <img src="assets/iLoveFood-icon.webp?v=4" alt="珍食超人"
           class="block md:hidden h-8 w-auto object-contain drop-shadow-sm transition-transform hover:scale-105 active:scale-95" />
-      </div>
+        <span class="header-brand-copy">
+          <strong>友善超人</strong>
+          <small>即時折扣庫存</small>
+        </span>
+      </button>
 
       <!-- Search Input -->
-      <form (ngSubmit)="onSubmit()" class="flex-1 min-w-0">
-        <div class="search-input-glass flex items-center h-11 pl-2.5 pr-3 gap-0" matAutocompleteOrigin #origin="matAutocompleteOrigin">
+      <form (ngSubmit)="onSubmit()" class="header-search-form">
+        <div class="search-input-glass" matAutocompleteOrigin #origin="matAutocompleteOrigin">
           <!-- Search icon -->
           <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 256 256"
-            class="text-gray-400 dark:text-zinc-400 shrink-0">
+            class="search-leading-icon">
             <path
               d="M229.66,218.34l-50.07-50.06a88.11,88.11,0,1,0-11.31,11.31l50.06,50.07a8,8,0,0,0,11.32-11.32ZM40,112a72,72,0,1,1,72,72A72.08,72.08,0,0,1,40,112Z">
             </path>
@@ -35,7 +39,10 @@
                  [class.scrolled-left]="chipsScrolledLeft">
               <mat-chip-grid #chipGrid aria-label="搜尋關鍵字" class="main-chip-grid">
                 <mat-chip-row *ngFor="let keyword of selectedKeywords" (removed)="removeKeyword(keyword)"
-                  class="main-chip">
+                  class="main-chip" [class.chip-store]="keyword.type === 'store'" [class.chip-category]="keyword.type === 'category'">
+                  <span *ngIf="keyword.type === 'store' || keyword.type === 'category'" class="main-chip-kind" aria-hidden="true">
+                    {{ keyword.type === 'store' ? '⌖' : '▦' }}
+                  </span>
                   <span class="main-chip-text">{{ keyword.name || keyword }}</span>
                   <button matChipRemove aria-label="移除關鍵字" class="main-chip-remove">
                     <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" viewBox="0 0 256 256">
@@ -44,7 +51,8 @@
                   </button>
                 </mat-chip-row>
 
-                <input [placeholder]="selectedKeywords.length > 0 ? '...' : '門市、商品或導航路徑'"
+                <input [placeholder]="selectedKeywords.length > 0 ? '＋' : '搜尋商品、分類或門市'"
+                       [attr.aria-label]="selectedKeywords.length > 0 ? '加入更多搜尋條件' : '搜尋商品、分類或門市'"
                        #keywordInput
                        [formControl]="keywordCtrl"
                        [matChipInputFor]="chipGrid"
@@ -62,59 +70,105 @@
             </div>
           </div>
 
-          <!--  Chatbot Button -->
-          <button *ngIf="chatEnabled" type="button" class="chatbot-inline-btn shrink-0" (click)="openChatbot()" aria-label="打開聊天機器人">
-            💬
+          <button *ngIf="selectedKeywords.length > 0" type="button" class="clear-query-btn"
+            (click)="clearSearchAndLocate()" aria-label="清除所有搜尋條件" title="清除搜尋條件">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24"
+              stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+              <path d="M6 6l12 12M18 6 6 18"/>
+            </svg>
           </button>
         </div>
 
         <!-- Autocomplete Dropdown -->
-        <mat-autocomplete #auto="matAutocomplete" (optionSelected)="onOptionSelect($event)" [displayWith]="displayFn">
-          <mat-option *ngFor="let item of unifiedDropDownList; trackBy: trackByDropdownItem" [value]="item">
-            <div *ngIf="item.type === 'store'" class="flex items-center gap-2 py-1">
-              <span class="text-xs px-1.5 py-0.5 rounded-md bg-blue-50 text-blue-600">🏪</span>
-              <img *ngIf="item.label === '7-11'" src="{{ sevenElevenIconUrl }}" alt="7-11" class="w-6 h-4 object-contain object-left shrink-0" />
-              <img *ngIf="item.label === '全家'" src="{{ familyMartIconUrl }}" alt="全家" class="w-6 h-4 object-contain object-left shrink-0" />
-              <div class="flex flex-col">
-                <span class="text-sm">{{ item.label === '全家' ? item.name.replace('店', '') + '門市' : item.name + '門市'
-                  }}</span>
-                <span class="text-xs text-gray-400 dark:text-zinc-400">{{ item.addr }}</span>
+        <mat-autocomplete #auto="matAutocomplete" (optionSelected)="onOptionSelect($event)" [displayWith]="displayFn"
+          class="search-autocomplete-panel">
+          <mat-option *ngFor="let item of unifiedDropDownList; trackBy: trackByDropdownItem" [value]="item" class="search-option">
+            <div *ngIf="item.type === 'store'" class="option-row">
+              <span class="option-media option-media-store">
+                <img *ngIf="item.label === '7-11'" [src]="sevenElevenIconUrl" alt="" />
+                <img *ngIf="item.label === '全家'" [src]="familyMartIconUrl" alt="" />
+              </span>
+              <div class="option-copy">
+                <span>{{ item.label === '全家' ? item.name.replace('店', '') + '門市' : '7-11 ' + item.name + '門市' }}</span>
+                <small>{{ item.addr }}</small>
               </div>
+              <span class="option-type">門市</span>
             </div>
-            <div *ngIf="item.type === 'product'" class="flex items-center gap-2 py-1">
-              <span class="text-xs px-1.5 py-0.5 rounded-md bg-orange-50 text-orange-600">🍱</span>
-              <div class="flex flex-col">
-                <span class="text-sm">{{ item.name }}</span>
-                <span class="text-xs text-gray-400 dark:text-zinc-400">{{ item.addr }}</span>
+            <div *ngIf="item.type === 'product'" class="option-row">
+              <span class="option-media option-media-product">
+                <img *ngIf="item.image" [src]="item.image" alt="" />
+                <span *ngIf="!item.image">食</span>
+              </span>
+              <div class="option-copy">
+                <span>{{ item.name }}</span>
+                <small>{{ item.addr }}</small>
               </div>
+              <span class="option-type">{{ item.source === '自訂' ? '搜尋' : '商品' }}</span>
             </div>
-            <div *ngIf="item.type === 'category'" class="flex items-center gap-2 py-1">
-              <span class="text-xs px-1.5 py-0.5 rounded-md bg-green-50 text-green-600">📂</span>
-              <div class="flex flex-col">
-                <span class="text-sm">{{ item.name }}</span>
-                <span class="text-xs text-gray-400 dark:text-zinc-400">{{ item.addr }}</span>
+            <div *ngIf="item.type === 'category'" class="option-row">
+              <span class="option-media option-media-category">
+                <img *ngIf="item.imageUrl" [src]="item.imageUrl" alt="" />
+                <span *ngIf="!item.imageUrl">類</span>
+              </span>
+              <div class="option-copy">
+                <span>{{ item.name }}</span>
+                <small>{{ item.addr }}</small>
               </div>
+              <span class="option-type">分類</span>
             </div>
-            <div *ngIf="item.type === 'route'" class="flex items-center gap-2 py-1">
-              <span class="text-xs px-1.5 py-0.5 rounded-md bg-purple-50 text-purple-600">🗺️</span>
-              <div class="flex flex-col">
-                <span class="text-sm">{{ item.name }}</span>
-                <span class="text-xs text-gray-400 dark:text-zinc-400">{{ item.addr }}</span>
+            <div *ngIf="item.type === 'route'" class="option-row option-row-route">
+              <span class="option-media option-media-route">↝</span>
+              <div class="option-copy">
+                <span>{{ item.name }}</span>
+                <small>{{ item.addr }}</small>
               </div>
+              <span class="option-type">開始</span>
             </div>
           </mat-option>
         </mat-autocomplete>
       </form>
 
-      <!-- Home Button -->
-      <button class="header-icon-btn" (click)="goHome()" aria-label="回首頁">
-        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="#6b7280" viewBox="0 0 24 24">
-          <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" />
+      <button type="button" class="route-entry-btn" (click)="openRouteSearch()" aria-label="使用 Google Maps 路線搜尋">
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24"
+          stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="6" cy="17" r="2"/><circle cx="18" cy="7" r="2"/>
+          <path d="M8 17h2a3 3 0 0 0 3-3v-4a3 3 0 0 1 3-3"/>
+        </svg>
+        <span>沿路找</span>
+      </button>
+
+      <div class="desktop-view-switch" role="group" aria-label="結果顯示方式">
+        <button type="button" [class.active]="!isMapView" [attr.aria-pressed]="!isMapView"
+          (click)="toggleMapView('list')" aria-label="顯示清單">
+          <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" fill="none" viewBox="0 0 24 24"
+            stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+            <path d="M9 6h11M9 12h11M9 18h11M4 6h.01M4 12h.01M4 18h.01"/>
+          </svg>
+          <span>清單</span>
+        </button>
+        <button type="button" [class.active]="isMapView" [attr.aria-pressed]="isMapView"
+          (click)="toggleMapView('map')" aria-label="顯示地圖">
+          <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" fill="none" viewBox="0 0 24 24"
+            stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="m3 6 5-3 8 3 5-3v15l-5 3-8-3-5 3V6Z"/><path d="M8 3v15M16 6v15"/>
+          </svg>
+          <span>地圖</span>
+        </button>
+      </div>
+
+      <!-- Refresh Button -->
+      <button type="button" class="header-icon-btn refresh-query-btn" (click)="refreshCurrentSearch()"
+        aria-label="更新目前查詢" title="更新查詢">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24"
+          stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="23 4 23 10 17 10"/>
+          <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
         </svg>
       </button>
 
       <!-- Hamburger Menu Button -->
-      <button #menuButton class="header-icon-btn" [class.active]="showMenu" (click)="toggleMenu()" aria-label="選單">
+      <button #menuButton type="button" class="header-icon-btn" [class.active]="showMenu" (click)="toggleMenu()"
+        aria-label="選單" aria-controls="site-menu" [attr.aria-expanded]="showMenu">
         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 24 24"
           [style.color]="showMenu ? 'var(--accent)' : '#6b7280'">
           <path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z" />
@@ -123,7 +177,8 @@
     </div>
 
     <!-- ===== Menu Panel ===== -->
-    <div #menuPanel class="menu-panel" [class.open]="showMenu">
+    <nav #menuPanel id="site-menu" class="menu-panel" [class.open]="showMenu" aria-label="網站選單"
+      [attr.aria-hidden]="!showMenu" [attr.inert]="!showMenu ? '' : null">
 
       <!-- Section: 我的收藏 -->
       <div class="menu-section-title">
@@ -137,14 +192,14 @@
         <div *ngIf="favoriteStores.length === 0" class="text-center text-sm text-gray-400 dark:text-zinc-400 py-2">
           尚未收藏任何店家
         </div>
-        <div *ngFor="let store of favoriteStores" class="menu-link-item favorite-store-item"
+        <button type="button" *ngFor="let store of favoriteStores" class="menu-link-item favorite-store-item"
           (click)="onFavoriteStoreSearch(store); showMenu = false">
           <img *ngIf="store.storeName?.includes('7-11')" [src]="sevenElevenIconUrl" alt="7-11" class="w-6 h-4 object-contain object-left shrink-0" />
           <img *ngIf="store.storeName?.includes('全家')" [src]="familyMartIconUrl" alt="全家" class="w-6 h-4 object-contain object-left shrink-0" />
           <span class="text-sm font-medium">{{ store.storeName }}</span>
-        </div>
+        </button>
         <div class="text-center mt-1 mb-2">
-          <button class="text-xs text-gray-400 dark:text-zinc-400 hover:text-gray-600 dark:hover:text-zinc-200 transition-colors" (click)="loginOrlogout()">
+          <button type="button" class="text-xs text-gray-400 dark:text-zinc-400 hover:text-gray-600 dark:hover:text-zinc-200 transition-colors" (click)="loginOrlogout()">
             {{ user.displayName }} — 登出
           </button>
         </div>
@@ -152,7 +207,7 @@
       <ng-template #loginPrompt>
         <div class="login-prompt">
           <p>登入後可收藏喜愛的店家</p>
-          <button class="login-prompt-btn" (click)="loginOrlogout()">
+          <button type="button" class="login-prompt-btn" (click)="loginOrlogout()">
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
               <path
                 d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
@@ -161,6 +216,33 @@
           </button>
         </div>
       </ng-template>
+
+      <div class="menu-divider"></div>
+
+      <div class="menu-section-title menu-section-title-utility">快速操作</div>
+      <button type="button" class="menu-link-item menu-primary-action" (click)="openRouteSearch()">
+        <span class="menu-action-icon menu-action-icon-route" aria-hidden="true">
+          <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" fill="none" viewBox="0 0 24 24"
+            stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="6" cy="17" r="2"/><circle cx="18" cy="7" r="2"/>
+            <path d="M8 17h2a3 3 0 0 0 3-3v-4a3 3 0 0 1 3-3"/>
+          </svg>
+        </span>
+        <span class="menu-action-copy">
+          <strong>沿路搜尋</strong>
+          <small>貼上 Google Maps 路線找順路門市</small>
+        </span>
+      </button>
+      <button *ngIf="chatEnabled" type="button" class="menu-link-item" (click)="openChatbot(); showMenu = false">
+        <span class="menu-action-icon" aria-hidden="true">
+          <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" fill="none" viewBox="0 0 24 24"
+            stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 12a8 8 0 0 1-8 8H6l-4 2 1.4-4.2A8.5 8.5 0 1 1 21 12Z"/>
+            <path d="M8 12h.01M12 12h.01M16 12h.01"/>
+          </svg>
+        </span>
+        <span>詢問友善小精靈</span>
+      </button>
 
       <div class="menu-divider"></div>
 
@@ -174,17 +256,18 @@
       </a>
 
       <!-- Section: 致謝與關於 -->
-      <a class="menu-link-item" (click)="toggleAboutCard()">
+      <button type="button" class="menu-link-item" (click)="toggleAboutCard()">
         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="#6366f1" viewBox="0 0 24 24">
           <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z" />
         </svg>
         <span>關於網站</span>
-      </a>
+      </button>
 
       <div class="menu-divider"></div>
 
       <!-- Section: 實驗室 -->
-      <div class="menu-link-item" (click)="toggleLabSection()">
+      <button type="button" class="menu-link-item" (click)="toggleLabSection()"
+        aria-controls="lab-settings" [attr.aria-expanded]="showLabSection">
         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="#8b5cf6" viewBox="0 0 24 24">
           <path
             d="M7 2v2h1v7.15l-4.78 7.17A2 2 0 0 0 4.89 21h14.22a2 2 0 0 0 1.67-3.07L16 10.57V4h1V2H7zm6 9.15l3.72 5.85H7.28L11 11.15V4h2v7.15z" />
@@ -194,29 +277,40 @@
           width="14" height="14" fill="#9ca3af" viewBox="0 0 24 24">
           <path d="M7 10l5 5 5-5z" />
         </svg>
-      </div>
-      <div class="lab-subsection" [class.open]="showLabSection">
+      </button>
+      <div id="lab-settings" class="lab-subsection" [class.open]="showLabSection"
+        [attr.aria-hidden]="!showLabSection" [attr.inert]="!showLabSection ? '' : null">
         <div class="menu-link-item lab-toggle-row">
           <span class="text-sm">聊天室按鈕</span>
           <label class="toggle-switch">
-            <input type="checkbox" [checked]="chatEnabled" (change)="onToggleChat($event)">
+            <input type="checkbox" aria-label="顯示聊天室按鈕" [checked]="chatEnabled" (change)="onToggleChat($event)">
             <span class="toggle-slider"></span>
           </label>
         </div>
         <div class="menu-link-item lab-toggle-row">
           <span class="text-sm">跟隨裝置深淺色</span>
           <label class="toggle-switch">
-            <input type="checkbox" [checked]="darkModeEnabled" (change)="onToggleDarkMode($event)">
+            <input type="checkbox" aria-label="跟隨裝置深淺色" [checked]="darkModeEnabled" (change)="onToggleDarkMode($event)">
             <span class="toggle-slider"></span>
           </label>
         </div>
       </div>
-    </div>
+    </nav>
   </div>
 </div>
 
 <!-- Spacer for fixed header -->
 <div class="search-bar-spacer"></div>
+
+<div *ngIf="productKeywordCount > 1 && !isMapView" class="multi-match-context max-w-3xl mx-auto">
+  <div class="multi-match-bar" role="group" aria-label="多商品比對方式">
+    <span>多商品符合</span>
+    <button type="button" [class.active]="keywordMatchMode === 'any'" [attr.aria-pressed]="keywordMatchMode === 'any'"
+      (click)="setKeywordMatchMode('any')">任一項</button>
+    <button type="button" [class.active]="keywordMatchMode === 'all'" [attr.aria-pressed]="keywordMatchMode === 'all'"
+      (click)="setKeywordMatchMode('all')">全部</button>
+  </div>
+</div>
 
 <!-- ===== View Flipper Container ===== -->
 <div class="view-flipper" [class.flipped]="isMapView">
@@ -232,7 +326,7 @@
     
     <!-- Premium Loading State (Active if resolving location, searching, or fetching more) -->
     <div *ngIf="(loadingService.loading$ | async) || isLoadingMore || productSearchRunning; else emptyState"
-      class="loading-overlay animate-fade-in-up">
+      class="loading-overlay animate-fade-in-up" role="status" aria-live="polite">
       <div class="premium-spinner spinner-lg"></div>
       <div style="position: relative; height: 20px; display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%;">
         <ng-container *ngFor="let msg of [(loadingService.message$ | async) || (productSearchRunning ? '搜尋商品中...' : '載入資料中...')]; trackBy: trackByMsg">
@@ -243,25 +337,66 @@
       </div>
     </div>
 
-    <!-- Clean Empty State (Strictly only when idle) -->
-    <!-- The user explicitly requested to completely remove the old magnifying glass style -->
     <ng-template #emptyState>
-      <!-- 導航路線過濾無結果 -->
-      <div *ngIf="routeNoResults" class="text-center py-12 px-6 animate-fade-in-up">
-        <div class="text-5xl mb-4">🔍</div>
-        <p class="text-lg font-semibold text-slate-600 dark:text-zinc-300 mb-2">沿途找不到符合的門市</p>
-        <p class="text-sm text-slate-400 dark:text-zinc-500">沒有門市在您的導航路線上擁有您搜尋的商品，請調整關鍵字後再試。</p>
-      </div>
-      <div *ngIf="!routeNoResults" class="text-center py-4"></div>
+      <section *ngIf="routeNoResults" class="empty-state-card animate-fade-in-up">
+        <span class="empty-state-icon" aria-hidden="true">
+          <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" fill="none" viewBox="0 0 24 24"
+            stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="6" cy="17" r="2"/><circle cx="18" cy="7" r="2"/>
+            <path d="M8 17h2a3 3 0 0 0 3-3v-4a3 3 0 0 1 3-3"/>
+          </svg>
+        </span>
+        <p class="empty-state-eyebrow">沿路搜尋</p>
+        <h2>這條路線上暫時沒有符合結果</h2>
+        <p>可以移除部分商品條件，或換一條路線再試一次。</p>
+        <button type="button" class="primary-empty-action" (click)="openRouteSearch()">調整路線搜尋</button>
+      </section>
+      <section *ngIf="!routeNoResults && selectedKeywords.length > 0" class="empty-state-card animate-fade-in-up">
+        <span class="empty-state-icon" aria-hidden="true">
+          <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" fill="none" viewBox="0 0 24 24"
+            stroke="currentColor" stroke-width="1.7" stroke-linecap="round">
+            <circle cx="10.5" cy="10.5" r="6.5"/><path d="m15.5 15.5 5 5M8 10.5h5"/>
+          </svg>
+        </span>
+        <p class="empty-state-eyebrow">找不到相符庫存</p>
+        <h2>目前找不到符合的折扣庫存</h2>
+        <p>商品名稱可能與門市標示不同，試著縮短關鍵字，或將「全部」改成「任一項」。</p>
+        <div class="empty-state-actions">
+          <button type="button" class="primary-empty-action" (click)="focusSearchInput()">修改搜尋</button>
+          <button type="button" class="secondary-empty-action" (click)="clearSearchAndLocate()">查看附近全部</button>
+        </div>
+      </section>
+      <section *ngIf="!routeNoResults && selectedKeywords.length === 0" class="empty-state-card welcome-state animate-fade-in-up">
+        <span class="empty-state-icon" aria-hidden="true">
+          <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" fill="none" viewBox="0 0 24 24"
+            stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.5"/>
+          </svg>
+        </span>
+        <p class="empty-state-eyebrow">即時折扣地圖</p>
+        <h2>找附近，或找你沿路會經過的門市</h2>
+        <p>搜尋商品、分類與門市；也可以貼上 Google Maps 路線一次找完。</p>
+        <div class="empty-state-actions">
+          <button type="button" class="primary-empty-action" (click)="onUseCurrentLocation()">使用目前位置</button>
+          <button type="button" class="secondary-empty-action" (click)="openRouteSearch()">使用 Maps 路線</button>
+        </div>
+      </section>
     </ng-template>
 
   </ng-container>
 
-  <!-- Store Search: No stock alert -->
-  <div
-    *ngIf="searchMode === 'store' && totalStoresShowList.length > 0 && (totalStoresShowList[0]?.distance > 1 || totalStoresShowList[0]?.remainingQty === 0)"
-    class="result-header-glass animate-fade-in-up">
-    您搜尋的商店目前無折扣商品，以下為附近店家
+  <div *ngIf="totalStoresShowList.length > 0 && (selectedKeywords.length > 0 || searchMode === 'route')"
+    class="result-summary animate-fade-in-up">
+    <div>
+      <span class="result-summary-label">{{ resultModeLabel }}</span>
+      <strong>{{ resultScopeText }}</strong>
+    </div>
+    <span>{{ totalStoresShowList.length }} 間有結果</span>
+  </div>
+
+  <div *ngIf="locationFallbackUsed && totalStoresShowList.length > 0" class="location-fallback-note animate-fade-in-up">
+    <span>目前先顯示台北 101 附近結果</span>
+    <button type="button" (click)="onUseCurrentLocation()">改用我的位置</button>
   </div>
 
   <!-- ===== Inline Cards Container ===== -->
@@ -281,7 +416,7 @@
             關於網站
           </h2>
         </div>
-        <button (click)="showAboutCard = false" class="shrink-0 p-1">
+        <button type="button" (click)="showAboutCard = false" class="shrink-0 p-1" aria-label="關閉關於網站">
           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="#9ca3af"
             viewBox="0 0 24 24" stroke-width="2">
             <path d="M18 6L6 18M6 6l12 12"></path>
@@ -315,33 +450,42 @@
     </div>
 
     <!-- === Location Permission Card === -->
-    <div class="store-glass-card card-location card-animate-in" *ngIf="locationDenied">
-      <div class="flex items-center gap-3 mb-3">
+    <section class="store-glass-card card-location card-animate-in" *ngIf="locationDenied">
+      <div class="location-card-heading">
         <div class="store-icon-badge badge-location">
-          <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="#ef4444" viewBox="0 0 24 24">
-            <path
-              d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" />
+          <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="none" viewBox="0 0 24 24"
+            stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.5"/>
           </svg>
         </div>
         <div class="flex-1 min-w-0">
-          <h2 class="text-lg font-bold inline-card-title p-0" style="color: var(--text-primary); margin: 3px 0 0 0; line-height: 1.4;">
-            需要您的位置資訊
-          </h2>
+          <p class="location-card-kicker">附近門市</p>
+          <h2>尚未取得您的位置</h2>
         </div>
       </div>
-      <div class="pl-0 mt-2">
-        <p style="font-size: 14px; color: var(--text-secondary); margin-bottom: 16px; line-height: 1.6;">
-          友善超人需要您的位置資訊來搜尋附近的優惠門市。<br>請在瀏覽器設定中授予位置權限後重新整理頁面。
-        </p>
-        <button class="resume-search-btn !bg-red-500 hover:!bg-red-600" (click)="onUseCurrentLocation()"
-          style="width: 100%; justify-content: center;">
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
-            <path d="M12 8V4l8 8-8 8v-4H4V8z" />
+      <p class="location-card-copy">
+        允許定位可以依距離排序；如果現在不方便授權，也能先瀏覽台北 101 周邊，或直接使用沿路搜尋。
+      </p>
+      <div class="location-card-actions">
+        <button type="button" class="location-primary-action" (click)="onUseCurrentLocation()">
+          <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" fill="none" viewBox="0 0 24 24"
+            stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/>
           </svg>
-          重新嘗試定位
+          再次定位
+        </button>
+        <button type="button" class="location-secondary-action" (click)="useFallbackLocation()">
+          先看台北 101 附近
         </button>
       </div>
-    </div>
+      <button type="button" class="location-route-action" (click)="openRouteSearch()">
+        使用 Google Maps 路線搜尋
+        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="none" viewBox="0 0 24 24"
+          stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+          <path d="m9 18 6-6-6-6"/>
+        </svg>
+      </button>
+    </section>
   </ng-container>
 
   <!-- ===== Store Cards ===== -->
@@ -351,10 +495,10 @@
       <div class="store-glass-card card-animate-in"
         [id]="'store-' + (store.StoreName || store.storeName)"
         [ngClass]="{'card-seven': store.label === '7-11', 'card-family': store.label === '全家'}"
-        [style.animation-delay]="(i % 10) * 0.06 + 's'" *ngIf="store.label === '7-11' ? store.RemainingQty > 0 : true">
+        [style.animation-delay]="(i % 10) * 0.06 + 's'">
 
         <!-- === 7-11 Store Card === -->
-        <ng-container *ngIf="store.label === '7-11' && store.RemainingQty > 0">
+        <ng-container *ngIf="store.label === '7-11'">
           <div class="store-card-header">
             <div class="store-icon-badge badge-seven">
               <img [src]="sevenElevenIconUrl" alt="7-11" class="w-[80%] h-auto object-contain" />
@@ -368,10 +512,13 @@
                   </svg>
                   {{ store.distance >= 1000 ? (store.distance / 1000 | number:'1.1-1') + ' km' : (store.distance | number:'1.0-0') + ' m' }}
                 </span>
-                <span class="qty-badge">{{ store.RemainingQty }} 件折扣品</span>
+                <span class="qty-badge" [class.qty-badge-empty]="!store.RemainingQty">
+                  {{ store.RemainingQty > 0 ? store.RemainingQty + ' 件折扣品' : '目前無折扣品' }}
+                </span>
               </div>
             </div>
-            <button (click)="toggleFavorite(store)" class="store-fav-btn" *ngIf="user">
+            <button type="button" (click)="toggleFavorite(store)" class="store-fav-btn" *ngIf="user"
+              [attr.aria-label]="favoriteStoreNameSet.has(store.storeName) ? '取消收藏 ' + store.storeName : '收藏 ' + store.storeName">
               <svg *ngIf="favoriteStoreNameSet.has(store.storeName)" xmlns="http://www.w3.org/2000/svg" width="20"
                 height="20" fill="#ef4444" viewBox="0 0 24 24">
                 <path
@@ -383,16 +530,22 @@
                   d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
               </svg>
             </button>
-            <a class="store-nav-btn" href="https://www.google.com/maps/search/7-ELEVEN{{ store.StoreName }}門市" target="_blank" aria-label="導航">
-              <img src="assets/GoogleMap_icon.webp" alt="導航" width="24" height="24" />
+            <a class="store-nav-btn" href="https://www.google.com/maps/search/7-ELEVEN{{ store.StoreName }}門市" target="_blank"
+              rel="noopener" [attr.aria-label]="'使用 Google Maps 導航到 7-11 ' + store.StoreName + '門市'">
+              <img src="assets/GoogleMap_icon.webp" alt="" width="24" height="24" />
+              <span class="store-nav-label">導航</span>
             </a>
           </div>
-          <div class="grid grid-cols-4 gap-2 mt-2 relative">
+          <p *ngIf="!store.RemainingQty" class="store-empty-stock">
+            {{ store.inventoryUnavailable ? '即時庫存暫時無法取得，請稍後重新載入。' : '這間門市目前沒有回報折扣庫存；資料可能剛售完。' }}
+          </p>
+          <div class="store-category-grid grid grid-cols-4 gap-2 mt-2 relative" aria-label="商品分類">
             <ng-container *ngFor="let category of foodCategories | slice:0:10; trackBy: trackByCategory">
               <button type="button" *ngIf="getSubCategoryTotalQty(store, category) > 0" class="category-chip"
                 [class.selected]="store.selectedCategory === category"
                 [class.is-loading]="store.selectedCategory === category && isCategoryLoading(store, category)"
                 [class.loading-complete]="store.selectedCategory === category && isCategoryLoadingComplete(store, category)"
+                [attr.aria-pressed]="store.selectedCategory === category"
                 (click)="toggleSubCategoryDetails(store, category)">
                 <img [src]="category.ImageUrl" [alt]="category.Name"
                   class="w-8 h-8 sm:w-12 sm:h-12 mx-auto mb-1 object-cover" />
@@ -425,10 +578,13 @@
                   </svg>
                   {{ store.distance >= 1000 ? (store.distance / 1000 | number:'1.1-1') + ' km' : (store.distance | number:'1.0-0') + ' m' }}
                 </span>
-                <span class="qty-badge qty-badge-family">{{ getStoreTotalQtyList(store) }} 件折扣品</span>
+                <span class="qty-badge qty-badge-family" [class.qty-badge-empty]="getStoreTotalQtyList(store) === 0">
+                  {{ getStoreTotalQtyList(store) > 0 ? getStoreTotalQtyList(store) + ' 件折扣品' : '目前無折扣品' }}
+                </span>
               </div>
             </div>
-            <button (click)="toggleFavorite(store)" class="store-fav-btn" *ngIf="user">
+            <button type="button" (click)="toggleFavorite(store)" class="store-fav-btn" *ngIf="user"
+              [attr.aria-label]="favoriteStoreNameSet.has(store.storeName) ? '取消收藏 ' + store.storeName : '收藏 ' + store.storeName">
               <svg *ngIf="favoriteStoreNameSet.has(store.storeName)" xmlns="http://www.w3.org/2000/svg" width="20"
                 height="20" fill="#ef4444" viewBox="0 0 24 24">
                 <path
@@ -440,14 +596,20 @@
                   d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
               </svg>
             </button>
-            <a class="store-nav-btn" href="https://www.google.com/maps/search/全家便利商店{{ fStoreName(store.name) }}" target="_blank" aria-label="導航">
-              <img src="assets/GoogleMap_icon.webp" alt="導航" width="24" height="24" />
+            <a class="store-nav-btn" href="https://www.google.com/maps/search/全家便利商店{{ fStoreName(store.name) }}" target="_blank"
+              rel="noopener" [attr.aria-label]="'使用 Google Maps 導航到 ' + store.name">
+              <img src="assets/GoogleMap_icon.webp" alt="" width="24" height="24" />
+              <span class="store-nav-label">導航</span>
             </a>
           </div>
-          <div class="grid grid-cols-4 gap-2 mt-2 relative">
+          <p *ngIf="getStoreTotalQtyList(store) === 0" class="store-empty-stock">
+            {{ store.inventoryUnavailable ? '即時庫存暫時無法取得，請稍後重新載入。' : '這間門市目前沒有回報折扣庫存；資料可能剛售完。' }}
+          </p>
+          <div class="store-category-grid grid grid-cols-4 gap-2 mt-2 relative" aria-label="商品分類">
             <button type="button" *ngFor="let category of store.info | slice:0:10; trackBy: trackByCategory" class="category-chip"
               [class.selected]="store.selectedCategory === category" (click)="toggleSubCategoryDetails(store, category)"
               [class.pointer-events-none]="getFSubCategoryQty(store, category) === 0"
+              [attr.aria-pressed]="store.selectedCategory === category"
               [class.is-loading]="store.selectedCategory === category && isCategoryLoading(store, category)"
               [class.loading-complete]="store.selectedCategory === category && isCategoryLoadingComplete(store, category)">
               <img [src]="getFUrl(category)" [alt]="getFCatName(category)"
@@ -509,7 +671,27 @@
 
   <!-- Back Face: Map View -->
   <div class="view-face view-face-map" [class.view-active]="isMapView">
-    <app-map-view *ngIf="isMapView"
+    <section *ngIf="isMapView && mapStoreCount === 0" class="map-empty-state" role="status">
+      <div class="map-empty-illustration" aria-hidden="true">
+        <svg xmlns="http://www.w3.org/2000/svg" width="34" height="34" fill="none" viewBox="0 0 24 24"
+          stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+          <path d="m3 6 5-3 8 3 5-3v15l-5 3-8-3-5 3V6Z"/><path d="M8 3v15M16 6v15"/>
+        </svg>
+      </div>
+      <ng-container *ngIf="productSearchRunning || isLoadingMore; else mapEmptyReady">
+        <h2>正在整理地圖結果</h2>
+        <p>找到門市後會自動顯示在地圖上，您也可以先回到清單查看進度。</p>
+      </ng-container>
+      <ng-template #mapEmptyReady>
+        <h2>地圖上還沒有可顯示的門市</h2>
+        <p>先完成定位或搜尋商品；也可以貼上 Google Maps 路線，直接找順路的門市。</p>
+      </ng-template>
+      <div class="map-empty-actions">
+        <button type="button" class="primary-empty-action" (click)="toggleMapView('list')">回到清單</button>
+        <button type="button" class="secondary-empty-action" (click)="openRouteSearch()">沿路搜尋</button>
+      </div>
+    </section>
+    <app-map-view *ngIf="isMapView && mapStoreCount > 0"
       [stores]="searchMode === 'product' ? productSearchStores : totalStoresShowList"
       [userLat]="latitude"
       [userLng]="longitude"
@@ -537,25 +719,42 @@
 </div> <!-- end .view-flipper -->
 
 <!-- View Toggle Wrapper with aesthetic backdrop blur -->
-<div class="view-toggle-container" [class.map-sheet-up]="isMapView && mapSheetOpen"
-     appMotion [initial]="{ opacity: 0, scale: 0.8 }" [animate]="{ opacity: 1, scale: 1 }" [transition]="{ type: 'spring', stiffness: 300, damping: 22 }">
+<div class="view-toggle-container" [class.map-sheet-up]="isMapView && mapSheetOpen">
   
   <!-- The "misty" background / Glow effect -->
   <div class="view-toggle-mist"></div>
   
   <div class="view-toggle-pill">
     <div class="view-toggle-indicator" [class.map-active]="isMapView"></div>
-    <button class="view-toggle-segment" [class.active]="!isMapView" (click)="toggleMapView('list')" (touchstart)="0">
+    <button type="button" class="view-toggle-segment" [class.active]="!isMapView" [attr.aria-pressed]="!isMapView" (click)="toggleMapView('list')" (touchstart)="0">
       <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
         <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 6.75h12M8.25 12h12m-12 5.25h12M3.75 6.75h.007v.008H3.75V6.75Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0ZM3.75 12h.007v.008H3.75V12Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm-.375 5.25h.007v.008H3.75v-.008Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z" />
       </svg>
       <span>清單</span>
     </button>
-    <button class="view-toggle-segment" [class.active]="isMapView" (click)="toggleMapView('map')" (touchstart)="0">
+    <button type="button" class="view-toggle-segment" [class.active]="isMapView" [attr.aria-pressed]="isMapView" (click)="toggleMapView('map')" (touchstart)="0">
       <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor">
         <path stroke-linecap="round" stroke-linejoin="round" d="M9 6.75V15m6-6v8.25m.503 3.498 4.875-2.437c.381-.19.622-.58.622-1.006V4.82c0-.836-.88-1.38-1.628-1.006l-3.869 1.934c-.317.159-.69.159-1.006 0L9.503 3.252a1.125 1.125 0 0 0-1.006 0L3.622 5.689C3.24 5.88 3 6.27 3 6.695V19.18c0 .836.88 1.38 1.628 1.006l3.869-1.934c.317-.159.69-.159 1.006 0l4.994 2.497c.317.158.69.158 1.006 0Z" />
       </svg>
       <span>地圖</span>
+    </button>
+    <button type="button" class="mobile-dock-action route-dock-action" (click)="openRouteSearch()"
+      aria-label="使用 Google Maps 路線搜尋">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"
+        stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="6" cy="17" r="2"/><circle cx="18" cy="7" r="2"/>
+        <path d="M8 17h2a3 3 0 0 0 3-3v-4a3 3 0 0 1 3-3"/>
+      </svg>
+      <span>沿路搜尋</span>
+    </button>
+    <button type="button" class="mobile-dock-action refresh-dock-action" (click)="refreshCurrentSearch()"
+      aria-label="更新目前查詢">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"
+        stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="23 4 23 10 17 10"/>
+        <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+      </svg>
+      <span>更新</span>
     </button>
   </div>
 </div>

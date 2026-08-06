@@ -121,6 +121,9 @@ export class NewSearchComponent implements OnInit, OnDestroy {
   productSearchKeyword: string = ''; // 目前搜尋的商品關鍵字
   routeProductKeywords: string[] = []; // 導航路線欲過濾的商品名稱
   routeNoResults: boolean = false; // 導航路線搜尋無結果
+  keywordMatchMode: 'any' | 'all' = 'any';
+  private lastRouteUrl = '';
+  private lastRouteMode: 'DRIVING' | 'BICYCLING' = 'BICYCLING';
 
   productSearchStores: any[] = []; // 商品搜尋結果的門市列表（所有已找到的）
   productSearchIsCategory: boolean = false; // 是否為種類搜尋
@@ -156,12 +159,14 @@ export class NewSearchComponent implements OnInit, OnDestroy {
   private productSearchGeneration: number = 0;       // 搜尋世代計數器，用於作廢舊搜尋的 setTimeout
   private storeSearchGeneration: number = 0;         // 店名搜尋世代計數器
   locationDenied: boolean = false;                   // 使用者拒絕定位
+  locationFallbackUsed: boolean = false;             // 商品搜尋無定位時使用台北市中心
   private minInitialStores: number = 5;             // 初始要求：嚴格 5 間
 
   // 拼音轉換快取：避免重複轉換相同的文字
   private pinyinCache = new Map<string, string>();
   private searchDebounceTimer: any = null; // 自動完成防抖計時器
   private favoritesSubscription: Subscription | null = null; // 收藏清單的訂閱
+  private onSystemThemeChange = () => this.applyTheme();
 
   // Chips search state
   separatorKeysCodes: number[] = [COMMA]; // 不含 ENTER，避免注音/拼音 IME 衝突
@@ -171,6 +176,30 @@ export class NewSearchComponent implements OnInit, OnDestroy {
   chipsScrolledLeft = false; // 卡片區域是否已向右捲動（控制左側漸層）
   @ViewChild('keywordInput') keywordInput!: ElementRef<HTMLInputElement>;
   @ViewChild('chipsScrollArea') chipsScrollArea!: ElementRef<HTMLDivElement>;
+
+  get productKeywordCount(): number {
+    return this.selectedKeywords.filter(keyword => keyword.type !== 'store' && keyword.type !== 'route').length;
+  }
+
+  get mapStoreCount(): number {
+    return (this.searchMode === 'product' ? this.productSearchStores : this.totalStoresShowList).length;
+  }
+
+  get resultModeLabel(): string {
+    if (this.searchMode === 'route') return '沿路搜尋';
+    if (this.selectedKeywords.some(keyword => keyword.type === 'store')) return '指定門市';
+    return '商品搜尋';
+  }
+
+  get resultScopeText(): string {
+    if (this.searchMode === 'route') {
+      return this.routeProductKeywords.length > 0 ? this.routeProductKeywords.join('、') : '沿途所有折扣品';
+    }
+    const names = this.selectedKeywords.map(keyword => keyword.name || keyword).filter(Boolean);
+    if (names.length === 0) return '附近折扣品';
+    const joiner = this.keywordMatchMode === 'all' && this.productKeywordCount > 1 ? ' ＋ ' : '、';
+    return names.join(joiner);
+  }
 
 
 
@@ -249,6 +278,8 @@ export class NewSearchComponent implements OnInit, OnDestroy {
     }
     window.removeEventListener('touchmove', this.onWindowTouchMove);
     window.removeEventListener('scroll', this.onWindowScroll);
+    this.darkModeMediaQuery.removeEventListener('change', this.onSystemThemeChange);
+    if (this.searchDebounceTimer) clearTimeout(this.searchDebounceTimer);
   }
 
   getCityName(): Observable<any[]> {
@@ -304,9 +335,7 @@ export class NewSearchComponent implements OnInit, OnDestroy {
     this.applyTheme();
 
     // 監聽裝置主題變更
-    this.darkModeMediaQuery.addEventListener('change', () => {
-      this.applyTheme();
-    });
+    this.darkModeMediaQuery.addEventListener('change', this.onSystemThemeChange);
 
     // 訂閱 getUser 方法來獲取用戶資料
     this.authService.getUser().subscribe(user => {
@@ -424,6 +453,14 @@ export class NewSearchComponent implements OnInit, OnDestroy {
       ));
     }
     return 999999; // 找不到座標時排最後
+  }
+
+  private get711QueryLocation(storeNo: string): { Latitude: number; Longitude: number } {
+    const coords = this.storeNoToCoords.get(storeNo);
+    return {
+      Latitude: coords?.lat || this.searchCenterLat || this.latitude || 25.0375197,
+      Longitude: coords?.lng || this.searchCenterLng || this.longitude || 121.5636704
+    };
   }
 
   getFoodSubCategoryImage(nodeID: number): string | null {
@@ -559,6 +596,41 @@ export class NewSearchComponent implements OnInit, OnDestroy {
     this.searchInput$.next('');
   }
 
+  focusSearchInput(): void {
+    this.keywordInput?.nativeElement.focus();
+  }
+
+  clearSearchAndLocate(): void {
+    this.selectedKeywords = [];
+    this.keywordCtrl.setValue('');
+    this.searchTerm = '';
+    this.onUseCurrentLocation();
+  }
+
+  setKeywordMatchMode(mode: 'any' | 'all'): void {
+    if (this.keywordMatchMode === mode) return;
+    this.keywordMatchMode = mode;
+    if (this.selectedKeywords.length > 0) this.performSearch();
+  }
+
+  openRouteSearch(): void {
+    this.showMenu = false;
+    this.handleRouteSelection('');
+  }
+
+  refreshCurrentSearch(): void {
+    this.showMenu = false;
+    if (this.searchMode === 'route' && this.lastRouteUrl) {
+      this.beginRouteAnalysis(this.lastRouteUrl, this.lastRouteMode, this.routeProductKeywords);
+      return;
+    }
+    if (this.selectedKeywords.length > 0) {
+      this.performSearch();
+      return;
+    }
+    this.onUseCurrentLocation();
+  }
+
   // Chips: Remove keyword
   removeKeyword(keyword: any): void {
     const index = this.selectedKeywords.indexOf(keyword);
@@ -627,6 +699,7 @@ export class NewSearchComponent implements OnInit, OnDestroy {
     this.showAboutCard = false;
     this.isMapView = false;
     this.mapSheetOpen = false;
+    this.routeNoResults = false;
     document.documentElement.classList.remove('map-active-lock');
     document.body.classList.remove('map-active-lock');
     this.onUseCurrentLocation();
@@ -665,6 +738,12 @@ export class NewSearchComponent implements OnInit, OnDestroy {
       // We are in List view, about to switch to Map View.
       // Calculate focus BEFORE flipping the view to ensure bounding boxes are perfectly intact
       this.calculateListFocus();
+      // 地圖的主要任務是比較位置。切換情境時先收合清單中展開的商品，
+      // 避免底部門市面板一出現就被商品詳情佔滿大半畫面。
+      const mapSourceStores = this.searchMode === 'product' ? this.productSearchStores : this.totalStoresShowList;
+      mapSourceStores.forEach(store => {
+        store.selectedCategory = undefined;
+      });
       console.log('[toggleMapView] Target list focus stored as:', this.listFocusStore);
     }
 
@@ -925,8 +1004,8 @@ export class NewSearchComponent implements OnInit, OnDestroy {
       this.searchDebounceTimer = setTimeout(() => this.handleSearch(input), 300);
     } else {
       this.unifiedDropDownList = [];
-      // 清空搜尋框時自動回到定位搜尋
-      if (input.length === 0 && this.searchMode !== 'location') {
+      // 僅在完全沒有已選條件時回到定位搜尋，避免刪除輸入文字時清掉既有 chips。
+      if (input.length === 0 && this.selectedKeywords.length === 0 && this.searchMode !== 'location') {
         this.onUseCurrentLocation();
       }
     }
@@ -974,6 +1053,10 @@ export class NewSearchComponent implements OnInit, OnDestroy {
     const lowerSearchTerm = searchTerm.toLowerCase().trim();
     const lowerText = text.toLowerCase();
     const lowerPinyin = pinyinText.toLowerCase();
+
+    if (this.normalizeSearchText(text).includes(this.normalizeSearchText(searchTerm))) {
+      return true;
+    }
     
     // 1. 直接文字比對（包含）
     if (lowerText.includes(lowerSearchTerm)) {
@@ -1001,13 +1084,46 @@ export class NewSearchComponent implements OnInit, OnDestroy {
     return false;
   }
 
+  private normalizeSearchText(value: string): string {
+    return (value || '')
+      .normalize('NFKC')
+      .toLowerCase()
+      .replace(/^(?:(?:[一二三四五六七八九十\d]\s*配|配(?=[-_.．\s])|(?:北|中|南|東|全)區)[-_.．\s]*)+/, '')
+      .replace(/臺/g, '台')
+      .replace(/意大利/g, '義大利')
+      .replace(/麪/g, '麵')
+      .replace(/[^a-z0-9\u3400-\u9fff]/g, '');
+  }
+
+  private productNameMatches(productName: string, keyword: string): boolean {
+    const normalizedName = this.normalizeSearchText(productName);
+    const normalizedKeyword = this.normalizeSearchText(keyword);
+    if (!normalizedKeyword) return true;
+    if (normalizedName.includes(normalizedKeyword)) return true;
+
+    const tokens = (keyword || '')
+      .normalize('NFKC')
+      .split(/[\s,，、/]+/)
+      .map(token => this.normalizeSearchText(token))
+      .filter(token => token.length > 0);
+    return tokens.length > 1 && tokens.every(token => normalizedName.includes(token));
+  }
+
+  private matchesKeywordSet(matchKeyword: (keyword: { text: string; isCategory: boolean }) => boolean,
+    keywords: { text: string; isCategory: boolean }[]): boolean {
+    if (keywords.length === 0) return true;
+    return this.keywordMatchMode === 'all'
+      ? keywords.every(matchKeyword)
+      : keywords.some(matchKeyword);
+  }
+
   // 使用本地 JSON 資料和拼音比對進行搜尋（支援門市、商品、種類，也支援 Google Maps 連結）
   handleSearch(input: string): void {
     if (input.length >= 1) {
       this.unifiedDropDownList = [];
 
       // --- 0. 判斷是否為 Google Maps 連結 ---
-      const isMapsLink = input.includes('maps.app.goo.gl') || input.includes('google.com/maps/dir');
+      const isMapsLink = /https:\/\/(?:maps\.app\.goo\.gl|(?:www\.)?google\.[^/]+\/maps\/(?:dir|place)|maps\.google\.)/i.test(input);
       if (isMapsLink) {
         this.unifiedDropDownList = [{
           name: '分析 Google Maps 導航路線',
@@ -1038,31 +1154,35 @@ export class NewSearchComponent implements OnInit, OnDestroy {
       const storeCandidates = [
         ...filtered711Stores.map(item => ({
           name: item.name,
+          rawName: item.name,
           addr: item.addr,
           label: '7-11',
           type: 'store' as const,
+          storeNo: item.serial,
           longitude: parseFloat(item.lng),
           latitude: parseFloat(item.lat)
         })),
         ...filteredFamilyMartStores.map(item => ({
           name: item.Name.replace('全家', ''),
+          rawName: item.Name,
           addr: item.addr,
           label: '全家',
           type: 'store' as const,
+          pkeynew: item.pkeynew,
           longitude: parseFloat(item.px_wgs84),
           latitude: parseFloat(item.py_wgs84)
         }))
       ];
 
       // --- 2. 篩選商品候選 ---
-      const lowerInput = input.toLowerCase();
       const productSet = new Set<string>();
       const productCandidates: any[] = [];
 
       // 搜尋 7-11 商品
       this.foodDetails711.forEach(item => {
-        if (item.name && item.name.toLowerCase().includes(lowerInput) && !productSet.has(item.name)) {
-          productSet.add(item.name);
+        const productKey = this.normalizeSearchText(item.name);
+        if (item.name && this.productNameMatches(item.name, input) && !productSet.has(productKey)) {
+          productSet.add(productKey);
           productCandidates.push({
             name: item.name,
             addr: '7-ELEVEN 商品',
@@ -1076,8 +1196,9 @@ export class NewSearchComponent implements OnInit, OnDestroy {
 
       // 搜尋全家商品
       this.foodDetailsFamilyMart.forEach(item => {
-        if (item.title && item.title.toLowerCase().includes(lowerInput) && !productSet.has(item.title)) {
-          productSet.add(item.title);
+        const productKey = this.normalizeSearchText(item.title);
+        if (item.title && this.productNameMatches(item.title, input) && !productSet.has(productKey)) {
+          productSet.add(productKey);
           productCandidates.push({
             name: item.title,
             addr: '全家 商品',
@@ -1095,7 +1216,7 @@ export class NewSearchComponent implements OnInit, OnDestroy {
 
       // 7-11 食物分類
       this.foodCategories.forEach(cat => {
-        if (cat.Name && cat.Name.toLowerCase().includes(lowerInput) && !categorySet.has(cat.Name)) {
+        if (cat.Name && this.productNameMatches(cat.Name, input) && !categorySet.has(cat.Name)) {
           categorySet.add(cat.Name);
           categoryCandidates.push({
             name: cat.Name,
@@ -1107,7 +1228,7 @@ export class NewSearchComponent implements OnInit, OnDestroy {
         }
         // 也搜尋子分類
         cat.Children.forEach(child => {
-          if (child.Name && child.Name.toLowerCase().includes(lowerInput) && !categorySet.has(child.Name)) {
+          if (child.Name && this.productNameMatches(child.Name, input) && !categorySet.has(child.Name)) {
             categorySet.add(child.Name);
             categoryCandidates.push({
               name: child.Name,
@@ -1123,7 +1244,7 @@ export class NewSearchComponent implements OnInit, OnDestroy {
       // 全家商品分類（從 foodDetailsFamilyMart 取得不重複的 category）
       const fmCategories = [...new Set(this.foodDetailsFamilyMart.map(item => item.category).filter(c => c))];
       fmCategories.forEach(catName => {
-        if (catName.toLowerCase().includes(lowerInput) && !categorySet.has(catName)) {
+        if (this.productNameMatches(catName, input) && !categorySet.has(catName)) {
           categorySet.add(catName);
           categoryCandidates.push({
             name: catName,
@@ -1158,7 +1279,8 @@ export class NewSearchComponent implements OnInit, OnDestroy {
       ];
 
       // 檢查是否已經有完全相符的商品名稱
-      const hasExactProductMatch = productCandidates.some(p => p.name.toLowerCase() === lowerInput);
+      const normalizedInput = this.normalizeSearchText(input);
+      const hasExactProductMatch = productCandidates.some(p => this.normalizeSearchText(p.name) === normalizedInput);
 
       // 如果沒有找到精確相符，且輸入值有意義，也推入一個手動新增的選項
       if (!hasExactProductMatch && input.trim().length > 0) {
@@ -1192,10 +1314,14 @@ export class NewSearchComponent implements OnInit, OnDestroy {
       }
 
       // Add to selectedKeywords
-      if (!this.selectedKeywords.some(k => k.name === selectedValue.name || k.name === selectedValue.label + selectedValue.name)) {
-        const chipObj = { ...selectedValue };
+      const selectedKey = `${selectedValue.type}:${selectedValue.storeNo || selectedValue.pkeynew || this.normalizeSearchText(selectedValue.name)}`;
+      if (!this.selectedKeywords.some(keyword =>
+        `${keyword.type}:${keyword.storeNo || keyword.pkeynew || this.normalizeSearchText(keyword.rawName || keyword.name)}` === selectedKey)) {
+        const chipObj = { ...selectedValue, rawName: selectedValue.rawName || selectedValue.name };
         if (chipObj.type === 'store') {
-          chipObj.name = (chipObj.label === '全家' ? chipObj.name.replace('店', '') + '門市' : chipObj.label + chipObj.name + '門市');
+          chipObj.name = chipObj.label === '全家'
+            ? chipObj.name.replace('店', '') + '門市'
+            : `7-11 ${chipObj.name}門市`;
         }
         this.selectedKeywords.push(chipObj);
       }
@@ -1235,7 +1361,8 @@ export class NewSearchComponent implements OnInit, OnDestroy {
     });
 
     const dialogRef = this.dialog.open(RouteModeDialogComponent, {
-      width: '400px',
+      width: 'calc(100vw - 24px)',
+      maxWidth: '440px',
       panelClass: 'glass-dialog',
       data: { originalUrl, allOptions },
       autoFocus: false
@@ -1243,38 +1370,42 @@ export class NewSearchComponent implements OnInit, OnDestroy {
 
     dialogRef.afterClosed().subscribe((result: any) => {
       if (!result || result === 'CANCEL') {
-        this.goHome();
         return;
       }
       
-      const selectedMode = typeof result === 'string' ? result : result.mode;
-      this.routeProductKeywords = result.productKeywords || [];
-      
-      // FIX: 立即清空舊的商店卡片，讓 Loading Overlay 能瞬間跳出來，消除卡頓感
-      this.totalStoresShowList = [];
-      this.allNearbyStores = [];
-      this.hasMoreStores = false;
-      this.searchMode = 'route';
-      this.routeNoResults = false; // 重置無結果狀態
-      
-      // 廢棄任何還在背景跑的舊搜尋 (避免互相干擾)
-      this.storeSearchGeneration++;
-      this.productSearchGeneration++;
+      const selectedMode = result.mode as 'DRIVING' | 'BICYCLING';
+      this.beginRouteAnalysis(result.originalUrl, selectedMode, result.productKeywords || []);
+    });
+  }
 
-      this.loadingService.show("正在解析 Google Maps 路線...");
-      
-      try {
-        const urlObj = new URL(originalUrl);
-        // 如果是短網址，需要透過 Proxy 展開；否則直接解析
-        if (urlObj.hostname.includes('goo.gl')) {
-          this.resolveMapsUrlAndFetchRoute(originalUrl, selectedMode);
-        } else {
-          this.parseAndFetchDirections(originalUrl, selectedMode);
-        }
-      } catch (e) {
+  private beginRouteAnalysis(
+    originalUrl: string,
+    selectedMode: 'DRIVING' | 'BICYCLING',
+    productKeywords: string[]
+  ): void {
+    this.lastRouteUrl = originalUrl;
+    this.lastRouteMode = selectedMode;
+    this.routeProductKeywords = productKeywords;
+
+    this.totalStoresShowList = [];
+    this.allNearbyStores = [];
+    this.hasMoreStores = false;
+    this.searchMode = 'route';
+    this.routeNoResults = false;
+    this.storeSearchGeneration++;
+    this.productSearchGeneration++;
+    this.loadingService.show('正在解析 Google Maps 路線…');
+
+    try {
+      const urlObj = new URL(originalUrl);
+      if (urlObj.hostname.includes('goo.gl')) {
+        this.resolveMapsUrlAndFetchRoute(originalUrl, selectedMode);
+      } else {
         this.parseAndFetchDirections(originalUrl, selectedMode);
       }
-    });
+    } catch {
+      this.showRouteErrorDialog();
+    }
   }
 
   private resolveMapsUrlAndFetchRoute(shortUrl: string, travelMode: 'DRIVING' | 'BICYCLING'): void {
@@ -1350,7 +1481,7 @@ export class NewSearchComponent implements OnInit, OnDestroy {
       region: 'tw'
     }, (result: any, status: any) => {
       if (status === (window as any).google.maps.DirectionsStatus.OK && result) {
-        this.processDirectionsResult(result);
+        this.processDirectionsResult(result, travelMode);
       } else {
         console.error('Directions API 錯誤', status);
         this.loadingService.hide();
@@ -1631,8 +1762,7 @@ export class NewSearchComponent implements OnInit, OnDestroy {
                     subCat.products.forEach((product: any) => {
                       // 名稱吻合且數量 > 0
                       if (product.name && product.qty > 0) {
-                        const productNameLower = product.name.toLowerCase();
-                        if (this.routeProductKeywords.some(kw => productNameLower.includes(kw.toLowerCase()))) {
+                        if (this.routeProductKeywords.some(keyword => this.productNameMatches(product.name, keyword))) {
                           hasKeywordMatch = true;
                         }
                       }
@@ -1678,17 +1808,17 @@ export class NewSearchComponent implements OnInit, OnDestroy {
         
         from(sevenStores).pipe(
           mergeMap(store => 
-            this.sevenElevenService.getItemsByStoreNo(store.StoreNo, {
-              Latitude: this.searchCenterLat, Longitude: this.searchCenterLng
-            }).pipe(
+            this.sevenElevenService.getItemsByStoreNo(
+              store.StoreNo,
+              this.get711QueryLocation(store.StoreNo)
+            ).pipe(
               map((detailRes: any) => {
                 const detail = detailRes?.element?.StoreStockItem?.CategoryStockItems || [];
                 store.CategoryStockItems = detail; // 更新詳細庫存
                 const hasMatch = detail.some((cat: any) =>
                   cat.ItemList && cat.ItemList.some((item: any) => {
                     if (!item.ItemName || item.RemainingQty <= 0) return false;
-                    const itemNameLower = item.ItemName.toLowerCase();
-                    return this.routeProductKeywords.some(kw => itemNameLower.includes(kw.toLowerCase()));
+                    return this.routeProductKeywords.some(keyword => this.productNameMatches(item.ItemName, keyword));
                   })
                 );
                 return hasMatch ? store : null;
@@ -1840,6 +1970,52 @@ export class NewSearchComponent implements OnInit, OnDestroy {
     }
   }
 
+  private matches711CategoryKeyword(detail: any[], keyword: string): boolean {
+    return detail.some((stockCategory: any) => {
+      if (!stockCategory || stockCategory.RemainingQty <= 0) return false;
+      return this.foodCategories.some(foodCategory => {
+        const parentMatches = this.productNameMatches(foodCategory.Name, keyword);
+        const childMatches = foodCategory.Children.some(child =>
+          child.ID === stockCategory.NodeID && this.productNameMatches(child.Name, keyword)
+        );
+        return childMatches ||
+          (parentMatches && foodCategory.Children.some(child => child.ID === stockCategory.NodeID));
+      });
+    });
+  }
+
+  private matches711DetailKeyword(
+    detail: any[],
+    keyword: { text: string; isCategory: boolean }
+  ): boolean {
+    if (keyword.isCategory) return this.matches711CategoryKeyword(detail, keyword.text);
+    return detail.some((category: any) =>
+      (category.ItemList || []).some((item: any) =>
+        item.RemainingQty > 0 && this.productNameMatches(item.ItemName, keyword.text)
+      )
+    );
+  }
+
+  private matchesFamilyMartKeyword(
+    store: any,
+    keyword: { text: string; isCategory: boolean }
+  ): boolean {
+    return (store.info || []).some((category: any) => {
+      if (keyword.isCategory) {
+        if (category.qty <= 0) return false;
+        if (this.productNameMatches(category.name || '', keyword.text)) return true;
+        return (category.categories || []).some((subCategory: any) =>
+          subCategory.qty > 0 && this.productNameMatches(subCategory.name || '', keyword.text)
+        );
+      }
+      return (category.categories || []).some((subCategory: any) =>
+        (subCategory.products || []).some((product: any) =>
+          product.qty > 0 && this.productNameMatches(product.name || '', keyword.text)
+        )
+      );
+    });
+  }
+
   // 批次搜尋：同時查 7-11 和全家，直到找到足夠的結果
   private fetchProductSearchBatch(isInitial: boolean): void {
     const currentGen = this.productSearchGeneration;
@@ -1850,7 +2026,7 @@ export class NewSearchComponent implements OnInit, OnDestroy {
     // 支援多關鍵字搜尋 (取自 selectedKeywords)
     const productChips = this.selectedKeywords.filter(k => k.type !== 'store' && k.type !== 'route');
     const productKeywords = productChips.map(k => ({
-      text: typeof k === 'string' ? k.toLowerCase() : k.name.toLowerCase(),
+      text: typeof k === 'string' ? k : k.name,
       isCategory: typeof k !== 'string' && k.type === 'category'
     }));
 
@@ -1949,11 +2125,7 @@ export class NewSearchComponent implements OnInit, OnDestroy {
             if (this.sevenQueriedStoreNos.has(storeNo)) return;
             this.sevenQueriedStoreNos.add(storeNo);
 
-            // 檢查這間 7-11 是否包含我們選取的任一商品或種類
-            let storeHasAnyMatch = false;
-
             if (noProductFilter) {
-              storeHasAnyMatch = true;
               newMatches.push({
                 ...store,
                 storeName: `7-11${store.StoreName}門市`,
@@ -1965,25 +2137,18 @@ export class NewSearchComponent implements OnInit, OnDestroy {
               });
             } else {
               const detail = store.CategoryStockItems || [];
-              
-              const hasCategoryMatch = productKeywords.some(kw => {
-                if (!kw.isCategory) return false;
-                return detail.some((cat: any) => {
-                  for (const fc of this.foodCategories) {
-                    if (fc.Name.toLowerCase().includes(kw.text)) {
-                      return fc.Children.some((child: any) => child.ID === cat.NodeID && cat.RemainingQty > 0);
-                    }
-                    const matchChild = fc.Children.find((child: any) => child.Name.toLowerCase().includes(kw.text));
-                    if (matchChild && matchChild.ID === cat.NodeID && cat.RemainingQty > 0) {
-                      return true;
-                    }
-                  }
-                  return false;
-                });
-              });
+              const categoryKeywords = productKeywords.filter(keyword => keyword.isCategory);
+              const hasTextKeywords = productKeywords.some(keyword => !keyword.isCategory);
+              const categorySummaryMatches = categoryKeywords.length > 0 &&
+                this.matchesKeywordSet(
+                  keyword => this.matches711CategoryKeyword(detail, keyword.text),
+                  categoryKeywords
+                );
+              const summaryIsConclusive = this.keywordMatchMode === 'any'
+                ? categorySummaryMatches
+                : !hasTextKeywords && categorySummaryMatches;
 
-              if (hasCategoryMatch) {
-                storeHasAnyMatch = true;
+              if (summaryIsConclusive) {
                 newMatches.push({
                   ...store,
                   storeName: `7-11${store.StoreName}門市`,
@@ -1993,12 +2158,8 @@ export class NewSearchComponent implements OnInit, OnDestroy {
                   showDistance: true,
                   CategoryStockItems: detail
                 });
-              } else {
-                // 若沒有種類配對成功，只要有文字搜尋(非種類)，就把門市推入 Phase 2 驗證
-                const hasTextKws = productKeywords.some(kw => !kw.isCategory);
-                if (hasTextKws) {
-                  candidateStores.push(store);
-                }
+              } else if (hasTextKeywords) {
+                candidateStores.push(store);
               }
             }
           });
@@ -2016,16 +2177,16 @@ export class NewSearchComponent implements OnInit, OnDestroy {
 
           from(candidateStores).pipe(
             mergeMap(store =>
-              this.sevenElevenService.getItemsByStoreNo(store.StoreNo, {
-                Latitude: this.searchCenterLat, Longitude: this.searchCenterLng
-              }).pipe(
+              this.sevenElevenService.getItemsByStoreNo(
+                store.StoreNo,
+                this.get711QueryLocation(store.StoreNo)
+              ).pipe(
                 timeout(8000),
                 map((res: any) => {
                   const detail = res?.element?.StoreStockItem?.CategoryStockItems || [];
-                  const hasMatch = detail.some((cat: any) =>
-                    cat.ItemList && cat.ItemList.some((item: any) =>
-                      item.ItemName && productKeywords.some(kw => !kw.isCategory && item.ItemName.toLowerCase().includes(kw.text)) && item.RemainingQty > 0
-                    )
+                  const hasMatch = this.matchesKeywordSet(
+                    keyword => this.matches711DetailKeyword(detail, keyword),
+                    productKeywords
                   );
                   if (hasMatch) {
                     return {
@@ -2071,25 +2232,10 @@ export class NewSearchComponent implements OnInit, OnDestroy {
             if (noProductFilter) {
               hasMatch = true;
             } else if (store.info) {
-              hasMatch = productKeywords.some(kw => {
-                return store.info.some((category: any) => {
-                  if (kw.isCategory) {
-                    if (category.name && category.name.toLowerCase().includes(kw.text) && category.qty > 0) return true;
-                  } else {
-                    if (category.categories) {
-                      return category.categories.some((subCat: any) => {
-                        if (subCat.products) {
-                          return subCat.products.some((product: any) => 
-                            product.name && product.name.toLowerCase().includes(kw.text) && product.qty > 0
-                          );
-                        }
-                        return false;
-                      });
-                    }
-                  }
-                  return false;
-                });
-              });
+              hasMatch = this.matchesKeywordSet(
+                keyword => this.matchesFamilyMartKeyword(store, keyword),
+                productKeywords
+              );
             }
 
             if (hasMatch) {
@@ -2291,34 +2437,16 @@ export class NewSearchComponent implements OnInit, OnDestroy {
     }
 
     this.stopProductSearch();
-    this.initPacedSearch(); // 統一準備 progressive 搜尋環境
 
-    // Determine the GPS center. If a specific store chip is present, use it.
     const storeChips = this.selectedKeywords.filter(c => c.type === 'store');
-    
-    if (storeChips.length > 0 && storeChips[0].latitude && storeChips[0].longitude) {
-      this.searchCenterLat = storeChips[0].latitude;
-      this.searchCenterLng = storeChips[0].longitude;
+    if (storeChips.length > 0) {
+      this.searchSelectedStores(storeChips);
+      return;
+    }
 
-      if (!this.latitude || !this.longitude) {
-        this.latitude = this.searchCenterLat;
-        this.longitude = this.searchCenterLng;
-      }
-      
-      // Setup tokens (if navigating near a store)
-      this.sevenElevenService.getAccessToken().pipe(
-        switchMap((token: any) => {
-          if (token && token.element) {
-            sessionStorage.setItem('711Token', token.element);
-            return this.sevenElevenService.getFoodCategory();
-          }
-          return of([]);
-        })
-      ).subscribe(() => {
-        this.waitForStoresDataAndSearch();
-      });
-      
-    } else {
+    this.initPacedSearch();
+
+    {
       // Must get user location
       this.loadingService.show("取得定位中...");
       from(this.geolocationService.getCurrentPosition())
@@ -2328,6 +2456,8 @@ export class NewSearchComponent implements OnInit, OnDestroy {
             this.longitude = position.coords.longitude;
             this.searchCenterLat = this.latitude;
             this.searchCenterLng = this.longitude;
+            this.locationFallbackUsed = false;
+            this.locationDenied = false;
             return this.sevenElevenService.getAccessToken();
           }),
           switchMap((token: any) => {
@@ -2338,10 +2468,12 @@ export class NewSearchComponent implements OnInit, OnDestroy {
             return of([]);
           }),
           catchError((err) => {
-            console.error('取得座標錯誤', err);
+            console.warn('無法取得定位，改用台北市中心作為搜尋起點。', err);
             // Default center if err
             this.searchCenterLat = 25.0330;
             this.searchCenterLng = 121.5654;
+            this.locationFallbackUsed = true;
+            this.locationDenied = false;
             this.loadingService.hide();
             return of(null);
           })
@@ -2350,6 +2482,180 @@ export class NewSearchComponent implements OnInit, OnDestroy {
           this.waitForStoresDataAndSearch();
         });
     }
+  }
+
+  private searchSelectedStores(storeChips: any[]): void {
+    const searchGeneration = ++this.storeSearchGeneration;
+    const productKeywords = this.selectedKeywords
+      .filter(keyword => keyword.type !== 'store' && keyword.type !== 'route')
+      .map(keyword => ({
+        text: typeof keyword === 'string' ? keyword : keyword.name,
+        isCategory: typeof keyword !== 'string' && keyword.type === 'category'
+      }));
+
+    this.searchMode = 'store';
+    this.isLocationSearchMode = false;
+    this.locationDenied = false;
+    this.routeNoResults = false;
+    this.totalStoresShowList = [];
+    this.allNearbyStores = [];
+    this.hasMoreStores = false;
+    this.productSearchRunning = false;
+    this.searchCenterLat = Number(storeChips[0]?.latitude) || this.latitude || 0;
+    this.searchCenterLng = Number(storeChips[0]?.longitude) || this.longitude || 0;
+    this.loadingService.show(`正在更新 ${storeChips.length} 間門市的即時庫存…`);
+
+    this.sevenElevenService.getAccessToken().pipe(
+      tap((token: any) => {
+        if (token?.element) sessionStorage.setItem('711Token', token.element);
+      }),
+      catchError(() => of(null)),
+      switchMap(() => {
+        const requests = storeChips.map(chip => this.fetchSelectedStore(chip, productKeywords));
+        return forkJoin(requests.length > 0 ? requests : [of(null)]);
+      })
+    ).subscribe({
+      next: (stores: any[]) => {
+        if (searchGeneration !== this.storeSearchGeneration) return;
+        const results = stores
+          .filter(Boolean)
+          .sort((a, b) => (a.distance || 0) - (b.distance || 0));
+        results.forEach(store => this.precomputeCategoryQty(store));
+        this.allNearbyStores = results;
+        this.totalStoresShowList = results;
+        this.storeDataService.setStores(results);
+        this.storeDataService.setIsUserLocationSearch(false);
+        this.loadingService.hide();
+      },
+      error: (error) => {
+        if (searchGeneration !== this.storeSearchGeneration) return;
+        console.error('指定門市查詢失敗:', error);
+        this.loadingService.hide();
+      }
+    });
+  }
+
+  private fetchSelectedStore(
+    chip: any,
+    productKeywords: { text: string; isCategory: boolean }[]
+  ): Observable<any | null> {
+    if (chip.label === '7-11') {
+      const localStore = this.all711Stores.find(store =>
+        store.serial === chip.storeNo ||
+        this.normalizeSearchText(store.name) === this.normalizeSearchText(chip.rawName || chip.name)
+      );
+      const storeNo = chip.storeNo || localStore?.serial;
+      if (!storeNo) return of(null);
+
+      return this.sevenElevenService.getItemsByStoreNo(
+        storeNo,
+        this.get711QueryLocation(storeNo)
+      ).pipe(
+        map((response: any) => {
+          const stock = response?.element?.StoreStockItem || {};
+          const detail = stock.CategoryStockItems || [];
+          const hasMatch = this.matchesKeywordSet(
+            keyword => this.matches711DetailKeyword(detail, keyword),
+            productKeywords
+          );
+          if (productKeywords.length > 0 && !hasMatch) return null;
+
+          const remainingQty = stock.RemainingQty ?? detail.reduce(
+            (sum: number, category: any) => sum + (category.RemainingQty || 0),
+            0
+          );
+          const coords = this.storeNoToCoords.get(storeNo);
+          return {
+            ...stock,
+            StoreNo: storeNo,
+            StoreName: stock.StoreName || localStore?.name || chip.rawName || chip.name,
+            storeName: `7-11 ${stock.StoreName || localStore?.name || chip.rawName || chip.name}門市`,
+            label: '7-11',
+            RemainingQty: remainingQty,
+            remainingQty,
+            CategoryStockItems: detail,
+            distance: this.distanceFromUser(coords?.lat, coords?.lng),
+            showDistance: true
+          };
+        }),
+        catchError(error => {
+          console.error(`7-11 ${chip.rawName || chip.name} 庫存查詢失敗:`, error);
+          return of(this.createUnavailableSelectedStore(chip));
+        })
+      );
+    }
+
+    const location = {
+      Latitude: Number(chip.latitude),
+      Longitude: Number(chip.longitude)
+    };
+    return this.familyMartService.getNearByStoreList(location).pipe(
+      map((response: any) => {
+        const stores = response?.code === 1 && Array.isArray(response.data) ? response.data : [];
+        const targetName = this.normalizeSearchText(chip.rawName || chip.name);
+        const store = stores.find((candidate: any) =>
+          candidate.oldPKey === chip.pkeynew ||
+          this.normalizeSearchText(candidate.name) === targetName
+        );
+        if (!store) {
+          return productKeywords.length === 0 ? this.createUnavailableSelectedStore(chip) : null;
+        }
+        const hasMatch = this.matchesKeywordSet(
+          keyword => this.matchesFamilyMartKeyword(store, keyword),
+          productKeywords
+        );
+        if (productKeywords.length > 0 && !hasMatch) return null;
+        return {
+          ...store,
+          storeName: store.name,
+          label: '全家',
+          distance: this.distanceFromUser(Number(store.latitude), Number(store.longitude)),
+          showDistance: true
+        };
+      }),
+      catchError(error => {
+        console.error(`全家 ${chip.rawName || chip.name} 庫存查詢失敗:`, error);
+        return of(this.createUnavailableSelectedStore(chip));
+      })
+    );
+  }
+
+  private createUnavailableSelectedStore(chip: any): any {
+    if (chip.label === '7-11') {
+      const rawName = (chip.rawName || chip.name || '').replace(/^7-11\s*/, '').replace(/門市$/, '');
+      return {
+        StoreNo: chip.storeNo,
+        StoreName: rawName,
+        storeName: `7-11 ${rawName}門市`,
+        label: '7-11',
+        RemainingQty: 0,
+        remainingQty: 0,
+        CategoryStockItems: [],
+        inventoryUnavailable: true,
+        distance: this.distanceFromUser(Number(chip.latitude), Number(chip.longitude)),
+        showDistance: true
+      };
+    }
+    const rawName = chip.rawName || chip.name;
+    return {
+      name: rawName,
+      storeName: rawName,
+      label: '全家',
+      info: [],
+      inventoryUnavailable: true,
+      latitude: Number(chip.latitude),
+      longitude: Number(chip.longitude),
+      distance: this.distanceFromUser(Number(chip.latitude), Number(chip.longitude)),
+      showDistance: true
+    };
+  }
+
+  private distanceFromUser(lat?: number, lng?: number): number {
+    if (!lat || !lng || !this.latitude || !this.longitude) return 0;
+    return getDistance(
+      { latitude: this.latitude, longitude: this.longitude },
+      { latitude: lat, longitude: lng }
+    );
   }
 
   // 強制終止並作廢目前進行中的商品/種類搜尋
@@ -2408,6 +2714,7 @@ export class NewSearchComponent implements OnInit, OnDestroy {
           this.searchCenterLat = lat;
           this.searchCenterLng = lng;
           this.locationDenied = false;
+          this.locationFallbackUsed = false;
 
           console.log('已取得位置');
 
@@ -2430,8 +2737,9 @@ export class NewSearchComponent implements OnInit, OnDestroy {
           }
         }),
         catchError((error) => {
-          console.error('定位失敗:', error);
+          console.warn('定位未授權或暫時無法取得。', error);
           this.locationDenied = true;
+          this.locationFallbackUsed = false;
           this.loadingService.hide();
           return of(null);
         })
@@ -2445,6 +2753,34 @@ export class NewSearchComponent implements OnInit, OnDestroy {
           }
         }
       );
+  }
+
+  useFallbackLocation(): void {
+    const fallbackLatitude = 25.0330;
+    const fallbackLongitude = 121.5654;
+
+    this.searchMode = 'location';
+    this.isLocationSearchMode = false;
+    this.locationDenied = false;
+    this.locationFallbackUsed = true;
+    this.routeNoResults = false;
+    this.isMapView = false;
+    this.mapSheetOpen = false;
+
+    this.latitude = fallbackLatitude;
+    this.longitude = fallbackLongitude;
+    this.searchCenterLat = fallbackLatitude;
+    this.searchCenterLng = fallbackLongitude;
+
+    this.totalStoresShowList = [];
+    this.allNearbyStores = [];
+    this.hasMoreStores = false;
+    this.stopProductSearch();
+    this.sevenQueriedStoreNos = new Set();
+    this.fmQueriedPKeys = new Set();
+    this.loadingService.show('正在搜尋台北 101 附近門市…');
+
+    this.searchCombineAndTransformStoresExpanded(fallbackLatitude, fallbackLongitude);
   }
 
   combineStoreList(storeLatitude?: number, storeLongitude?: number): void {

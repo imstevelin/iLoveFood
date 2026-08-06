@@ -11,7 +11,7 @@ import { map, startWith } from 'rxjs/operators';
 import { COMMA, ENTER } from '@angular/cdk/keycodes';
 
 export interface RouteDialogData {
-  originalUrl: string;
+  originalUrl?: string;
   allOptions: { name: string, type: 'category' | 'product', addr?: string }[];
 }
 
@@ -33,9 +33,11 @@ export interface RouteDialogData {
 })
 export class RouteModeDialogComponent implements OnInit {
   separatorKeysCodes: number[] = [ENTER, COMMA];
+  routeUrlCtrl = new FormControl('');
   keywordCtrl = new FormControl('');
   filteredOptions$: Observable<{ name: string, type: 'category' | 'product', addr?: string }[]>;
   selectedKeywords: string[] = [];
+  urlError = '';
 
   @ViewChild('keywordInput') keywordInput!: ElementRef<HTMLInputElement>;
 
@@ -43,6 +45,7 @@ export class RouteModeDialogComponent implements OnInit {
     public dialogRef: MatDialogRef<RouteModeDialogComponent>,
     @Inject(MAT_DIALOG_DATA) public data: RouteDialogData
   ) {
+    this.routeUrlCtrl.setValue(this.data.originalUrl || '');
     this.filteredOptions$ = this.keywordCtrl.valueChanges.pipe(
       startWith(''),
       map(value => this._filter(value || ''))
@@ -105,6 +108,30 @@ export class RouteModeDialogComponent implements OnInit {
   }
 
   selectMode(mode: 'DRIVING' | 'BICYCLING'): void {
-    this.dialogRef.close({ mode, productKeywords: this.selectedKeywords });
+    const originalUrl = (this.routeUrlCtrl.value || '').trim();
+    if (!this.isSupportedMapsUrl(originalUrl)) {
+      this.urlError = '請貼上 Google Maps 的路線分享連結';
+      return;
+    }
+    this.urlError = '';
+    this.dialogRef.close({ mode, productKeywords: this.selectedKeywords, originalUrl });
+  }
+
+  onRouteUrlInput(): void {
+    if (this.urlError) this.urlError = '';
+  }
+
+  private isSupportedMapsUrl(value: string): boolean {
+    if (!value) return false;
+    try {
+      const url = new URL(value);
+      return url.protocol === 'https:' &&
+        (url.hostname === 'maps.app.goo.gl' ||
+         url.hostname.endsWith('.google.com') ||
+         url.hostname === 'google.com' ||
+         url.hostname === 'maps.google.com');
+    } catch {
+      return false;
+    }
   }
 }

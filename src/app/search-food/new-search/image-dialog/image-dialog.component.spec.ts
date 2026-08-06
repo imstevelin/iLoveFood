@@ -1,4 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 
 import { ImageDialogComponent } from './image-dialog.component';
 
@@ -8,7 +9,11 @@ describe('ImageDialogComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [ImageDialogComponent]
+      imports: [ImageDialogComponent],
+      providers: [
+        { provide: MatDialogRef, useValue: jasmine.createSpyObj('MatDialogRef', ['close']) },
+        { provide: MAT_DIALOG_DATA, useValue: { image: 'assets/iLoveFood-icon.webp' } }
+      ]
     })
     .compileComponents();
 

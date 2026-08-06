@@ -1,4 +1,7 @@
+import { NO_ERRORS_SCHEMA } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { HttpClientTestingModule } from '@angular/common/http/testing';
+import { MatDialogModule } from '@angular/material/dialog';
 
 import { SiderComponent } from './sider.component';
 
@@ -8,7 +11,9 @@ describe('SiderComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [SiderComponent]
+      declarations: [SiderComponent],
+      imports: [HttpClientTestingModule, MatDialogModule],
+      schemas: [NO_ERRORS_SCHEMA]
     })
     .compileComponents();
 

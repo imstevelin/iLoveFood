@@ -24,7 +24,7 @@ export class ChatbotComponent implements OnInit, OnDestroy {
   isLogin = false;
   isOpen = false;
   isMounted = false;
-  chatEnabled = false; // 預設關閉，由實驗室開關控制
+  chatEnabled = true;
   userInput = '';
   userName = '';
   messages: { text: string; safeHtml?: SafeHtml; sender: string; isLoading?: boolean }[] = [];
@@ -32,6 +32,24 @@ export class ChatbotComponent implements OnInit, OnDestroy {
   suggestedReplies: string[] = [];
   private lastVvH = 0;
   private stateSub?: Subscription;
+  private welcomeInitialized = false;
+  private onStorageChange = (event: StorageEvent) => {
+    if (event.key === 'chatEnabled') {
+      this.chatEnabled = event.newValue ? JSON.parse(event.newValue) : true;
+      if (!this.chatEnabled) this.isOpen = false;
+    }
+  };
+  private onChatEnabledChanged = ((event: CustomEvent<boolean>) => {
+    this.chatEnabled = event.detail;
+    if (!this.chatEnabled) this.isOpen = false;
+  }) as EventListener;
+  private onOpenChatbot = () => {
+    if (this.chatEnabled && !this.isOpen) this.toggleChat();
+  };
+
+  get isAssistantLoading(): boolean {
+    return this.messages[this.messages.length - 1]?.isLoading === true;
+  }
 
   constructor(
     private authService: AuthService,
@@ -43,31 +61,21 @@ export class ChatbotComponent implements OnInit, OnDestroy {
   ngOnInit() {
     // 讀取實驗室開關
     const saved = localStorage.getItem('chatEnabled');
-    this.chatEnabled = saved ? JSON.parse(saved) : false;
+    this.chatEnabled = saved ? JSON.parse(saved) : true;
 
     // 監聽其他組件透過 localStorage 改變此設定（跨分頁）
-    window.addEventListener('storage', (e) => {
-      if (e.key === 'chatEnabled') {
-        this.chatEnabled = e.newValue ? JSON.parse(e.newValue) : false;
-        if (!this.chatEnabled) this.isOpen = false;
-      }
-    });
+    window.addEventListener('storage', this.onStorageChange);
 
     // 監聽同頁面的自訂事件（同分頁內由 new-search 觸發）
-    window.addEventListener('chatEnabledChanged', ((e: CustomEvent) => {
-      this.chatEnabled = e.detail;
-      if (!this.chatEnabled) this.isOpen = false;
-    }) as EventListener);
+    window.addEventListener('chatEnabledChanged', this.onChatEnabledChanged);
 
     // 監聽開啟聊天室事件
-    window.addEventListener('openChatbot', () => {
-      if (this.chatEnabled && !this.isOpen) {
-        this.toggleChat();
-      }
-    });
+    window.addEventListener('openChatbot', this.onOpenChatbot);
 
     this.authService.isLoggedIn().subscribe(res => this.isLogin = res);
     this.authService.getUser().subscribe(user => {
+      if (this.welcomeInitialized) return;
+      this.welcomeInitialized = true;
       if (!user) {
         this.isLogin = false;
         this.putMessage('嗨～！我是友善小精靈 ✨ 想找什麼好吃的嗎？', 'bot');
@@ -101,6 +109,12 @@ export class ChatbotComponent implements OnInit, OnDestroy {
     if (this.stateSub) {
       this.stateSub.unsubscribe();
     }
+    window.removeEventListener('storage', this.onStorageChange);
+    window.removeEventListener('chatEnabledChanged', this.onChatEnabledChanged);
+    window.removeEventListener('openChatbot', this.onOpenChatbot);
+    document.body.style.overflow = '';
+    document.documentElement.style.removeProperty('--vvTop');
+    document.documentElement.style.removeProperty('--vvH');
   }
 
   private onVisualViewportChange = () => {
@@ -271,7 +285,8 @@ export class ChatbotComponent implements OnInit, OnDestroy {
   }
 
   scrollToBottom(): void {
-    const el = this.chatBody.nativeElement;
+    const el = this.chatBody?.nativeElement;
+    if (!el) return;
     el.scrollTop = el.scrollHeight;
     this.showScrollBottom = false;
   }

@@ -15,8 +15,8 @@ export class RoundPipe implements PipeTransform {
     }
 
     if(precision === -1){
-      // -1代表是顯示打折後的價格
-      return `${numericValue.toFixed(0)} 元`;
+      // -1 只回傳四捨五入後的價格數字，幣別與單位由畫面文案負責。
+      return numericValue.toFixed(0);
     }
   
     // 判斷數值是否小於 1000

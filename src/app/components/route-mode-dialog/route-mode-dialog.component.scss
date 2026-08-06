@@ -202,3 +202,235 @@
     box-shadow: none !important;
   }
 }
+
+/* ===== Guided route-search flow ===== */
+.route-dialog {
+  width: min(100%, 440px);
+  padding: 24px;
+  color: var(--text-primary);
+  background: var(--surface);
+  box-sizing: border-box;
+}
+
+.route-dialog-heading {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 24px;
+  text-align: left;
+
+  h2 {
+    margin: 2px 0 4px;
+    font-family: var(--font-body) !important;
+    font-size: 22px;
+    line-height: 1.25;
+    font-weight: 800;
+  }
+
+  p {
+    margin: 0;
+    color: var(--text-secondary);
+    font-size: 13px;
+    line-height: 1.5;
+  }
+}
+
+.route-dialog-icon {
+  width: 54px;
+  height: 54px;
+  flex: 0 0 54px;
+  display: grid;
+  place-items: center;
+  border-radius: 18px;
+  background: linear-gradient(145deg, #4f7cff, #6558d9);
+  box-shadow: 0 10px 28px rgba(79, 124, 255, 0.25);
+}
+
+.route-dialog-kicker {
+  color: #526be8;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+}
+
+.route-step {
+  margin-bottom: 18px;
+  text-align: left;
+}
+
+.route-step-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  font-size: 13px;
+  font-weight: 750;
+
+  > span {
+    width: 22px;
+    height: 22px;
+    display: inline-grid;
+    place-items: center;
+    border-radius: 8px;
+    color: #526be8;
+    background: rgba(82, 107, 232, 0.1);
+    font-size: 11px;
+  }
+
+  em {
+    margin-left: auto;
+    color: var(--text-secondary);
+    font-size: 11px;
+    font-style: normal;
+    font-weight: 500;
+  }
+}
+
+.route-url-box,
+.route-search-box {
+  border-radius: 14px;
+  border-color: var(--border-default);
+  background: var(--bg);
+  box-shadow: 0 1px 0 rgba(29, 28, 26, 0.03);
+}
+
+.route-url-box {
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 13px;
+  border: 1px solid var(--border-default);
+  transition: border-color 150ms ease, box-shadow 150ms ease;
+
+  svg {
+    flex: 0 0 auto;
+    color: var(--text-secondary);
+  }
+
+  input {
+    width: 100%;
+    min-width: 0;
+    border: 0;
+    outline: 0;
+    color: var(--text-primary);
+    background: transparent;
+    font-size: 14px;
+  }
+
+  &:focus-within {
+    border-color: #526be8;
+    box-shadow: 0 0 0 3px rgba(82, 107, 232, 0.12);
+  }
+
+  &.has-error {
+    border-color: #dc2626;
+    box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.08);
+  }
+}
+
+.route-field-help,
+.route-field-error {
+  margin: 6px 4px 0;
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.route-field-help { color: var(--text-secondary); }
+.route-field-error { color: #dc2626; font-weight: 650; }
+
+.route-search-box {
+  min-height: 48px;
+  padding: 5px 12px;
+
+  &:focus-within {
+    border-color: #526be8;
+    background: var(--bg);
+    box-shadow: 0 0 0 3px rgba(82, 107, 232, 0.12);
+  }
+}
+
+.route-search-icon {
+  margin-top: 10px;
+  color: var(--text-secondary);
+}
+
+::ng-deep .route-chip.mat-mdc-chip {
+  border-radius: 999px !important;
+}
+
+.route-mode-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.mode-btn {
+  min-height: 68px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 10px;
+  padding: 10px 12px !important;
+  border-radius: 16px;
+  text-align: left;
+
+  > span:last-child {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+
+  strong {
+    color: var(--text-primary);
+    font-size: 14px;
+  }
+
+  small {
+    margin-top: 2px;
+    color: var(--text-secondary);
+    font-size: 10px;
+    line-height: 1.3;
+    white-space: normal;
+  }
+}
+
+.mode-emoji {
+  font-size: 26px;
+  line-height: 1;
+}
+
+.dialog-cancel-btn {
+  width: 100%;
+  padding: 10px;
+  border: 0;
+  color: var(--text-secondary);
+  background: transparent;
+  font-size: 14px;
+}
+
+@media (max-width: 480px) {
+  .route-dialog {
+    padding: 20px 16px 14px;
+  }
+
+  .route-dialog-heading {
+    margin-bottom: 20px;
+
+    h2 { font-size: 20px; }
+  }
+
+  .route-dialog-icon {
+    width: 48px;
+    height: 48px;
+    flex-basis: 48px;
+    border-radius: 15px;
+
+    svg { width: 27px; height: 27px; }
+  }
+
+  .mode-btn {
+    min-height: 72px;
+    padding: 9px !important;
+  }
+}

@@ -418,6 +418,64 @@
     }
 }
 
+/* Refined assistant surface */
+.chatbot-container {
+    border-radius: 22px;
+    box-shadow: 0 24px 70px rgba(20, 24, 32, 0.22);
+}
+
+.chatbot-header {
+    padding: 14px 16px;
+    background: var(--surface);
+}
+
+.toggle-btn,
+.scroll-bottom-btn {
+    border-radius: 10px;
+}
+
+.chatbot-body .user > span {
+    border-radius: 16px 16px 4px 16px;
+}
+
+.chatbot-body .bot > .bot-message,
+.chatbot-body .bot > span {
+    border-radius: 16px 16px 16px 4px;
+}
+
+.preset-btn {
+    border-radius: 999px !important;
+}
+
+.chatbot-footer {
+    padding: 10px 12px calc(10px + env(safe-area-inset-bottom, 0px));
+}
+
+.chatbot-footer input {
+    min-width: 0;
+    border-radius: 14px;
+}
+
+.chatbot-footer button {
+    border-radius: 13px;
+
+    &:disabled {
+        opacity: 0.42;
+        cursor: not-allowed;
+    }
+}
+
+@media screen and (max-width: 768px) {
+    .chatbot-container.open {
+        border-radius: 0;
+        box-shadow: none;
+    }
+
+    .chatbot-header {
+        padding-top: max(14px, env(safe-area-inset-top, 0px));
+    }
+}
+
 /* Suggested Replies */
 .chatbot-presets {
     padding: 0 12px 10px 12px;

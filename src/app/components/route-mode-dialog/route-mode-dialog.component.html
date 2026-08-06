@@ -1,18 +1,40 @@
-<div class="p-6 md:p-8 flex flex-col items-center justify-center text-center relative overflow-hidden bg-white/20 dark:bg-transparent">
+<div class="route-dialog">
   
   <!-- Icon & Title -->
-  <div class="mb-6 flex flex-col items-center animate-fade-in-up">
-    <div class="w-16 h-16 rounded-3xl bg-gradient-to-br from-blue-500 to-indigo-600 shadow-xl shadow-blue-500/20 flex items-center justify-center mb-5 ring-4 ring-white/30">
+  <div class="route-dialog-heading animate-fade-in-up">
+    <div class="route-dialog-icon">
       <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="white" viewBox="0 0 256 256">
         <path d="M228.92,49.69a8,8,0,0,0-6.86-1.45L160.93,63.52,99.58,32.84a8,8,0,0,0-7.16,0L27.08,65.18A8,8,0,0,0,24,72.35V206.31a8,8,0,0,0,10.92,7.45l61.15-15.29,61.35,30.68a8,8,0,0,0,7.16,0l65.34-32.34A8,8,0,0,0,232,189.65V56.35A8,8,0,0,0,228.92,49.69ZM96,49.33l56,28V206.67l-56-28ZM40,78.22l40-18.46V187.12L40,197.12Zm176,99.56-40,19.8V88.88l40-10Z"></path>
       </svg>
     </div>
-    <h2 class="text-xl font-bold text-slate-800 dark:text-slate-100 m-0">分析導航路線</h2>
-    <p class="text-[14px] text-slate-500 dark:text-slate-300 mt-2 mb-0 px-2 leading-relaxed font-medium">請選擇交通工具以便推薦最順路的門市。</p>
+    <div>
+      <span class="route-dialog-kicker">GOOGLE MAPS 路線搜尋</span>
+      <h2>沿路找折扣品</h2>
+      <p>貼上已規劃好的路線，我們會找出真正順路的門市。</p>
+    </div>
+  </div>
+
+  <div class="route-step">
+    <div class="route-step-label"><span>1</span> 貼上路線分享連結</div>
+    <div class="route-url-box" [class.has-error]="urlError">
+      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 24 24">
+        <path d="M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7a5 5 0 0 0 0 10h4v-1.9H7A3.1 3.1 0 0 1 3.9 12ZM8 13h8v-2H8v2Zm9-6h-4v1.9h4a3.1 3.1 0 0 1 0 6.2h-4V17h4a5 5 0 0 0 0-10Z"/>
+      </svg>
+      <input type="url"
+             [formControl]="routeUrlCtrl"
+             (input)="onRouteUrlInput()"
+             placeholder="https://maps.app.goo.gl/…"
+             inputmode="url"
+             autocomplete="off"
+             aria-label="Google Maps 路線分享連結" />
+    </div>
+    <p class="route-field-help" *ngIf="!urlError">Google Maps「分享」→「複製連結」</p>
+    <p class="route-field-error" *ngIf="urlError">{{ urlError }}</p>
   </div>
 
   <!-- Product Keyword Search Box -->
-  <div class="w-full px-2 mb-4">
+  <div class="route-step">
+    <div class="route-step-label"><span>2</span> 想找什麼？<em>可略過</em></div>
     <div class="route-search-box">
       <!-- 放大鏡 icon：固定在左側不會被擠壓 -->
       <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 256 256"
@@ -33,7 +55,7 @@
             </button>
           </mat-chip-row>
           
-          <input placeholder="可選：搜尋欲過濾之商品或種類..."
+          <input placeholder="例如：便當、義大利麵"
                  #keywordInput
                  [formControl]="keywordCtrl"
                  [matChipInputFor]="chipGrid"
@@ -66,27 +88,25 @@
   </div>
 
   <!-- Mode Selection Buttons -->
-  <div class="flex gap-4 w-full mt-2">
+  <div class="route-step">
+    <div class="route-step-label"><span>3</span> 選擇交通方式並開始</div>
+    <div class="route-mode-actions">
     <!-- Motorcycle Option -->
-    <button mat-button class="mode-btn flex-1 p-0 overflow-hidden group" (click)="selectMode('BICYCLING')">
-      <div class="flex flex-col items-center gap-2 py-5 transition-transform duration-300 group-active:scale-95">
-        <span class="text-4xl filter drop-shadow-sm">🛵</span>
-        <span class="font-bold text-slate-700 dark:text-slate-200 text-sm">機車</span>
-      </div>
+    <button type="button" mat-button class="mode-btn" (click)="selectMode('BICYCLING')">
+      <span class="mode-emoji">🛵</span>
+      <span><strong>機車</strong><small>避開汽車專用道路</small></span>
     </button>
     
     <!-- Car Option -->
-    <button mat-button class="mode-btn flex-1 p-0 overflow-hidden group" (click)="selectMode('DRIVING')">
-      <div class="flex flex-col items-center gap-2 py-5 transition-transform duration-300 group-active:scale-95">
-        <span class="text-4xl filter drop-shadow-sm">🚗</span>
-        <span class="font-bold text-slate-700 dark:text-slate-200 text-sm">汽車</span>
-      </div>
+    <button type="button" mat-button class="mode-btn" (click)="selectMode('DRIVING')">
+      <span class="mode-emoji">🚗</span>
+      <span><strong>汽車</strong><small>略過交流道與高架路段</small></span>
     </button>
+    </div>
   </div>
   
-  <button mat-button 
-          class="dialog-cancel-btn w-full mt-4 py-3 rounded-xl text-[15px] font-medium text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 active:scale-95 transition-all" 
-          style="background: transparent; border: none; box-shadow: none;"
+  <button type="button" mat-button
+          class="dialog-cancel-btn"
           (click)="onCancel()">
     取消
   </button>
