@@ -60,16 +60,16 @@
   --font-body: 'Noto Sans TC', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   --font-mono: ui-monospace, 'SFMono-Regular', Menlo, monospace;
 
-  /* ===== Simplified Animation Tokens ===== */
-  --spring: cubic-bezier(0.2, 0, 0, 1);
-  --spring-snappy: cubic-bezier(0.2, 0, 0, 1);
-  --spring-gentle: cubic-bezier(0.4, 0, 0.2, 1);
+  /* ===== Apple-like non-linear motion tokens ===== */
+  --spring: cubic-bezier(0.16, 1, 0.3, 1);
+  --spring-snappy: cubic-bezier(0.22, 1, 0.36, 1);
+  --spring-gentle: cubic-bezier(0.25, 0.8, 0.25, 1);
 
   --duration-instant: 100ms;
   --duration-fast: 150ms;
-  --duration-normal: 200ms;
-  --duration-slow: 300ms;
-  --duration-expand: 350ms;
+  --duration-normal: 220ms;
+  --duration-slow: 320ms;
+  --duration-expand: 420ms;
 
   --transition-spring: var(--duration-normal) var(--spring);
   --transition-snappy: var(--duration-fast) var(--spring-snappy);
@@ -116,7 +116,7 @@
 .mat-typography,
 html,
 body {
-  height: 100%;
+  min-height: 100%;
   margin: 0;
   font-family: var(--font-body) !important;
   background-color: var(--bg);
@@ -148,7 +148,86 @@ h6,
 }
 
 html {
+  height: 100%;
   scroll-behavior: smooth;
+  background-color: var(--bg);
+}
+
+body.mat-typography,
+app-root {
+  min-height: 100%;
+  min-height: 100dvh;
+  background-color: var(--bg);
+}
+
+app-root {
+  display: block;
+}
+
+@media (max-width: 768px) {
+  /* iOS Safari 聚焦小於 16px 的輸入框時會自動放大頁面。 */
+  app-new-search .main-search-input {
+    font-size: 16px !important;
+  }
+
+  app-new-search .main-search-input:focus,
+  app-new-search .main-search-input:focus-visible {
+    outline: none !important;
+    box-shadow: none !important;
+  }
+
+  /* 避免 iOS Safari 在鍵盤開啟、視覺視窗改變時重繪固定 Header。 */
+  app-new-search .search-bar-fixed {
+    position: sticky !important;
+    top: 0 !important;
+    left: auto !important;
+    right: auto !important;
+    background: var(--surface) !important;
+    box-shadow: none !important;
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+    transition: none !important;
+    -webkit-transform: none !important;
+    transform: none !important;
+    will-change: auto;
+  }
+
+  app-new-search .search-bar-spacer {
+    display: none !important;
+  }
+
+  app-new-search .menu-panel.open {
+    max-height: min(70dvh, 560px);
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-y;
+  }
+
+  /* 讓距離與折扣數量在行動版有足夠的同列空間，避免只差幾個像素就換行。 */
+  app-new-search .store-card-meta {
+    gap: 4px !important;
+  }
+
+  app-new-search .store-card-meta .distance-badge,
+  app-new-search .store-card-meta .qty-badge {
+    flex: 0 0 auto;
+    padding-left: 8px !important;
+    padding-right: 8px !important;
+    white-space: nowrap;
+  }
+
+  /* 頂部狀態提示與 Sticky Header 保持清楚的閱讀距離。 */
+  app-new-search .discount-availability-note {
+    margin-top: 16px !important;
+  }
+
+  app-new-search .discount-closed-card {
+    margin-top: 24px !important;
+  }
+
+  app-new-search .location-fallback-note {
+    margin-top: 14px !important;
+  }
 }
 
 /* ===== Lock scroll when Map is active (mobile fix) ===== */
@@ -351,6 +430,101 @@ input:focus-visible {
     background: var(--surface) !important;
     border: 1px solid var(--border-default) !important;
     box-shadow: none !important;
+  }
+}
+
+/* 優惠時段狀態提示（置於全域以避免主搜尋元件樣式預算膨脹） */
+app-new-search {
+  .discount-availability-note {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0 0 12px;
+    padding: 10px 12px;
+    border: 1px solid var(--border-default);
+    border-radius: 13px;
+    color: #92400e;
+    background: rgba(245, 158, 11, 0.08);
+    font-size: 11px;
+    line-height: 1.45;
+
+    svg { flex: 0 0 auto; }
+    strong { font-weight: 850; }
+  }
+
+  .discount-closed-card {
+    max-width: 520px;
+    margin: clamp(22px, 7vh, 68px) auto 24px;
+    padding: 28px;
+    border: 1px solid var(--border-default);
+    border-radius: 24px;
+    color: var(--text-primary);
+    background: radial-gradient(circle at 100% 0%, rgba(245, 158, 11, .11), transparent 42%), var(--surface);
+    box-shadow: 0 18px 52px rgba(28, 35, 48, .08);
+    text-align: center;
+
+    h2 { margin: 14px 0 8px; font-size: 21px; font-weight: 850; letter-spacing: -.02em; }
+    > p:not(.discount-closed-eyebrow) { margin: 0; color: var(--text-secondary); font-size: 13px; line-height: 1.65; }
+    > button {
+      width: 100%;
+      min-height: 44px;
+      margin-top: 16px;
+      border: 1px solid var(--accent);
+      border-radius: 13px;
+      color: #fff;
+      background: var(--accent);
+      font-size: 13px;
+      font-weight: 800;
+      cursor: pointer;
+    }
+  }
+
+  .discount-closed-icon {
+    width: 58px;
+    height: 58px;
+    display: inline-grid;
+    place-items: center;
+    border-radius: 19px;
+    color: #b45309;
+    background: rgba(245, 158, 11, .12);
+  }
+
+  .discount-closed-eyebrow {
+    margin: 12px 0 0;
+    color: var(--accent);
+    font-size: 10px;
+    font-weight: 850;
+    letter-spacing: .06em;
+  }
+
+  .discount-closed-next {
+    display: grid;
+    grid-template-columns: auto 1fr 1fr;
+    align-items: center;
+    gap: 8px;
+    margin-top: 16px;
+    padding: 11px 12px;
+    border-radius: 13px;
+    background: var(--bg);
+    font-size: 11px;
+
+    span { color: var(--text-secondary); }
+    strong { font-family: var(--font-mono); font-weight: 750; }
+  }
+}
+
+[data-theme="dark"] app-new-search {
+  .discount-availability-note {
+    color: #fbbf24;
+    background: rgba(245, 158, 11, .1);
+  }
+}
+
+@media (max-width: 560px) {
+  app-new-search {
+    .discount-closed-card { margin-top: 16px; padding: 23px 18px; }
+    .discount-closed-next { grid-template-columns: 1fr; }
+    .discount-closed-next span { font-size: 10px; }
   }
 }
 

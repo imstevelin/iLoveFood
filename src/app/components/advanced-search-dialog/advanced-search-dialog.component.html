@@ -1,0 +1,83 @@
+<div class="advanced-dialog">
+  <header class="advanced-dialog-heading">
+    <div class="advanced-dialog-icon" aria-hidden="true">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+        stroke-width="1.8" stroke-linecap="round">
+        <path d="M4 7h10M18 7h2M4 17h2M10 17h10"/>
+        <circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/>
+      </svg>
+    </div>
+    <div>
+      <h2>進階搜尋</h2>
+      <p>組合多個商品、分類或指定門市，精確控制搜尋結果。</p>
+    </div>
+  </header>
+
+  <section class="advanced-section">
+    <div class="advanced-section-label"><span>1</span> 加入搜尋條件</div>
+    <div class="advanced-search-control" [class.has-error]="validationError">
+      <svg class="advanced-search-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+        stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+        <circle cx="11" cy="11" r="6"/><path d="m16 16 4 4"/>
+      </svg>
+      <input #keywordInput [formControl]="keywordCtrl" [matAutocomplete]="auto"
+        [matAutocompleteDisabled]="false" [matChipInputFor]="chipGrid"
+        (keydown)="onKeywordKeydown($event)"
+        (compositionstart)="isComposing = true" (compositionend)="isComposing = false"
+        placeholder="輸入商品、分類或門市" aria-label="新增進階搜尋條件" autocomplete="off" />
+      <button type="button" class="add-condition-btn" (click)="addCurrentKeyword()">加入</button>
+    </div>
+    <p *ngIf="validationError" class="advanced-field-error">{{ validationError }}</p>
+
+    <mat-autocomplete #auto="matAutocomplete" [displayWith]="displayOption.bind(this)"
+      (optionSelected)="selectOption($event)" class="advanced-autocomplete-panel">
+      <mat-option *ngFor="let option of filteredOptions$ | async" [value]="option" class="advanced-autocomplete-option">
+        <div class="advanced-option-row">
+          <span class="advanced-option-type" [class.option-store]="option.type === 'store'"
+            [class.option-category]="option.type === 'category'">{{ typeLabel(option) }}</span>
+          <span class="advanced-option-copy">
+            <strong>{{ displayName(option) }}</strong>
+            <small>{{ option.addr }}</small>
+          </span>
+        </div>
+      </mat-option>
+    </mat-autocomplete>
+
+    <mat-chip-grid #chipGrid aria-label="已選擇的進階搜尋條件" class="advanced-chip-grid">
+      <mat-chip-row *ngFor="let keyword of selectedKeywords" (removed)="removeKeyword(keyword)"
+        class="advanced-chip" [class.chip-store]="keyword.type === 'store'"
+        [class.chip-category]="keyword.type === 'category'">
+        <span class="advanced-chip-kind">{{ typeLabel(keyword) }}</span>
+        <span class="advanced-chip-text">{{ displayName(keyword) }}</span>
+        <button matChipRemove [attr.aria-label]="'移除 ' + displayName(keyword)">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="2" stroke-linecap="round"><path d="m7 7 10 10M17 7 7 17"/></svg>
+        </button>
+      </mat-chip-row>
+    </mat-chip-grid>
+    <p *ngIf="selectedKeywords.length === 0" class="advanced-empty-hint">尚未加入條件；可輸入自訂關鍵字或從建議中選擇。</p>
+  </section>
+
+  <section class="advanced-section">
+    <div class="advanced-section-label"><span>2</span> 多條件符合方式</div>
+    <div class="advanced-match-options" role="group" aria-label="多條件符合方式">
+      <button type="button" [class.active]="matchMode === 'any'" [attr.aria-pressed]="matchMode === 'any'"
+        (click)="setMatchMode('any')">
+        <strong>符合任一條件</strong>
+        <small>結果較多，適合找不同選擇</small>
+      </button>
+      <button type="button" [class.active]="matchMode === 'all'" [attr.aria-pressed]="matchMode === 'all'"
+        (click)="setMatchMode('all')">
+        <strong>同時符合全部</strong>
+        <small>結果更精確，條件也更嚴格</small>
+      </button>
+    </div>
+  </section>
+
+  <footer class="advanced-dialog-actions">
+    <button type="button" class="advanced-cancel-btn" (click)="onCancel()">取消</button>
+    <button type="button" class="advanced-submit-btn" (click)="applySearch()">
+      開始搜尋<span *ngIf="selectedKeywords.length > 0">（{{ selectedKeywords.length }}）</span>
+    </button>
+  </footer>
+</div>

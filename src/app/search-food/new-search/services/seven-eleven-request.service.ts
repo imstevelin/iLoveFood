@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
-import { Observable, BehaviorSubject, throwError, defer } from 'rxjs';
-import { catchError, filter, take, switchMap, map, timeout, retry } from 'rxjs/operators';
+import { Observable, BehaviorSubject, throwError, defer, of } from 'rxjs';
+import { catchError, filter, take, switchMap, map, timeout, retry, tap, finalize, shareReplay } from 'rxjs/operators';
 import { HttpClient } from '@angular/common/http';
 
 import { environment } from 'src/environments/environment';
@@ -15,6 +15,7 @@ export class SevenElevenRequestService {
 
   private isRefreshing = false;
   private refreshTokenSubject: BehaviorSubject<string | null> = new BehaviorSubject<string | null>(null);
+  private accessTokenRequest$: Observable<any> | null = null;
 
   constructor(
     private requestService: RequestService,
@@ -61,7 +62,7 @@ export class SevenElevenRequestService {
     if (!this.isRefreshing) {
       this.isRefreshing = true;
       this.refreshTokenSubject.next(null);
-      this.loadingService.show("取得超商憑證...");
+      this.loadingService.update('正在更新 7-11 憑證', 44, '其餘查詢會繼續進行');
 
       return this.fetchNewMidV().pipe(
         switchMap(newMidV => {
@@ -71,7 +72,6 @@ export class SevenElevenRequestService {
         }),
         switchMap((tokenRes: any) => {
           this.isRefreshing = false;
-          this.loadingService.hide();
           if (tokenRes && tokenRes.element) {
             sessionStorage.setItem('711Token', tokenRes.element);
             this.refreshTokenSubject.next(tokenRes.element);
@@ -82,10 +82,19 @@ export class SevenElevenRequestService {
         }),
         catchError(refreshErr => {
           this.isRefreshing = false;
-          this.loadingService.hide();
           this.refreshTokenSubject.error(refreshErr); // 解除其他正在等待的請求
           this.refreshTokenSubject = new BehaviorSubject<string | null>(null); // 重置以供下次使用
           return throwError(() => refreshErr);
+        }),
+        finalize(() => {
+          // 上層 timeout 取消訂閱時不會進入 catchError。若不在這裡解鎖，
+          // 後續所有 7-11 請求都會永久等待一個已取消的更新流程。
+          if (this.isRefreshing) {
+            const cancelledRefreshSubject = this.refreshTokenSubject;
+            this.isRefreshing = false;
+            this.refreshTokenSubject = new BehaviorSubject<string | null>(null);
+            cancelledRefreshSubject.error(new Error('7-11 token refresh was cancelled'));
+          }
         })
       );
     } else {
@@ -97,12 +106,32 @@ export class SevenElevenRequestService {
     }
   }
 
-  getAccessToken(): Observable<any> {
-    return this.executeRequest(() => {
+  getAccessToken(forceRefresh = false): Observable<any> {
+    const cachedToken = sessionStorage.getItem('711Token');
+    if (cachedToken && !forceRefresh) {
+      return of({ isSuccess: true, element: cachedToken, fromCache: true });
+    }
+
+    if (this.accessTokenRequest$ && !forceRefresh) {
+      return this.accessTokenRequest$;
+    }
+
+    const request$ = this.executeRequest(() => {
       const url = this.baseUrl + environment.sevenElevenUrl.endpoint.accessToken;
       const params = { mid_v: this.getMidV() };
       return this.requestService.post(url, params);
-    });
+    }).pipe(
+      tap((response: any) => {
+        if (response?.element) sessionStorage.setItem('711Token', response.element);
+      }),
+      finalize(() => {
+        if (this.accessTokenRequest$ === request$) this.accessTokenRequest$ = null;
+      }),
+      shareReplay({ bufferSize: 1, refCount: false })
+    );
+
+    this.accessTokenRequest$ = request$;
+    return request$;
   }
 
   getStoreByAddress(keyword: string): Observable<any> {

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Supervised one-click launcher for the 7-ELEVEN token farmer.
 
-set -u
+set -uo pipefail
 
 BASE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ANDROID_HOME="${ANDROID_HOME:-$HOME/android_sdk}"
@@ -13,7 +13,16 @@ ADB_BIN="$ANDROID_HOME/platform-tools/adb"
 EMULATOR_BIN="$ANDROID_HOME/emulator/emulator"
 EMULATOR_SERIAL="emulator-5554"
 AVD_NAME="token_farmer"
+EMULATOR_GPU_MODE="${FARMER_GPU_MODE:-swiftshader_indirect}"
 export ADB_BIN EMULATOR_SERIAL
+
+case "$EMULATOR_GPU_MODE" in
+    auto|host|software|lavapipe|swiftshader|swiftshader_indirect|swangle) ;;
+    *)
+        printf 'Unsupported FARMER_GPU_MODE: %s\n' "$EMULATOR_GPU_MODE" >&2
+        exit 64
+        ;;
+esac
 
 log() {
     printf '%s %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$*"
@@ -25,6 +34,8 @@ stop_farmer_processes() {
         wait "$child_pid" 2>/dev/null || true
     fi
     timeout 5 "$ADB_BIN" -s "$EMULATOR_SERIAL" emu kill >/dev/null 2>&1 || true
+    sleep 1
+    pkill -9 -f "qemu-system-x86_64.*-avd $AVD_NAME" >/dev/null 2>&1 || true
 }
 
 # The outer process is a lightweight supervisor. FARMER_WORKER prevents a
@@ -50,6 +61,11 @@ if [[ "${FARMER_WORKER:-0}" != "1" ]]; then
     done
 fi
 
+# The singleton lock belongs only to the outer supervisor. Without explicitly
+# closing it here, a newly spawned ADB server inherits fd 9 and can keep the
+# farm locked even after the supervisor is stopped.
+exec 9>&- 2>/dev/null || true
+
 log "[1/4] 清理舊的農場與 token_farmer 模擬器程序..."
 pkill -f "$BASE_DIR/reactive_farmer.py" >/dev/null 2>&1 || true
 timeout 5 "$ADB_BIN" -s "$EMULATOR_SERIAL" emu kill >/dev/null 2>&1 || true
@@ -63,13 +79,13 @@ sleep 5
 fuser -k 5000/tcp >/dev/null 2>&1 || true
 rm -f "$HOME/.android/avd/$AVD_NAME.avd/"*.lock
 
-log "[2/4] 啟動模擬器 (2GB RAM / 1 vCPU 穩定模式)..."
+log "[2/4] 啟動模擬器 (2GB RAM / 1 vCPU / GPU=$EMULATOR_GPU_MODE)..."
 nohup "$EMULATOR_BIN" \
     -avd "$AVD_NAME" \
     -no-window \
     -no-audio \
     -no-boot-anim \
-    -gpu swiftshader_indirect \
+    -gpu "$EMULATOR_GPU_MODE" \
     -writable-system \
     -memory 2048 \
     -cores 1 \

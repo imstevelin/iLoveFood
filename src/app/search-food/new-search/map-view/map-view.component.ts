@@ -4,7 +4,7 @@ import {
   ChangeDetectorRef, NgZone
 } from '@angular/core';
 import { forkJoin, of } from 'rxjs';
-import { catchError, timeout } from 'rxjs/operators';
+import { catchError, timeout, tap } from 'rxjs/operators';
 import { SevenElevenRequestService } from '../services/seven-eleven-request.service';
 import { FamilyMartRequestService } from '../services/family-mart-request.service';
 import { LocationData, StoreStockItem } from '../../model/seven-eleven.model';
@@ -39,6 +39,7 @@ export class MapViewComponent implements OnInit, OnDestroy, OnChanges {
 
   // Allow parent to pass loading state & completely clear stores
   @Input() isParentSearching: boolean = false;
+  @Input() parentSearchProgress: number = 0;
   @Input() focusStoreFromList: any = null;
 
   // Favorite support
@@ -60,6 +61,9 @@ export class MapViewComponent implements OnInit, OnDestroy, OnChanges {
   showAreaTooLargeMsg: boolean = false;
   isSearchingArea: boolean = false;
   searchProgress: number = 0;
+  searchErrorMessage: string = '';
+  private areaActualProgress: number = 0;
+  private areaProgressTimer: ReturnType<typeof setInterval> | null = null;
   private lastSearchCenter: { lat: number; lng: number } | null = null;
   allMapStores: any[] = [];
   private searchedStoreKeys = new Set<string>();
@@ -69,9 +73,6 @@ export class MapViewComponent implements OnInit, OnDestroy, OnChanges {
 
   // Fix 5: Track expanded detail height to prevent jumping
   sheetDetailMinHeight: number = 0;
-
-  // Fix 4: Continuous progress animation
-  private progressTimer: any = null;
 
   // Fix 6: Suppress initial idle check when doing fitBounds from route search
   private suppressIdleCount: number = 0;
@@ -125,7 +126,7 @@ export class MapViewComponent implements OnInit, OnDestroy, OnChanges {
 
   ngOnDestroy(): void {
     this.clearMarkers();
-    this.stopProgressTimer();
+    this.stopAreaProgressAnimation();
     if (this.mapIdleListener) google.maps.event.removeListener(this.mapIdleListener);
   }
 
@@ -133,14 +134,15 @@ export class MapViewComponent implements OnInit, OnDestroy, OnChanges {
     // Sync the parent's external loading state with the internal progress bar
     if (changes['isParentSearching']) {
       if (this.isParentSearching) {
-        this.searchProgress = 5;
-        this.startProgressTimer();
+        this.searchProgress = this.parentSearchProgress || 5;
       } else if (changes['isParentSearching'].previousValue) {
-        // Parent finished searching
-        this.stopProgressTimer();
         this.searchProgress = 100;
-        setTimeout(() => { this.searchProgress = 0; this.cdr.detectChanges(); }, 600);
+        setTimeout(() => { this.searchProgress = 0; this.cdr.detectChanges(); }, 180);
       }
+    }
+
+    if (changes['parentSearchProgress'] && this.isParentSearching) {
+      this.searchProgress = this.parentSearchProgress;
     }
 
     if (changes['stores'] && this.stores) {
@@ -350,26 +352,6 @@ export class MapViewComponent implements OnInit, OnDestroy, OnChanges {
     );
   }
 
-  // Fix 4: Start continuous progress timer
-  private startProgressTimer(): void {
-    this.stopProgressTimer();
-    this.progressTimer = setInterval(() => {
-      // Slowly increment but never exceed 90% (actual completion sets 100%)
-      if (this.searchProgress < 90) {
-        this.searchProgress += Math.random() * 3 + 1; // +1~4% each tick
-        if (this.searchProgress > 90) this.searchProgress = 90;
-        this.cdr.detectChanges();
-      }
-    }, 400);
-  }
-
-  private stopProgressTimer(): void {
-    if (this.progressTimer) {
-      clearInterval(this.progressTimer);
-      this.progressTimer = null;
-    }
-  }
-
   searchThisArea(): void {
     if (this.isSearchingArea) return;
     if (this.getViewportDiameter() > this.MAX_VIEWPORT_DIAMETER) {
@@ -387,26 +369,41 @@ export class MapViewComponent implements OnInit, OnDestroy, OnChanges {
     const searchPoints = this.generateSearchGrid(sw.lat(), ne.lat(), sw.lng(), ne.lng());
 
     this.showSearchAreaBtn = false;
+    this.searchErrorMessage = '';
     this.isSearchingArea = true;
-    this.searchProgress = 5;
+    this.searchProgress = 8;
+    this.areaActualProgress = 8;
+    this.startAreaProgressAnimation();
     this.cdr.detectChanges();
-
-    // Fix 4: Start continuous progress animation
-    this.startProgressTimer();
 
     const center = this.map.getCenter();
     this.lastSearchCenter = { lat: center.lat(), lng: center.lng() };
+
+    const totalRequests = Math.max(1, searchPoints.length * 2);
+    let completedRequests = 0;
+    const markRequestComplete = (): void => {
+      completedRequests++;
+      this.areaActualProgress = Math.min(90, Math.round(8 + (completedRequests / totalRequests) * 82));
+    };
 
     const sevenRequests = searchPoints.map(p => {
       const loc: LocationData = {
         CurrentLocation: { Latitude: p.lat, Longitude: p.lng },
         SearchLocation: { Latitude: p.lat, Longitude: p.lng }
       };
-      return this.sevenElevenService.getNearByStoreList(loc).pipe(timeout(10000), catchError(() => of(null)));
+      return this.sevenElevenService.getNearByStoreList(loc).pipe(
+        timeout(10000),
+        catchError(() => of(null)),
+        tap(() => markRequestComplete())
+      );
     });
     const fmRequests = searchPoints.map(p => {
       return this.familyMartService.getNearByStoreList({ Latitude: p.lat, Longitude: p.lng }, [])
-        .pipe(timeout(10000), catchError(() => of(null)));
+        .pipe(
+          timeout(10000),
+          catchError(() => of(null)),
+          tap(() => markRequestComplete())
+        );
     });
 
     forkJoin({
@@ -414,7 +411,21 @@ export class MapViewComponent implements OnInit, OnDestroy, OnChanges {
       fmResults: forkJoin(fmRequests.length > 0 ? fmRequests : [of(null)])
     }).subscribe({
       next: ({ sevenResults, fmResults }) => {
-        this.stopProgressTimer();
+        this.stopAreaProgressAnimation();
+        const sevenHealthy = (sevenResults as any[]).some(
+          response => Array.isArray(response?.element?.StoreStockItemList)
+        );
+        const familyMartHealthy = (fmResults as any[]).some(
+          response => response?.code === 1 && Array.isArray(response?.data)
+        );
+        if (!sevenHealthy && !familyMartHealthy) {
+          this.isSearchingArea = false;
+          this.searchProgress = 0;
+          this.searchErrorMessage = '查詢服務暫時沒有回應';
+          this.cdr.detectChanges();
+          return;
+        }
+        this.searchProgress = 94;
 
         (sevenResults as any[]).forEach((res: any) => {
           if (!res?.element?.StoreStockItemList) return;
@@ -453,13 +464,41 @@ export class MapViewComponent implements OnInit, OnDestroy, OnChanges {
         this.cdr.detectChanges();
         this.parsedStoresChange.emit([...this.allMapStores]);
         this.updateMarkers();
-        setTimeout(() => { this.isSearchingArea = false; this.searchProgress = 0; this.cdr.detectChanges(); }, 600);
+        setTimeout(() => { this.isSearchingArea = false; this.searchProgress = 0; this.cdr.detectChanges(); }, 180);
       },
       error: () => {
-        this.stopProgressTimer();
-        this.isSearchingArea = false; this.searchProgress = 0; this.cdr.detectChanges();
+        this.stopAreaProgressAnimation();
+        this.isSearchingArea = false;
+        this.searchProgress = 0;
+        this.searchErrorMessage = '查詢服務暫時沒有回應';
+        this.cdr.detectChanges();
       }
     });
+  }
+
+  private startAreaProgressAnimation(): void {
+    this.stopAreaProgressAnimation();
+    this.areaProgressTimer = setInterval(() => {
+      if (!this.isSearchingArea) {
+        this.stopAreaProgressAnimation();
+        return;
+      }
+      const gap = this.areaActualProgress - this.searchProgress;
+      if (gap > 0.4) {
+        this.searchProgress += Math.max(0.4, gap * 0.18);
+      } else {
+        const driftCeiling = Math.min(92, this.areaActualProgress + 10);
+        if (this.searchProgress < driftCeiling) this.searchProgress += 0.16;
+      }
+      this.searchProgress = Math.min(92, this.searchProgress);
+      this.cdr.detectChanges();
+    }, 140);
+  }
+
+  private stopAreaProgressAnimation(): void {
+    if (!this.areaProgressTimer) return;
+    clearInterval(this.areaProgressTimer);
+    this.areaProgressTimer = null;
   }
 
   private generateSearchGrid(latS: number, latN: number, lngW: number, lngE: number): { lat: number; lng: number }[] {

@@ -1,12 +1,37 @@
 # 7‑ELEVEN `mid_v` Token 農場部署與維運指南
 
-本指南說明如何在無圖形介面的 Linux 主機部署 7‑ELEVEN Token 農場，以及如何把已存在的舊版農場升級到 2026‑08‑06 的穩定版本。
+本指南說明如何在無圖形介面的 Linux 主機部署 7‑ELEVEN Token 農場，以及如何把已存在的舊版農場升級到 2026‑08‑07 的長時間穩定版本。
 
-正式程式碼已獨立存放在 [`scripts/op-farmer`](./op-farmer/)；文件不再複製另一份容易過期的程式碼。日後更新或重新部署時，直接安裝該目錄中的三個檔案即可：
+正式程式碼已獨立存放在 [`scripts/op-farmer`](./op-farmer/)；文件不再複製另一份容易過期的程式碼。日後更新或重新部署時，直接安裝該目錄中的四個檔案：
 
 - `hook_mid.js`：攔截 `mid_v`，並處理 App 強制更新 Activity。
-- `reactive_farmer.py`：Token 池、ADB/Frida 自癒、HTTP API 與健康檢查。
+- `reactive_farmer.py`：可重複使用的 Token 快取、App 休眠、ADB/Frida 自癒、資源看門與 HTTP API。
 - `start_farmer.sh`：單例監督、模擬器冷啟動、Frida 驗證與程序自動重建。
+- `op-farmer.service`：systemd 系統服務，在開機、supervisor 崩潰或被 OOM 中止後重建農場。
+
+## 2026‑08‑07 長時間穩定化摘要
+
+6 小時穩定性測試共發送 720 次對外請求，720 次全部成功，可用性 100%；對外平均 68.24ms、p95 128.59ms、最大 267.71ms。但該測試也暴露了未反映在 HTTP 延遲上的長期劣化：
+
+1. 每次來回切換 i地圖與首頁，舊 App 會持續累積 WebView。測試結束時已有 20 個 WebView、44 個 socket，App PSS 約 374MiB，其中原生堆約 276MiB。
+2. 預取平均時間由第一小時約 5.05 秒退化至第六小時約 8.19 秒。
+3. QEMU RSS 在 6 小時內增加約 1.05GiB，軟體 GPU 即使閒置仍佔用約 190% CPU。
+4. 原有 `flock` fd 會被 ADB 繼承；即使 supervisor 已退出，殘留 ADB 仍可能永久占住單例鎖。
+5. `@reboot` 只負責開機時啟動一次，supervisor 本身退出後不會復活。
+
+2026‑08‑07 版的處理方式：
+
+- `mid_v` 在過期前可重複使用，因此預設只保留 1 枚快取。所有短時間併發請求都直接回傳同一枚，不會每次查詢就啟動 App 另取新值。
+- 只在快取更新時啟動 App 與 Frida attach；新值就緒後 unload/detach、`am force-stop`，使 App 大多數時間維持休眠，每一次更新都從乾淨的 WebView 進程開始。
+- Token 在 180 秒時就背景滾動更新，240 秒後絕不對外回傳；新 Token 成功擷取前，舊快取仍可繼續服務，成功後再原子替換。
+- API 最多等待 15 秒，失敗就明確回傳 HTTP 503 與 `Retry-After: 2`，不讓使用者無限等待。
+- 連續 3 次擷取失敗時完整冷啟動；主機可用記憶體或 QEMU RSS 連續越界時也會主動重建。
+- worker 啟動前關閉繼承的鎖 fd，單例鎖只由外層 supervisor 持有。
+- 改由 systemd 系統服務管理，並明確加入 `kvm` supplementary group；不再依賴已登入的圖形階段或單次 Cron。
+
+實機回歸中，App 休眠後閒置 CPU 由約 190% 降至多數 3–10%，QEMU swap 由約 900MiB 降為 0。休眠策略原型繼續運行約 94 分鐘，60 次預取無失敗，p95 2.12 秒、systemd 無重啟、閒置 CPU 五次取樣平均 2.4%。確認 `mid_v` 可重複使用後，正式版再將預取頻率降為每約 180 秒一次。
+
+可重用快取版的實機驗證結果：20 路同時呼叫對外 API 全部 HTTP 200，20 份回應的 `mid_v` 完全相同，平均 503.18ms、p95 954.01ms、最大 1093.97ms；同一枚 `mid_v` 連續兌換兩次 access token 也都成功。另以每 2 秒一筆請求跨越 180 秒更新點，29/29 全部 HTTP 200、p95 1.26ms、最大 27.92ms；更新期間持續回傳舊值，擷取成功後雜湊只切換一次，證實背景更新不會阻塞前景查詢。
 
 ## 2026‑08‑06 修復摘要
 
@@ -65,6 +90,8 @@ cp -a ~/op-farmer/start_farmer.sh "$backup_dir/"
 cp -a ~/op-farmer/hook_mid.js "$backup_dir/"
 cp -a ~/op-farmer/farmer_live.log "$backup_dir/" 2>/dev/null || true
 cp -a ~/op-farmer/emulator.log "$backup_dir/" 2>/dev/null || true
+sudo cp -a /etc/systemd/system/op-farmer.service "$backup_dir/" 2>/dev/null || true
+crontab -l > "$backup_dir/crontab.txt" 2>/dev/null || true
 ```
 
 ### 2. 安裝正式腳本
@@ -73,6 +100,7 @@ cp -a ~/op-farmer/emulator.log "$backup_dir/" 2>/dev/null || true
 install -m 0644 scripts/op-farmer/reactive_farmer.py ~/op-farmer/reactive_farmer.py
 install -m 0644 scripts/op-farmer/hook_mid.js ~/op-farmer/hook_mid.js
 install -m 0755 scripts/op-farmer/start_farmer.sh ~/op-farmer/start_farmer.sh
+sudo install -m 0644 scripts/op-farmer/op-farmer.service /etc/systemd/system/op-farmer.service
 ```
 
 若專案不在農場主機，先從本機傳送：
@@ -81,8 +109,11 @@ install -m 0755 scripts/op-farmer/start_farmer.sh ~/op-farmer/start_farmer.sh
 scp scripts/op-farmer/reactive_farmer.py user@server:~/op-farmer/
 scp scripts/op-farmer/hook_mid.js user@server:~/op-farmer/
 scp scripts/op-farmer/start_farmer.sh user@server:~/op-farmer/
+scp scripts/op-farmer/op-farmer.service user@server:~/op-farmer/
 ssh user@server 'chmod 755 ~/op-farmer/start_farmer.sh'
 ```
+
+`op-farmer.service` 內的 `User`、`Group`、`HOME`、`XDG_RUNTIME_DIR` 與絕對路徑預設為目前正式主機的 `imstevelin`/UID 1000。若部署到其他帳號，必須先同步修改這些欄位，再安裝到 `/etc/systemd/system`。
 
 ### 3. 部署前靜態檢查
 
@@ -91,6 +122,7 @@ ssh user@server 'chmod 755 ~/op-farmer/start_farmer.sh'
 ```bash
 ~/op-farmer/venv/bin/python -m py_compile ~/op-farmer/reactive_farmer.py
 bash -n ~/op-farmer/start_farmer.sh
+sudo systemd-analyze verify /etc/systemd/system/op-farmer.service
 ```
 
 若主機有 Node.js，也可檢查 JavaScript 語法：
@@ -99,16 +131,16 @@ bash -n ~/op-farmer/start_farmer.sh
 node --check ~/op-farmer/hook_mid.js
 ```
 
-### 4. 停止舊程序並啟動新版
+### 4. 切換為 systemd 並啟動新版
 
 ```bash
-pkill -TERM -f "$HOME/op-farmer/start_farmer.sh" 2>/dev/null || true
-pkill -TERM -f "$HOME/op-farmer/reactive_farmer.py" 2>/dev/null || true
-sleep 3
-nohup ~/op-farmer/start_farmer.sh >> ~/op-farmer/farmer_live.log 2>&1 </dev/null &
+sudo systemctl daemon-reload
+sudo systemctl enable --now op-farmer.service
+sudo systemctl restart op-farmer.service
+sudo systemctl --no-pager --full status op-farmer.service
 ```
 
-`start_farmer.sh` 會持有 `~/op-farmer/.farmer-supervisor.lock`。重複執行時，第二個監督程序會安全退出，不會同時啟動兩座模擬器。
+`start_farmer.sh` 會持有 `~/op-farmer/.farmer-supervisor.lock`。重複執行時，第二個監督程序會安全退出，不會同時啟動兩座模擬器。若舊版曾使用 Cron，確認 systemd 正常後移除舊 `@reboot ... start_farmer.sh` 條目，避免兩套啟動管理並存。
 
 ### 5. 觀察冷啟動
 
@@ -122,9 +154,10 @@ tail -f ~/op-farmer/farmer_live.log
 農場監督程序已啟動
 Android 已完成開機
 Frida Server 啟動成功
-Frida 注入成功，系統就緒
-啟動 Waitress 服務 (Port 5000, 8 threads)
-預取成功
+Frida 注入成功，補貨引擎就緒
+啟動 Waitress 服務 (Port 5000, 8 threads, pool=1)
+預取成功，擷取 ...；快取 1/1
+Token 快取已就緒，休眠 App 以釋放 WebView / CPU 資源
 ```
 
 完整冷啟動通常需要 1–2 分鐘。首次 Token 完成前，`/health` 可能短暫顯示 `fetching=true`。
@@ -203,7 +236,7 @@ python3 -m venv ~/op-farmer/venv
   frida==16.2.1 frida-tools==12.3.0
 ```
 
-依照「既有主機快速升級」第 2 步安裝三個正式腳本。
+依照「既有主機快速升級」第 2 步安裝四個正式檔案。
 
 ### 6. 安裝並登入 7‑ELEVEN App
 
@@ -252,15 +285,18 @@ ADB="$HOME/android_sdk/platform-tools/adb"
 
 最後一行應輸出 `16.2.1`。
 
-### 8. 設定開機啟動
+### 8. 設定開機啟動與崩潰復原
 
-以 `crontab -e` 加入一行：
+使用 systemd 系統服務，而不是只會在開機時執行一次的 Cron：
 
-```cron
-@reboot sleep 30 && bash -c "cd $HOME/op-farmer && ./start_farmer.sh > $HOME/op-farmer/farmer_live.log 2>&1"
+```bash
+sudo install -m 0644 ~/op-farmer/op-farmer.service /etc/systemd/system/op-farmer.service
+sudo systemctl daemon-reload
+sudo systemctl enable --now op-farmer.service
+sudo systemctl --no-pager --full status op-farmer.service
 ```
 
-監督器會留在前台管理 worker；Cron 本身會讓它脫離登入工作階段。不要在 crontab 內再加第二層無限迴圈。
+服務必須以實際農場帳號運行，並保留 `SupplementaryGroups=kvm`。如果省略該 group，即使 SSH 登入後的 `id` 看得到 `kvm`，早已啟動的 user manager 仍可能因為群組快取而無法開啟 `/dev/kvm`。
 
 ---
 
@@ -278,15 +314,18 @@ Token 已就緒時：
 {
   "consecutive_failures": 0,
   "fetching": false,
+  "app_state": "hibernating",
   "last_error": null,
+  "pool_capacity": 1,
+  "pool_size": 1,
   "status": "ok",
   "token_age_seconds": 12.3,
   "token_ready": true
 }
 ```
 
-- HTTP 200：已有 Token 或正在補貨。
-- HTTP 503：目前沒有 Token 且沒有成功補貨，檢查 `last_error` 與日誌。
+- HTTP 200：至少有一枚未過期 Token 可立即回傳。`app_state=hibernating` 是正常的省資源狀態。
+- HTTP 503：目前沒有可用 Token；即使 `fetching=true` 也不會把「正在嘗試」誤報成已就緒。檢查 `last_error`、`app_state` 與日誌。
 
 ### 取得 Token
 
@@ -303,7 +342,9 @@ curl -X POST http://127.0.0.1:5000/get_token
 }
 ```
 
-有庫存時會立即回傳；回傳後背景執行緒會立刻補貨。如果所有嘗試在 25 秒內都無法取得 Token，API 回傳 HTTP 503，讓呼叫端稍後重試。
+有快取時會立即回傳，並不會移除該 Token；併發請求可重複取得同一值。只有快取接近過期時才在背景更新。如果 15 秒內仍無法取得任何有效 Token，API 回傳 HTTP 503 與 `Retry-After: 2`。
+
+可用環境變數調整但通常不需更改：`FARMER_TOKEN_REFRESH_SECONDS=180`、`FARMER_TOKEN_TTL_SECONDS=240`、`FARMER_API_WAIT_TIMEOUT_SECONDS=15`、`FARMER_MIN_HOST_AVAILABLE_MIB=640`與 `FARMER_MAX_QEMU_RSS_MIB=4608`。快取容量固定為 1，因為增加容量只會多做無必要的 App 查詢。
 
 ### 對外服務
 
@@ -317,10 +358,12 @@ curl -X POST http://127.0.0.1:5000/get_token
 HTTP request
     │
     ▼
-TokenPool ──有庫存──▶ 立即回傳 ──▶ 立即補貨
+TokenCache(1) ──有效──▶ 併發請求重複回傳同一 Token
     │
-    └─無庫存──▶ 單一 fetch_token_job
+    └─180s 滾動更新或無快取──▶ 單一 fetch_token_job
                      │
+                     ├─開始更新──▶ 啟動 App/Frida 擷取一枚新 Token
+                     ├─原子替換──▶ detach + force-stop App
                      ├─ADB timeout──▶ 重啟 ADB server/transport 後重試
                      ├─App/Frida 問題──▶ 重啟 App、Frida attach 與 hook
                      └─連續 3 次失敗──▶ exit 75
@@ -329,6 +372,8 @@ TokenPool ──有庫存──▶ 立即回傳 ──▶ 立即補貨
                                   start_farmer.sh supervisor
                                              │
                                              └─冷啟動模擬器與整套服務
+                                                    │
+                                                    └─supervisor 退出─▶ systemd 重建
 ```
 
 重要特性：
@@ -336,9 +381,11 @@ TokenPool ──有庫存──▶ 立即回傳 ──▶ 立即補貨
 - `emulator_lock` 保證同一時間只有一個執行緒操作 Android UI。
 - `pool.condition` 直接喚醒 API 等待者，不再每 0.5 秒盲目輪詢。
 - Frida 重新初始化前會 unload/detach 舊 client，避免反覆注入造成資源洩漏。
+- 快取已就緒後 App 進程不存在是預期行為；可避免 WebView、socket 與軟體 GPU 長時間累積。
 - Frida Server 用 `pidof asdf` 驗證，不會把 `grep` 自己誤認為 server。
 - `wait-for-device` 後還會做真實 `adb shell` round trip，避免「顯示 device、實際已卡死」。
-- 監督器使用檔案鎖防止重複實例；worker 崩潰、初始化失敗或主動 exit 75 都會恢復。
+- 監督器使用檔案鎖防止重複實例，worker 不會把鎖 fd 傳給 ADB/QEMU；worker 崩潰、初始化失敗或主動 exit 75 都會恢復。
+- systemd 在最外層提供第二道復原，並確保 KVM 群組與開機自動啟動。
 
 ---
 
@@ -347,6 +394,7 @@ TokenPool ──有庫存──▶ 立即回傳 ──▶ 立即補貨
 ### 查看程序與 Port
 
 ```bash
+sudo systemctl --no-pager --full status op-farmer.service
 pgrep -a -f 'start_farmer|reactive_farmer|qemu-system|asdf'
 ss -ltnp | grep -E ':5000|:5037|:12345|:5554|:5555'
 ```
@@ -389,6 +437,13 @@ tail -f ~/op-farmer/farmer_live.log
 ```
 
 預期看到 `農場程序結束`、重新執行 `[1/4]` 至 `[4/4]`，最後再次 `預取成功`。
+
+若要由最外層重建，使用：
+
+```bash
+sudo systemctl restart op-farmer.service
+sudo journalctl -u op-farmer.service -n 50 --no-pager
+```
 
 ---
 
@@ -445,6 +500,15 @@ df -h ~
 
 監督器會自動重試。若每次都退出，檢查 KVM 權限、磁碟空間、AVD lock 與 Port 5554/5555 是否被其他模擬器占用。
 
+由 systemd 啟動時，不只檢查 SSH shell 的 `id`，也要檢查實際服務程序：
+
+```bash
+pid="$(systemctl show -p MainPID --value op-farmer.service)"
+grep '^Groups:' "/proc/$pid/status"
+```
+
+輸出必須包含主機的 `kvm` GID。正式 unit 已透過 `SupplementaryGroups=kvm` 明確設定。
+
 ### API 回傳 503
 
 先看 `/health` 的 `last_error`，再查 `farmer_live.log`。HTTP 503 代表服務有回應但正在恢復，與 Cloudflare 的 502（本機 Port 5000 完全沒有 listener）不同。
@@ -456,13 +520,14 @@ df -h ~
 如果新版在不同 App 版本出現未預期行為：
 
 ```bash
-pkill -TERM -f "$HOME/op-farmer/start_farmer.sh" 2>/dev/null || true
-pkill -TERM -f "$HOME/op-farmer/reactive_farmer.py" 2>/dev/null || true
+sudo systemctl stop op-farmer.service
 cp -a /path/to/backup/reactive_farmer.py ~/op-farmer/
 cp -a /path/to/backup/hook_mid.js ~/op-farmer/
 cp -a /path/to/backup/start_farmer.sh ~/op-farmer/
 chmod 755 ~/op-farmer/start_farmer.sh
-nohup ~/op-farmer/start_farmer.sh >> ~/op-farmer/farmer_live.log 2>&1 </dev/null &
+sudo cp -a /path/to/backup/op-farmer.service /etc/systemd/system/op-farmer.service
+sudo systemctl daemon-reload
+sudo systemctl start op-farmer.service
 ```
 
 回滾後仍應檢查 `/health` 與實際 `mid_v` 能否兌換 access token，而不只確認 Port 5000 有開啟。

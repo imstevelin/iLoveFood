@@ -3,7 +3,11 @@
 
 <!-- Progress Bar -->
 <div class="search-progress-bar" [class.active]="isSearchingArea || isParentSearching">
-  <div class="search-progress-fill" [style.width.%]="searchProgress"></div>
+  <span>{{ searchProgress | number:'1.0-0' }}%</span>
+  <div class="search-progress-track" role="progressbar" aria-label="地圖查詢進度"
+    [attr.aria-valuenow]="searchProgress" aria-valuemin="0" aria-valuemax="100">
+    <div class="search-progress-fill" [style.transform]="'scaleX(' + (searchProgress / 100) + ')'" ></div>
+  </div>
 </div>
 
 <!-- "Search this area" Button -->
@@ -17,6 +21,11 @@
 <!-- Area too large message -->
 <div *ngIf="showAreaTooLargeMsg" class="area-too-large-msg">
   搜尋區域過大，請放大地圖後再搜尋
+</div>
+
+<div *ngIf="searchErrorMessage" class="map-search-error" role="alert">
+  <span>{{ searchErrorMessage }}</span>
+  <button type="button" (click)="searchThisArea()">再試一次</button>
 </div>
 
 <!-- Custom Zoom Controls -->

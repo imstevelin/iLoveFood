@@ -1,0 +1,45 @@
+<div class="discount-dialog">
+  <header class="discount-dialog-heading">
+    <span class="discount-dialog-icon" aria-hidden="true">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+        stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>
+      </svg>
+    </span>
+    <div>
+      <p>台灣時間 {{ currentTaipeiTimeLabel }}</p>
+      <h2>優惠時段查詢</h2>
+      <span>完整查看 7-11 i珍食與全家友善食光時段。</span>
+    </div>
+  </header>
+
+  <div class="discount-dialog-programs">
+    <section *ngFor="let chain of chains" class="discount-dialog-program"
+      [class.program-seven]="chain === '7-11'" [class.program-family]="chain === '全家'">
+      <div class="discount-dialog-program-title">
+        <div>
+          <span>{{ chain }}</span>
+          <h3>{{ schedules[chain].programName }}</h3>
+        </div>
+        <span class="discount-dialog-status" [class.is-active]="statusFor(chain)?.active">
+          {{ statusFor(chain)?.active ? '優惠進行中' : '目前非優惠時段' }}
+        </span>
+      </div>
+
+      <div class="discount-dialog-periods">
+        <article *ngFor="let period of schedules[chain].periods"
+          [class.is-current]="isActivePeriod(chain, period.startMinute)">
+          <div>
+            <strong>{{ period.timeLabel }}</strong>
+            <span>{{ period.discountLabel }}</span>
+          </div>
+          <p>{{ period.productLabel }}</p>
+          <small *ngIf="isActivePeriod(chain, period.startMinute)">目前時段</small>
+        </article>
+      </div>
+    </section>
+  </div>
+
+  <p class="discount-dialog-note">優惠時段供參考，實際品項、折扣與庫存以各門市現場標示為準。</p>
+  <button type="button" class="discount-dialog-close" (click)="close()">關閉</button>
+</div>

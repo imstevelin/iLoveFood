@@ -10,7 +10,7 @@ export const environment = {
     }
   },
   sevenElevenUrl: {
-    icon: 'https://www.7-11.com.tw/favicon.ico',
+    icon: 'assets/7-11logo-320.webp',
     base: 'https://lovefood.openpoint.com.tw/LoveFood/api/',
     endpoint: {
       accessToken: 'Auth/FrontendAuth/AccessToken',

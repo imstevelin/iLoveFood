@@ -30,48 +30,35 @@
             </path>
           </svg>
 
-          <!-- Chips + Input scrollable area with CSS mask fades -->
-          <div class="main-search-chips-wrapper">
-            <div class="main-search-chips-area"
-                 #chipsScrollArea
-                 (scroll)="onChipsScroll()"
-                 [class.has-chips]="selectedKeywords.length > 0"
-                 [class.scrolled-left]="chipsScrolledLeft">
-              <mat-chip-grid #chipGrid aria-label="搜尋關鍵字" class="main-chip-grid">
-                <mat-chip-row *ngFor="let keyword of selectedKeywords" (removed)="removeKeyword(keyword)"
-                  class="main-chip" [class.chip-store]="keyword.type === 'store'" [class.chip-category]="keyword.type === 'category'">
-                  <span *ngIf="keyword.type === 'store' || keyword.type === 'category'" class="main-chip-kind" aria-hidden="true">
-                    {{ keyword.type === 'store' ? '⌖' : '▦' }}
-                  </span>
-                  <span class="main-chip-text">{{ keyword.name || keyword }}</span>
-                  <button matChipRemove aria-label="移除關鍵字" class="main-chip-remove">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" viewBox="0 0 256 256">
-                      <path d="M205.66,194.34a8,8,0,0,1-11.32,11.32L128,139.31,61.66,205.66a8,8,0,0,1-11.32-11.32L116.69,128,50.34,61.66A8,8,0,0,1,61.66,50.34L128,116.69l66.34-66.35a8,8,0,0,1,11.32,11.32L139.31,128Z"></path>
-                    </svg>
-                  </button>
-                </mat-chip-row>
+          <input [placeholder]="mainSearchPlaceholder"
+                 aria-label="單一搜尋：搜尋商品、分類或門市"
+                 #keywordInput
+                 [formControl]="keywordCtrl"
+                 [matAutocomplete]="auto"
+                 [matAutocompleteConnectedTo]="origin"
+                 [disabled]="isSearchBlockedByDiscountHours"
+                 (input)="onInput($event)"
+                 (keydown)="onKeyDown($event)"
+                 (compositionstart)="isComposing = true"
+                 (compositionend)="isComposing = false"
+                 enterkeyhint="search"
+                 autocomplete="off"
+                 class="main-search-input" />
 
-                <input [placeholder]="selectedKeywords.length > 0 ? '＋' : '搜尋商品、分類或門市'"
-                       [attr.aria-label]="selectedKeywords.length > 0 ? '加入更多搜尋條件' : '搜尋商品、分類或門市'"
-                       #keywordInput
-                       [formControl]="keywordCtrl"
-                       [matChipInputFor]="chipGrid"
-                       [matAutocomplete]="auto"
-                       [matAutocompleteConnectedTo]="origin"
-                       [matChipInputSeparatorKeyCodes]="separatorKeysCodes"
-                       (matChipInputTokenEnd)="addToken($event)"
-                       (input)="onInput($event)"
-                       (keydown)="onKeyDown($event)"
-                       (compositionstart)="isComposing = true"
-                       (compositionend)="isComposing = false"
-                       enterkeyhint="search"
-                       class="main-chip-input" />
-              </mat-chip-grid>
-            </div>
-          </div>
+          <button *ngIf="advancedSearchActive" type="button" class="advanced-query-btn"
+            (click)="openAdvancedSearch()" [attr.aria-label]="'調整進階搜尋，目前有 ' + selectedKeywords.length + ' 個條件'"
+            [disabled]="isSearchBlockedByDiscountHours"
+            title="調整進階搜尋">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24"
+              stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+              <path d="M4 7h10M18 7h2M4 17h2M10 17h10"/>
+              <circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/>
+            </svg>
+            <span>{{ selectedKeywords.length }}</span>
+          </button>
 
-          <button *ngIf="selectedKeywords.length > 0" type="button" class="clear-query-btn"
-            (click)="clearSearchAndLocate()" aria-label="清除所有搜尋條件" title="清除搜尋條件">
+          <button *ngIf="selectedKeywords.length > 0 || keywordCtrl.value" type="button" class="clear-query-btn"
+            (click)="clearSearchAndLocate()" aria-label="清除搜尋" title="清除搜尋">
             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24"
               stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
               <path d="M6 6l12 12M18 6 6 18"/>
@@ -128,7 +115,8 @@
         </mat-autocomplete>
       </form>
 
-      <button type="button" class="route-entry-btn" (click)="openRouteSearch()" aria-label="使用 Google Maps 路線搜尋">
+      <button type="button" class="route-entry-btn" (click)="openRouteSearch()" aria-label="使用 Google Maps 路線搜尋"
+        [disabled]="isSearchBlockedByDiscountHours">
         <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24"
           stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <circle cx="6" cy="17" r="2"/><circle cx="18" cy="7" r="2"/>
@@ -156,13 +144,13 @@
         </button>
       </div>
 
-      <!-- Refresh Button -->
-      <button type="button" class="header-icon-btn refresh-query-btn" (click)="refreshCurrentSearch()"
-        aria-label="更新目前查詢" title="更新查詢">
+      <!-- Home Button -->
+      <button type="button" class="header-icon-btn refresh-query-btn" (click)="goHome()"
+        aria-label="回到首頁並重新定位" title="回到首頁">
         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24"
-          stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-          <polyline points="23 4 23 10 17 10"/>
-          <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+          stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="m3 10.5 9-7 9 7"/>
+          <path d="M5.5 9.5V21h13V9.5M9 21v-7h6v7"/>
         </svg>
       </button>
 
@@ -193,7 +181,7 @@
           尚未收藏任何店家
         </div>
         <button type="button" *ngFor="let store of favoriteStores" class="menu-link-item favorite-store-item"
-          (click)="onFavoriteStoreSearch(store); showMenu = false">
+          (click)="onFavoriteStoreSearch(store); showMenu = false" [disabled]="isSearchBlockedByDiscountHours">
           <img *ngIf="store.storeName?.includes('7-11')" [src]="sevenElevenIconUrl" alt="7-11" class="w-6 h-4 object-contain object-left shrink-0" />
           <img *ngIf="store.storeName?.includes('全家')" [src]="familyMartIconUrl" alt="全家" class="w-6 h-4 object-contain object-left shrink-0" />
           <span class="text-sm font-medium">{{ store.storeName }}</span>
@@ -220,7 +208,8 @@
       <div class="menu-divider"></div>
 
       <div class="menu-section-title menu-section-title-utility">快速操作</div>
-      <button type="button" class="menu-link-item menu-primary-action" (click)="openRouteSearch()">
+      <button type="button" class="menu-link-item menu-primary-action" (click)="openRouteSearch()"
+        [disabled]="isSearchBlockedByDiscountHours">
         <span class="menu-action-icon menu-action-icon-route" aria-hidden="true">
           <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" fill="none" viewBox="0 0 24 24"
             stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
@@ -231,6 +220,32 @@
         <span class="menu-action-copy">
           <strong>沿路搜尋</strong>
           <small>貼上 Google Maps 路線找順路門市</small>
+        </span>
+      </button>
+      <button type="button" class="menu-link-item menu-primary-action" (click)="openAdvancedSearch()"
+        [disabled]="isSearchBlockedByDiscountHours">
+        <span class="menu-action-icon menu-action-icon-advanced" aria-hidden="true">
+          <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" fill="none" viewBox="0 0 24 24"
+            stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+            <path d="M4 7h10M18 7h2M4 17h2M10 17h10"/>
+            <circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/>
+          </svg>
+        </span>
+        <span class="menu-action-copy">
+          <strong>進階搜尋</strong>
+          <small>組合多個商品、分類或指定門市</small>
+        </span>
+      </button>
+      <button type="button" class="menu-link-item menu-primary-action" (click)="openDiscountTimeDialog()">
+        <span class="menu-action-icon menu-action-icon-discount" aria-hidden="true">
+          <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" fill="none" viewBox="0 0 24 24"
+            stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>
+          </svg>
+        </span>
+        <span class="menu-action-copy">
+          <strong>優惠時段查詢</strong>
+          <small>查看兩家超商的完整折扣時段</small>
         </span>
       </button>
       <button *ngIf="chatEnabled" type="button" class="menu-link-item" (click)="openChatbot(); showMenu = false">
@@ -302,16 +317,6 @@
 <!-- Spacer for fixed header -->
 <div class="search-bar-spacer"></div>
 
-<div *ngIf="productKeywordCount > 1 && !isMapView" class="multi-match-context max-w-3xl mx-auto">
-  <div class="multi-match-bar" role="group" aria-label="多商品比對方式">
-    <span>多商品符合</span>
-    <button type="button" [class.active]="keywordMatchMode === 'any'" [attr.aria-pressed]="keywordMatchMode === 'any'"
-      (click)="setKeywordMatchMode('any')">任一項</button>
-    <button type="button" [class.active]="keywordMatchMode === 'all'" [attr.aria-pressed]="keywordMatchMode === 'all'"
-      (click)="setKeywordMatchMode('all')">全部</button>
-  </div>
-</div>
-
 <!-- ===== View Flipper Container ===== -->
 <div class="view-flipper" [class.flipped]="isMapView">
 
@@ -321,23 +326,60 @@
     <!-- ===== Main Content Area (List View) ===== -->
     <div class="max-w-3xl mx-auto px-4 pb-8" style="padding-top: 8px;" *ngIf="!isMapView">
 
-  <!-- ===== Unified Loading & Empty States (When No Cards Are Showing) ===== -->
-  <ng-container *ngIf="totalStoresShowList.length === 0 && !locationDenied && !showAboutCard">
-    
-    <!-- Premium Loading State (Active if resolving location, searching, or fetching more) -->
-    <div *ngIf="(loadingService.loading$ | async) || isLoadingMore || productSearchRunning; else emptyState"
-      class="loading-overlay animate-fade-in-up" role="status" aria-live="polite">
-      <div class="premium-spinner spinner-lg"></div>
-      <div style="position: relative; height: 20px; display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%;">
-        <ng-container *ngFor="let msg of [(loadingService.message$ | async) || (productSearchRunning ? '搜尋商品中...' : '載入資料中...')]; trackBy: trackByMsg">
-          <span class="loading-text" style="position: absolute;" [@textCrossfade]>
-            {{ msg }}
-          </span>
-        </ng-container>
-      </div>
+  <section *ngIf="isSearchBlockedByDiscountHours" class="discount-closed-card animate-fade-in-up" role="status">
+    <span class="discount-closed-icon" aria-hidden="true">
+      <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" fill="none" viewBox="0 0 24 24"
+        stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>
+      </svg>
+    </span>
+    <p class="discount-closed-eyebrow">台灣時間 {{ currentTaipeiTimeLabel }}</p>
+    <h2>目前非優惠時段，暫停查詢</h2>
+    <p>7-11 i珍食與全家友善食光目前都不在優惠時段。為避免顯示容易誤解的空庫存結果，網站會在優惠時段恢復查詢。</p>
+    <div class="discount-closed-next">
+      <span>下一時段</span>
+      <strong>7-11 10:00–17:00</strong>
+      <strong>全家 10:00–17:00</strong>
     </div>
+    <button type="button" (click)="openDiscountTimeDialog()">查看完整優惠時段</button>
+  </section>
+
+  <div *ngIf="!isSearchBlockedByDiscountHours && inactiveDiscountTimeStatuses.length === 1"
+    class="discount-availability-note animate-fade-in-up" role="status">
+    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24"
+      stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>
+    </svg>
+    <span>
+      <strong>{{ inactiveDiscountTimeStatuses[0].chain }} {{ inactiveDiscountTimeStatuses[0].programName }}</strong>
+      目前非優惠時段，下個時段為 {{ inactiveDiscountTimeStatuses[0].nextPeriod.timeLabel }}。
+    </span>
+  </div>
+
+  <!-- ===== Unified Loading & Empty States (When No Cards Are Showing) ===== -->
+  <ng-container *ngIf="!isSearchBlockedByDiscountHours && !locationDenied && !showAboutCard">
+    
+    <ng-container *ngIf="loadingService.state$ | async as loadingState">
+      <section *ngIf="loadingState.visible || (totalStoresShowList.length === 0 && (isLoadingMore || productSearchRunning)); else emptyState"
+        class="query-progress-card" [class.query-progress-error]="loadingState.status === 'error'"
+        role="status" aria-live="polite" data-testid="query-progress">
+        <ng-container *ngIf="loadingState.status !== 'error'; else queryError">
+          <span class="query-progress-percent">{{ loadingState.progress }}%</span>
+          <div class="query-progress-track" role="progressbar" aria-label="載入進度"
+            [attr.aria-valuenow]="loadingState.progress" aria-valuemin="0" aria-valuemax="100">
+            <span [style.transform]="'scaleX(' + (loadingState.progress / 100) + ')'" ></span>
+          </div>
+        </ng-container>
+        <ng-template #queryError>
+          <div class="query-error-symbol" aria-hidden="true">!</div>
+          <strong>{{ loadingState.errorMessage }}</strong>
+          <button type="button" (click)="refreshCurrentSearch()">再試一次</button>
+        </ng-template>
+      </section>
+    </ng-container>
 
     <ng-template #emptyState>
+      <ng-container *ngIf="totalStoresShowList.length === 0">
       <section *ngIf="routeNoResults" class="empty-state-card animate-fade-in-up">
         <span class="empty-state-icon" aria-hidden="true">
           <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" fill="none" viewBox="0 0 24 24"
@@ -358,9 +400,9 @@
             <circle cx="10.5" cy="10.5" r="6.5"/><path d="m15.5 15.5 5 5M8 10.5h5"/>
           </svg>
         </span>
-        <p class="empty-state-eyebrow">找不到相符庫存</p>
-        <h2>目前找不到符合的折扣庫存</h2>
-        <p>商品名稱可能與門市標示不同，試著縮短關鍵字，或將「全部」改成「任一項」。</p>
+        <p class="empty-state-eyebrow">當前查詢無結果</p>
+        <h2>{{ emptyResultTitle }}</h2>
+        <p>{{ emptyResultDescription }}</p>
         <div class="empty-state-actions">
           <button type="button" class="primary-empty-action" (click)="focusSearchInput()">修改搜尋</button>
           <button type="button" class="secondary-empty-action" (click)="clearSearchAndLocate()">查看附近全部</button>
@@ -381,11 +423,12 @@
           <button type="button" class="secondary-empty-action" (click)="openRouteSearch()">使用 Maps 路線</button>
         </div>
       </section>
+      </ng-container>
     </ng-template>
 
   </ng-container>
 
-  <div *ngIf="totalStoresShowList.length > 0 && (selectedKeywords.length > 0 || searchMode === 'route')"
+  <div *ngIf="totalStoresShowList.length > 0 && (selectedKeywords.length > 0 || searchMode === 'route') && (loadingService.state$ | async)?.visible !== true"
     class="result-summary animate-fade-in-up">
     <div>
       <span class="result-summary-label">{{ resultModeLabel }}</span>
@@ -394,13 +437,14 @@
     <span>{{ totalStoresShowList.length }} 間有結果</span>
   </div>
 
-  <div *ngIf="locationFallbackUsed && totalStoresShowList.length > 0" class="location-fallback-note animate-fade-in-up">
+  <div *ngIf="locationFallbackUsed && totalStoresShowList.length > 0 && (loadingService.state$ | async)?.visible !== true"
+    class="location-fallback-note animate-fade-in-up">
     <span>目前先顯示台北 101 附近結果</span>
     <button type="button" (click)="onUseCurrentLocation()">改用我的位置</button>
   </div>
 
   <!-- ===== Inline Cards Container ===== -->
-  <ng-container *ngIf="showAboutCard || locationDenied">
+  <ng-container *ngIf="!isSearchBlockedByDiscountHours && (showAboutCard || locationDenied)">
 
     <!-- === About Card === -->
     <div class="store-glass-card card-about card-animate-in" *ngIf="showAboutCard">
@@ -489,13 +533,13 @@
   </ng-container>
 
   <!-- ===== Store Cards ===== -->
-  <ng-container *ngIf="!locationDenied && !showAboutCard">
+  <ng-container *ngIf="!locationDenied && !showAboutCard && (loadingService.state$ | async)?.visible !== true">
     <ng-container *ngFor="let store of totalStoresShowList; let i = index; trackBy: trackByStore">
       <!-- Only render card if store has content -->
       <div class="store-glass-card card-animate-in"
+        data-testid="store-result"
         [id]="'store-' + (store.StoreName || store.storeName)"
-        [ngClass]="{'card-seven': store.label === '7-11', 'card-family': store.label === '全家'}"
-        [style.animation-delay]="(i % 10) * 0.06 + 's'">
+        [ngClass]="{'card-seven': store.label === '7-11', 'card-family': store.label === '全家'}">
 
         <!-- === 7-11 Store Card === -->
         <ng-container *ngIf="store.label === '7-11'">
@@ -513,7 +557,7 @@
                   {{ store.distance >= 1000 ? (store.distance / 1000 | number:'1.1-1') + ' km' : (store.distance | number:'1.0-0') + ' m' }}
                 </span>
                 <span class="qty-badge" [class.qty-badge-empty]="!store.RemainingQty">
-                  {{ store.RemainingQty > 0 ? store.RemainingQty + ' 件折扣品' : '目前無折扣品' }}
+                  {{ store.RemainingQty > 0 ? store.RemainingQty + ' 件折扣品' : '暫無即期商品' }}
                 </span>
               </div>
             </div>
@@ -533,11 +577,10 @@
             <a class="store-nav-btn" href="https://www.google.com/maps/search/7-ELEVEN{{ store.StoreName }}門市" target="_blank"
               rel="noopener" [attr.aria-label]="'使用 Google Maps 導航到 7-11 ' + store.StoreName + '門市'">
               <img src="assets/GoogleMap_icon.webp" alt="" width="24" height="24" />
-              <span class="store-nav-label">導航</span>
             </a>
           </div>
           <p *ngIf="!store.RemainingQty" class="store-empty-stock">
-            {{ store.inventoryUnavailable ? '即時庫存暫時無法取得，請稍後重新載入。' : '這間門市目前沒有回報折扣庫存；資料可能剛售完。' }}
+            {{ getStoreEmptyMessage(store) }}
           </p>
           <div class="store-category-grid grid grid-cols-4 gap-2 mt-2 relative" aria-label="商品分類">
             <ng-container *ngFor="let category of foodCategories | slice:0:10; trackBy: trackByCategory">
@@ -549,8 +592,10 @@
                 (click)="toggleSubCategoryDetails(store, category)">
                 <img [src]="category.ImageUrl" [alt]="category.Name"
                   class="w-8 h-8 sm:w-12 sm:h-12 mx-auto mb-1 object-cover" />
-                <span class="block text-xs font-medium leading-tight mb-1">{{ category.Name }}</span>
-                <span class="category-qty-badge">{{ getSubCategoryTotalQty(store, category) }}</span>
+                <span class="category-chip-copy">
+                  <span class="category-chip-name">{{ category.Name }}</span>
+                  <span class="category-qty-badge">{{ getSubCategoryTotalQty(store, category) }}</span>
+                </span>
               </button>
             </ng-container>
           </div>
@@ -579,7 +624,7 @@
                   {{ store.distance >= 1000 ? (store.distance / 1000 | number:'1.1-1') + ' km' : (store.distance | number:'1.0-0') + ' m' }}
                 </span>
                 <span class="qty-badge qty-badge-family" [class.qty-badge-empty]="getStoreTotalQtyList(store) === 0">
-                  {{ getStoreTotalQtyList(store) > 0 ? getStoreTotalQtyList(store) + ' 件折扣品' : '目前無折扣品' }}
+                  {{ getStoreTotalQtyList(store) > 0 ? getStoreTotalQtyList(store) + ' 件折扣品' : '暫無即期商品' }}
                 </span>
               </div>
             </div>
@@ -599,11 +644,10 @@
             <a class="store-nav-btn" href="https://www.google.com/maps/search/全家便利商店{{ fStoreName(store.name) }}" target="_blank"
               rel="noopener" [attr.aria-label]="'使用 Google Maps 導航到 ' + store.name">
               <img src="assets/GoogleMap_icon.webp" alt="" width="24" height="24" />
-              <span class="store-nav-label">導航</span>
             </a>
           </div>
           <p *ngIf="getStoreTotalQtyList(store) === 0" class="store-empty-stock">
-            {{ store.inventoryUnavailable ? '即時庫存暫時無法取得，請稍後重新載入。' : '這間門市目前沒有回報折扣庫存；資料可能剛售完。' }}
+            {{ getStoreEmptyMessage(store) }}
           </p>
           <div class="store-category-grid grid grid-cols-4 gap-2 mt-2 relative" aria-label="商品分類">
             <button type="button" *ngFor="let category of store.info | slice:0:10; trackBy: trackByCategory" class="category-chip"
@@ -615,8 +659,10 @@
               <img [src]="getFUrl(category)" [alt]="getFCatName(category)"
                 class="w-8 h-8 sm:w-12 sm:h-12 mx-auto mb-1 object-cover"
                 [ngStyle]="{'opacity': getFSubCategoryQty(store, category) === 0 ? 0.3 : 1}" />
-              <span class="block text-xs font-medium leading-tight mb-1">{{ getFCatName(category) }}</span>
-              <span class="category-qty-badge">{{ getFSubCategoryQty(store, category) }}</span>
+              <span class="category-chip-copy">
+                <span class="category-chip-name">{{ getFCatName(category) }}</span>
+                <span class="category-qty-badge">{{ getFSubCategoryQty(store, category) }}</span>
+              </span>
             </button>
           </div>
           <!-- Category details with CSS grid expand transition -->
@@ -632,11 +678,14 @@
   </ng-container>
 
   <!-- ===== Product Search: Continuous search indicator ===== -->
-  <ng-container *ngIf="searchMode === 'product' && !isMapView">
+  <ng-container *ngIf="searchMode === 'product' && !isMapView && (loadingService.state$ | async)?.visible !== true">
     <!-- Still searching (Bottom Indicator) -->
-    <div *ngIf="productSearchRunning && !productSearchPaused && totalStoresShowList.length > 0" class="search-progress-indicator animate-fade-in-up">
-      <div class="premium-spinner spinner-sm"></div>
-      <span>正在為您搜尋更多結果...</span>
+    <div *ngIf="productSearchRunning && !productSearchPaused && totalStoresShowList.length > 0" class="search-progress-indicator">
+      <span class="search-progress-value">{{ productSearchProgressPercent }}%</span>
+      <div class="query-progress-track" role="progressbar" aria-label="門市搜尋範圍"
+        [attr.aria-valuenow]="productSearchProgressPercent" aria-valuemin="0" aria-valuemax="100">
+        <span [style.transform]="'scaleX(' + (productSearchProgressPercent / 100) + ')'" ></span>
+      </div>
     </div>
 
     <!-- Paused — show resume button -->
@@ -705,7 +754,8 @@
       [searchMode]="searchMode"
       [searchCenterLat]="searchCenterLat"
       [searchCenterLng]="searchCenterLng"
-      [isParentSearching]="productSearchRunning || isLoadingMore || isSearchingMore"
+      [isParentSearching]="(loadingService.loading$ | async) || productSearchRunning || isLoadingMore || isSearchingMore"
+      [parentSearchProgress]="searchMode === 'product' ? productSearchProgressPercent : ((loadingService.progress$ | async) || 0)"
       [user]="user"
       [favoriteStoreNameSet]="favoriteStoreNameSet"
       [focusStoreFromList]="listFocusStore"
@@ -719,26 +769,29 @@
 </div> <!-- end .view-flipper -->
 
 <!-- View Toggle Wrapper with aesthetic backdrop blur -->
-<div class="view-toggle-container" [class.map-sheet-up]="isMapView && mapSheetOpen">
+<div *ngIf="!isSearchBlockedByDiscountHours && (loadingService.state$ | async)?.visible !== true"
+  class="view-toggle-container" [class.scrolled-down]="isScrolledDown"
+  [class.map-sheet-up]="isMapView && mapSheetOpen">
   
   <!-- The "misty" background / Glow effect -->
   <div class="view-toggle-mist"></div>
   
   <div class="view-toggle-pill">
     <div class="view-toggle-indicator" [class.map-active]="isMapView"></div>
-    <button type="button" class="view-toggle-segment" [class.active]="!isMapView" [attr.aria-pressed]="!isMapView" (click)="toggleMapView('list')" (touchstart)="0">
+    <button type="button" class="view-toggle-segment list-dock-action" [class.active]="!isMapView" [attr.aria-pressed]="!isMapView" (click)="toggleMapView('list')" (touchstart)="0">
       <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
         <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 6.75h12M8.25 12h12m-12 5.25h12M3.75 6.75h.007v.008H3.75V6.75Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0ZM3.75 12h.007v.008H3.75V12Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm-.375 5.25h.007v.008H3.75v-.008Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z" />
       </svg>
       <span>清單</span>
     </button>
-    <button type="button" class="view-toggle-segment" [class.active]="isMapView" [attr.aria-pressed]="isMapView" (click)="toggleMapView('map')" (touchstart)="0">
+    <button type="button" class="view-toggle-segment map-dock-action" [class.active]="isMapView" [attr.aria-pressed]="isMapView" (click)="toggleMapView('map')" (touchstart)="0">
       <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor">
         <path stroke-linecap="round" stroke-linejoin="round" d="M9 6.75V15m6-6v8.25m.503 3.498 4.875-2.437c.381-.19.622-.58.622-1.006V4.82c0-.836-.88-1.38-1.628-1.006l-3.869 1.934c-.317.159-.69.159-1.006 0L9.503 3.252a1.125 1.125 0 0 0-1.006 0L3.622 5.689C3.24 5.88 3 6.27 3 6.695V19.18c0 .836.88 1.38 1.628 1.006l3.869-1.934c.317-.159.69-.159 1.006 0l4.994 2.497c.317.158.69.158 1.006 0Z" />
       </svg>
       <span>地圖</span>
     </button>
     <button type="button" class="mobile-dock-action route-dock-action" (click)="openRouteSearch()"
+      [disabled]="isSearchBlockedByDiscountHours"
       aria-label="使用 Google Maps 路線搜尋">
       <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"
         stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
@@ -747,14 +800,14 @@
       </svg>
       <span>沿路搜尋</span>
     </button>
-    <button type="button" class="mobile-dock-action refresh-dock-action" (click)="refreshCurrentSearch()"
-      aria-label="更新目前查詢">
+    <button type="button" class="mobile-dock-action home-dock-action" (click)="goHome()"
+      aria-label="回到首頁並重新定位">
       <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"
-        stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-        <polyline points="23 4 23 10 17 10"/>
-        <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+        stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="m3 10.5 9-7 9 7"/>
+        <path d="M5.5 9.5V21h13V9.5M9 21v-7h6v7"/>
       </svg>
-      <span>更新</span>
+      <span>回首頁</span>
     </button>
   </div>
 </div>
