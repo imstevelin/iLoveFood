@@ -126,7 +126,7 @@ Build command: npm run build
 Deploy command: npx wrangler deploy
 ```
 
-Worker 名稱必須與根目錄 `wrangler.jsonc` 的 `name` 同為 `ilovefood`。非正式分支可使用 `npx wrangler versions upload` 產生預覽版本，而不直接取代正式部署。
+Worker 名稱必須與根目錄 `wrangler.jsonc` 的 `name` 同為 `ilovefood`。`npm run build` 會先執行 `scripts/prepare-environments.mjs`：本機既有且被忽略的環境檔不會被覆寫；Cloudflare 的乾淨 Git checkout 則會從安全範例建立環境檔。Firebase Web 設定可出現在瀏覽器，但 AI provider secret 不可提交，因此自動建置仍維持 Chatbot Beta 關閉。非正式分支可使用 `npx wrangler versions upload` 產生預覽版本，而不直接取代正式部署。
 
 ### 🚜 3. LINUX 超商驗證農場環境 (OPENPOINT Token Farm)
 為確保自動且無縫地獲取 7-Eleven OPENPOINT 系統的動態加密保護 Token (`mid_v`)，我們設計了一套自動化農場：
