@@ -85,7 +85,7 @@ ilovefood-token-farm.imstevelin.com -> VPS Token Farm（Cloudflare Tunnel）
 首次部署前先設定 Worker secret：
 
 ```bash
-npx wrangler secret put TOKEN_FARM_API_KEY --config cloudflare_worker/wrangler.jsonc
+npx wrangler secret put TOKEN_FARM_API_KEY
 ```
 
 正式部署前先建置並執行 Wrangler dry-run：
@@ -107,7 +107,7 @@ npm run deploy:status
 npm run deploy:logs
 ```
 
-`cloudflare_worker/wrangler.jsonc` 是唯一部署設定來源，使用 Workers Static Assets 的 SPA fallback，並只讓 `/api/*` 與 `/health` 先進入 Worker 程式；其餘靜態檔案直接由 Cloudflare edge 傳送。正式環境的 `ALLOWED_ORIGINS` 必須保持為 `https://ilovefood.imstevelin.com`。`TOKEN_FARM_URL` 指向 VPS 的獨立 Tunnel，`API_RATE_LIMITER` 負責每 IP 限流。Worker 不會把 `mid_v` 或 OPENPOINT access token 回傳給瀏覽器。
+專案根目錄的 `wrangler.jsonc` 是唯一部署設定來源，讓本機 Wrangler 與 Cloudflare Workers Builds 都能使用標準指令自動找到設定。它使用 Workers Static Assets 的 SPA fallback，並只讓 `/api/*` 與 `/health` 先進入 Worker 程式；其餘靜態檔案直接由 Cloudflare edge 傳送。正式環境的 `ALLOWED_ORIGINS` 必須保持為 `https://ilovefood.imstevelin.com`。`TOKEN_FARM_URL` 指向 VPS 的獨立 Tunnel，`API_RATE_LIMITER` 負責每 IP 限流。Worker 不會把 `mid_v` 或 OPENPOINT access token 回傳給瀏覽器。
 
 #### 為什麼 Cloudflare 程式碼編輯器看不到 Angular 網站原始碼？
 
@@ -123,10 +123,10 @@ Worker 的程式碼編輯器只顯示執行中的 `cloudflare_worker/worker.js`�
 Production branch: main
 Root directory: /
 Build command: npm run build
-Deploy command: npx wrangler deploy --config cloudflare_worker/wrangler.jsonc
+Deploy command: npx wrangler deploy
 ```
 
-Worker 名稱必須與 `wrangler.jsonc` 的 `name` 同為 `ilovefood`。非正式分支可使用 `npx wrangler versions upload --config cloudflare_worker/wrangler.jsonc` 產生預覽版本，而不直接取代正式部署。
+Worker 名稱必須與根目錄 `wrangler.jsonc` 的 `name` 同為 `ilovefood`。非正式分支可使用 `npx wrangler versions upload` 產生預覽版本，而不直接取代正式部署。
 
 ### 🚜 3. LINUX 超商驗證農場環境 (OPENPOINT Token Farm)
 為確保自動且無縫地獲取 7-Eleven OPENPOINT 系統的動態加密保護 Token (`mid_v`)，我們設計了一套自動化農場：
