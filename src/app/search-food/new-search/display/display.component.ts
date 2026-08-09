@@ -10,8 +10,10 @@ import { SevenElevenRequestService } from '../services/seven-eleven-request.serv
 
 import Fuse from 'fuse.js';
 import { HapticService } from 'src/app/services/haptic.service';
+import { calculateDiscountedPrice } from 'src/app/utils/discount-schedule';
 
 @Component({
+  standalone: false,
   selector: 'app-display',
   templateUrl: './display.component.html',
   styleUrls: ['./display.component.scss']
@@ -237,22 +239,9 @@ export class DisplayComponent implements OnChanges, OnInit, OnDestroy {
     }
   }
 
-  getDiscountedPrice(originalPrice: string): string {
-    const price = parseFloat(originalPrice.replace('NT$', '').trim());
-    const currentTime = new Date();
-    const currentHour = currentTime.getHours();
-
-    let discountedPrice = price;
-
-    if (currentHour >= 19 && currentHour < 20) {
-      discountedPrice *= 0.8;
-    } else if ((currentHour >= 10 && currentHour < 18) || (currentHour >= 20 || currentHour < 3)) {
-      discountedPrice *= 0.65;
-    }
-    else {
-      discountedPrice *= 0.8;
-    }
-    return discountedPrice.toString();
+  getDiscountedPrice(originalPrice: string, now: Date = new Date()): number | null {
+    const price = Number(String(originalPrice).replace(/[^0-9.]/g, ''));
+    return calculateDiscountedPrice('7-11', price, now);
   }
 
   // 內部查詢方法（僅在 precomputeFoodDetails 中呼叫，不再從模板呼叫）
@@ -307,7 +296,7 @@ export class DisplayComponent implements OnChanges, OnInit, OnDestroy {
 
     const discountedPrice = this.getDiscountedPrice(foodDetail.price);
     foodDetail['discountedPrice'] = discountedPrice;
-    foodDetail['originalPrice'] = foodDetail.price;
+    foodDetail['originalPrice'] = Number(String(foodDetail.price).replace(/[^0-9.]/g, ''));
 
     return foodDetail;
   }

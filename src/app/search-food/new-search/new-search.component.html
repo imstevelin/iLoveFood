@@ -296,9 +296,9 @@
       <div id="lab-settings" class="lab-subsection" [class.open]="showLabSection"
         [attr.aria-hidden]="!showLabSection" [attr.inert]="!showLabSection ? '' : null">
         <div class="menu-link-item lab-toggle-row">
-          <span class="text-sm">聊天室按鈕</span>
+          <span class="text-sm">AI Chatbot（Beta）</span>
           <label class="toggle-switch">
-            <input type="checkbox" aria-label="顯示聊天室按鈕" [checked]="chatEnabled" (change)="onToggleChat($event)">
+            <input type="checkbox" aria-label="顯示 AI Chatbot Beta 按鈕" [checked]="chatEnabled" (change)="onToggleChat($event)">
             <span class="toggle-slider"></span>
           </label>
         </div>
@@ -469,18 +469,14 @@
       </div>
 
       <div class="about-content" style="color: var(--text-secondary); font-size: 14px; line-height: 1.6;">
-        <h3 class="font-bold mb-2 mt-4" style="font-size: 15px; color: var(--text-primary);">致謝</h3>
-        <p class="mb-3">
-          本專案 Fork 自 Alan Cheng 開發的 Public Repo <strong><a href="https://github.com/Alan-Cheng/Friendly-Cat"
-              target="_blank" rel="noopener"> 友善黑貓 </a></strong>專案，感謝可以基於其原項目向上發展。門市、商品與即時資訊的資料來源自全家便利商店與統一超商的 API。
-        </p>
-
         <h3 class="font-bold mb-2 mt-4" style="font-size: 15px; color: var(--text-primary);">關於</h3>
         <p class="mb-4">
           <strong>友善超人</strong>是一個即時追蹤便利商店（全家、7-11）折扣鮮食商品的工具，由 imstevelin 開發。<br>其實最開始只是女朋友喜歡吃 7-11 的擔擔麵，這個麵原價實在吃不起，i珍食又很難找...... 就讓我想到「不如來做一個查詢小工具」吧。<br><br>
           🌱 <strong>開源宣告</strong>：本專案為完全開源專案，歡迎前往 GitHub 查看原始碼或參與貢獻（請不要商用這個專案）：<br>
           👉 <a href="https://github.com/imstevelin/iLoveFood" target="_blank" rel="noopener" class="text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300 font-medium">GitHub: imstevelin/iLoveFood</a>
         </p>
+
+        <p class="mb-3">門市、商品與即時資訊來自全家便利商店與統一超商的公開服務；實際庫存、價格與優惠以門市現場為準。</p>
 
         <h3 class="font-bold mb-2 mt-4" style="font-size: 15px; color: var(--text-primary);">功能亮點</h3>
         <ul class="mb-4 pl-4" style="list-style-type: none;">

@@ -11,17 +11,6 @@ export const environment = {
   },
   sevenElevenUrl: {
     icon: 'assets/7-11logo-320.webp',
-    base: 'https://lovefood.openpoint.com.tw/LoveFood/api/',
-    endpoint: {
-      accessToken: 'Auth/FrontendAuth/AccessToken',
-      getList: 'Master/FrontendItemCategory/GetList',
-      getStoreByAddress: 'Master/FrontendStore/GetStoreByAddress',
-      getNearbyStoreList: 'Search/FrontendStoreItemStock/GetNearbyStoreList',
-      getStoreDetail: 'Search/FrontendStoreItemStock/GetStoreDetail'
-    },
-    params: {
-      mid_v: 'W0_DiF4DlgU5OeQoRswrRcaaNHMWOL7K3ra3381ocZUv-rdOWySZv4ctG6X-7pjiccl0C5h41-cHaupfvgcXKJKifEvNt9NiU94M_ZVp42Ig7JEn15la5iV0H3-8dZfASc7Mgke95qb9LYu3ghJ5Sam6D0LAnYK9Lb0DZg_YnSDhJwb-RrxfBT0X0fs'
-    }
   },
   firebaseConfig: {
     apiKey: "YOUR_FIREBASE_API_KEY_HERE",

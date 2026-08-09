@@ -43,6 +43,10 @@ export class GeolocationService {
 
       return {
         timestamp: cached.timestamp,
+        toJSON: () => ({
+          timestamp: cached.timestamp,
+          coords: { latitude: cached.latitude, longitude: cached.longitude }
+        }),
         coords: {
           latitude: cached.latitude,
           longitude: cached.longitude,
@@ -50,7 +54,12 @@ export class GeolocationService {
           altitude: null,
           altitudeAccuracy: null,
           heading: null,
-          speed: null
+          speed: null,
+          toJSON: () => ({
+            latitude: cached.latitude,
+            longitude: cached.longitude,
+            accuracy: cached.accuracy || 0
+          })
         }
       };
     } catch {

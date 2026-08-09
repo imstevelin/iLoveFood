@@ -10,6 +10,8 @@ declare global {
   providedIn: 'root'
 })
 export class SeoService {
+  private readonly siteUrl = 'https://ilovefood.imstevelin.com';
+  private readonly brandName = '友善超人';
 
   constructor(
     private meta: Meta,
@@ -110,14 +112,14 @@ export class SeoService {
    * Set search page SEO
    */
   setSearchPageSEO(): void {
-    this.setTitle('友善時光查詢 - 友善黑貓 Friendly Cat');
+    this.setTitle(`友善時光查詢 - ${this.brandName}`);
     this.setDescription('查詢附近超商的友善時光商品，包括全家、7-11等便利商店的剩食優惠資訊。省錢又環保，讓您輕鬆找到優惠商品。');
     this.setKeywords('友善時光查詢,超商剩食,全家便利商店,7-11,便利商店優惠,省錢,環保');
     
     this.setOpenGraphTags({
-      title: '友善時光查詢 - 友善黑貓 Friendly Cat',
+      title: `友善時光查詢 - ${this.brandName}`,
       description: '查詢附近超商的友善時光商品，包括全家、7-11等便利商店的剩食優惠資訊。省錢又環保，讓您輕鬆找到優惠商品。',
-      url: 'https://alan-cheng.github.io/Friendly-Cat/search',
+      url: this.siteUrl,
       type: 'website'
     });
 
@@ -126,10 +128,10 @@ export class SeoService {
       "@type": "WebPage",
       "name": "友善時光查詢",
       "description": "查詢附近超商的友善時光商品，包括全家、7-11等便利商店的剩食優惠資訊",
-      "url": "https://alan-cheng.github.io/Friendly-Cat/search",
+      "url": this.siteUrl,
       "mainEntity": {
         "@type": "SearchAction",
-        "target": "https://alan-cheng.github.io/Friendly-Cat/search?q={search_term_string}",
+        "target": `${this.siteUrl}/?q={search_term_string}`,
         "query-input": "required name=search_term_string"
       }
     });
@@ -139,7 +141,7 @@ export class SeoService {
    * Set store page SEO
    */
   setStorePageSEO(storeName?: string): void {
-    const title = storeName ? `${storeName} - 友善黑貓 Friendly Cat` : '便利商店資訊 - 友善黑貓 Friendly Cat';
+    const title = storeName ? `${storeName} - ${this.brandName}` : `便利商店資訊 - ${this.brandName}`;
     const description = storeName 
       ? `查看${storeName}的友善時光商品資訊，包括商品價格、庫存狀況等詳細資訊。`
       : '查看便利商店的友善時光商品資訊，包括商品價格、庫存狀況等詳細資訊。';
@@ -151,7 +153,7 @@ export class SeoService {
     this.setOpenGraphTags({
       title,
       description,
-      url: 'https://alan-cheng.github.io/Friendly-Cat/store',
+      url: this.siteUrl,
       type: 'website'
     });
   }
@@ -160,14 +162,14 @@ export class SeoService {
    * Set chatbot page SEO
    */
   setChatbotPageSEO(): void {
-    this.setTitle('AI 助手 - 友善黑貓 Friendly Cat');
-    this.setDescription('友善黑貓AI助手，為您提供友善時光查詢、商品推薦等智能服務。讓您的購物體驗更加便捷。');
+    this.setTitle(`AI 助手 Beta - ${this.brandName}`);
+    this.setDescription('友善超人 AI 助手 Beta 提供友善時光查詢與商品推薦；功能預設關閉，可由使用者自行啟用。');
     this.setKeywords('AI助手,智能客服,友善時光,商品推薦,智能服務');
 
     this.setOpenGraphTags({
-      title: 'AI 助手 - 友善黑貓 Friendly Cat',
-      description: '友善黑貓AI助手，為您提供友善時光查詢、商品推薦等智能服務。讓您的購物體驗更加便捷。',
-      url: 'https://alan-cheng.github.io/Friendly-Cat/chatbot',
+      title: `AI 助手 Beta - ${this.brandName}`,
+      description: '友善超人 AI 助手 Beta 提供友善時光查詢與商品推薦。',
+      url: this.siteUrl,
       type: 'website'
     });
   }
@@ -186,4 +188,4 @@ export class SeoService {
       });
     }
   }
-} 
+}

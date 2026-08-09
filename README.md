@@ -1,6 +1,6 @@
-# iLoveFood (友善食光地圖 & 最新商品搜尋)
+# 友善超人（iLoveFood）
 
-iLoveFood 是一個基於 Angular 構建的現代化 Web 應用程式。專為尋找全家與 7-Eleven 便利商店的「友善食光折扣商品」及「全網最新商品」而生。本作擁有獨特的「順路門市搜尋」功能、智能 AI 客服、以及極具質感的深色模式玻璃擬物 (Glassmorphism) 介面設計。
+友善超人是以 Angular 建構的開源研究性 Web 應用程式，協助使用者尋找全家與 7-Eleven 的即期折扣商品。正式網站為 [ilovefood.imstevelin.com](https://ilovefood.imstevelin.com)。
 
 > **開源聲明**：本專案為開源專案，歡迎前往 GitHub 查看原始碼與參與貢獻！👉 [https://github.com/imstevelin/iLoveFood](https://github.com/imstevelin/iLoveFood)
 
@@ -9,7 +9,7 @@ iLoveFood 是一個基於 Angular 構建的現代化 Web 應用程式。專為�
 ## ✨ 核心亮點與功能 (Core Features)
 
 ### 🗺️ 1. Google Maps 順路門市搜尋 (Route Search)
-不再只是單純的「附近搜尋」，使用者可直接貼上 Google Maps 導航路線連結（支援短網址）。系統能在分析路線後，自動為您找出整條通勤或旅遊路線上的所有便利商店，成為通勤族的完美助手！
+使用者可貼上 Google Maps 路線分享連結（含短網址），並以汽車或 Google `TWO_WHEELER` 機車模式查詢沿路門市。機車路線目前為 Google Beta；系統最多處理 300 公里、40 個取樣點與 4 路並發，避免長路線壓垮即時庫存服務。
 
 ### 🔍 2. 智慧多選過濾與自定義搜尋 (Multi-Select Filtering)
 整合自動完成 (Autocomplete) 與 Chips 標籤設計的搜索列：
@@ -17,8 +17,8 @@ iLoveFood 是一個基於 Angular 構建的現代化 Web 應用程式。專為�
 - 提供「自定義輸入」關鍵字，讓您跨平台精準比對。
 - 具備防呆機制與長文字限縮處理，提供流暢的 UX 體驗。
 
-### 🤖 3. AI 智能客服 (Gemini & Minimax Powered Chatbot)
-內建由 Google Gemini 2.5 Flash 或 Minimax 驅動的智能助理：
+### 🤖 3. AI Chatbot Beta
+內建由 Google Gemini 或 Minimax 驅動的實驗性智能助理；此功能預設關閉，由使用者在「實驗室」中自行開啟：
 - 具備防 ban 機制的記憶體緩衝與分頁設計。
 - 專為行動裝置優化的聊天滾動體驗。
 - 支援上下文理解，幫您解答商品內容、推薦吃法甚至是熱量估算。
@@ -38,10 +38,10 @@ iLoveFood 是一個基於 Angular 構建的現代化 Web 應用程式。專為�
 
 ## 🛠 技術堆疊 (Tech Stack)
 
-*   **前端框架**: Angular 18 (TypeScript)
+*   **前端框架**: Angular 22 (TypeScript 6)
 *   **樣式與組件**: Vanilla CSS, Tailwind CSS, Angular Material, SCSS 編譯
 *   **後端與 API**: Cloudflare Workers
-*   **資料庫與用戶驗證**: Firebase (Authentication, Firestore, Hosting)
+*   **資料庫與用戶驗證**: Firebase (Authentication, Firestore)
 *   **地圖與定位**: Google Maps Directions API, Geolib
 *   **數據更新引擎**: Python 3 (Requests, BeautifulSoup4)
 
@@ -65,27 +65,86 @@ iLoveFood/
 
 ## 🚀 環境配置與開發指南 (Getting Started)
 
-為了讓服務順利運行，專案需要依賴下列三個核心環境的配置：API 金鑰設定、Cloudflare Worker 代理以及 Linux 超商驗證農場。
+為了讓服務順利運行，專案需要依賴下列三個核心環境的配置：API 金鑰設定、Cloudflare Worker 全端服務以及 Linux 超商驗證農場。
 
 ### 🔑 1. API 金鑰與環境變數設定
-專案中的 `src/environments/` 資料夾需建立正確的 `environment.ts` 與 `environment.prod.ts`，並參照 `environment.example.ts` 填寫下列金鑰：
-- **Firebase Config**: 用於資料庫同步、用戶登入與收藏店家資料儲存。
+專案中的 `src/environments/` 資料夾需建立正確的 `environment.ts` 與 `environment.prod.ts`，並參照 `environment.example.ts` 填寫下列金鑰。瀏覽器設定中不應包含 OPENPOINT `mid_v` 或 access token。
+- **Firebase Config**: 用於手機簡訊 OTP 登入與 Firestore 收藏資料。Firebase Console 需啟用 Phone provider，並將正式網域加入 Authorized domains。
 - **Gemini & Minimax API Keys**: 用於驅動「友善小精靈」 AI 聊天機器人的智能回覆。
 - **Umami 追蹤碼**: 供網站流量追蹤（若無需求也可忽略）。
 
-### ☁️ 2. Cloudflare Worker 代理配置
-由於需要規避瀏覽器的 CORS 限制並隱身發送外部網路請求，本專案全面改用 Cloudflare Workers 作為邊緣運算 API 代理：
-- 請進入 `cloudflare_worker/` 目錄中，將 `worker.js` 部署至您的 Cloudflare 帳戶。
-- 該 Worker 專門攔截並處理 Google Maps 導航短網址的解碼轉換，並偽裝瀏覽器避免被阻擋，將轉址後的最終結果安全回傳給前端。
+### ☁️ 2. Cloudflare Worker 全端部署
+專案只使用一支 `ilovefood` Worker，同時提供 Angular SPA 靜態資源、Google Maps 短網址解析與 7-Eleven 庫存閘道：
+
+```text
+ilovefood.imstevelin.com       -> Angular SPA + /api/*
+ilovefood-api.imstevelin.com   -> 舊版 API 網域相容路由
+ilovefood-token-farm.imstevelin.com -> VPS Token Farm（Cloudflare Tunnel）
+```
+
+首次部署前先設定 Worker secret：
+
+```bash
+npx wrangler secret put TOKEN_FARM_API_KEY --config cloudflare_worker/wrangler.jsonc
+```
+
+正式部署前先建置並執行 Wrangler dry-run：
+
+```bash
+npm run deploy:check
+```
+
+建置 Angular 並部署整個網站：
+
+```bash
+npm run deploy
+```
+
+查看目前部署版本或串流正式環境日誌：
+
+```bash
+npm run deploy:status
+npm run deploy:logs
+```
+
+`cloudflare_worker/wrangler.jsonc` 是唯一部署設定來源，使用 Workers Static Assets 的 SPA fallback，並只讓 `/api/*` 與 `/health` 先進入 Worker 程式；其餘靜態檔案直接由 Cloudflare edge 傳送。正式環境的 `ALLOWED_ORIGINS` 必須保持為 `https://ilovefood.imstevelin.com`。`TOKEN_FARM_URL` 指向 VPS 的獨立 Tunnel，`API_RATE_LIMITER` 負責每 IP 限流。Worker 不會把 `mid_v` 或 OPENPOINT access token 回傳給瀏覽器。
+
+#### 為什麼 Cloudflare 程式碼編輯器看不到 Angular 網站原始碼？
+
+Worker 的程式碼編輯器只顯示執行中的 `cloudflare_worker/worker.js`。Angular 的 `src/app/**/*.ts`、HTML 與 SCSS 會先由 `npm run build` 編譯、壓縮並產生帶 hash 的 JavaScript/CSS/HTML 到 `dist/ilovefood/`，Wrangler 再依 `assets.directory` 將這些檔案以 Static Assets 集合上傳。它們和 Worker 屬於同一個部署與同一支 Worker，但不是 Worker script 的文字內容，因此不會出現在程式碼編輯器裡。
+
+請把 Git 儲存庫與本機檔案視為原始碼的唯一來源，不要用 Cloudflare Quick Edit 修改前端。每次修改網站後執行 `npm run deploy`，就會先重新建置 Angular，再將 Worker 程式與有變更的靜態資產一起部署。
+
+#### 可選：推送 Git 後自動部署
+
+若要免除本機手動部署，可在 Cloudflare Dashboard 的 `ilovefood` Worker 進入 **Settings → Builds**，連接本專案的 GitHub 或 GitLab 儲存庫，並使用：
+
+```text
+Production branch: main
+Root directory: /
+Build command: npm run build
+Deploy command: npx wrangler deploy --config cloudflare_worker/wrangler.jsonc
+```
+
+Worker 名稱必須與 `wrangler.jsonc` 的 `name` 同為 `ilovefood`。非正式分支可使用 `npx wrangler versions upload --config cloudflare_worker/wrangler.jsonc` 產生預覽版本，而不直接取代正式部署。
 
 ### 🚜 3. LINUX 超商驗證農場環境 (OPENPOINT Token Farm)
 為確保自動且無縫地獲取 7-Eleven OPENPOINT 系統的動態加密保護 Token (`mid_v`)，我們設計了一套自動化農場：
 - **原理**: 使用 Proxmox VE (PVE) 部署一台 Ubuntu Server，啟用 KVM 硬體加速執行 Android x86 模擬器，並透過 Frida Injection 與 Waitress API Server 打造零延遲伺服器。
-- **教學**: 詳細部署流程請務必參閱 `scripts/OPENPOINT_token_deploy.md`。透過遠端連線安裝 APK 並駐留記憶體，本系統將能達成毫秒級回應與高併發處理，讓前端在請求最新庫存時能夠被動式地取得超商驗證 token。
+- **教學**: 詳細部署流程請參閱 `scripts/OPENPOINT_token_deploy.md`。Token Farm 預設只綁 `127.0.0.1`，`/get_token` 必須使用與 Worker 相同的 Bearer key；前端不可直接連線。
+
+### 4. Firebase 規則與舊收藏遷移
+
+```bash
+firebase deploy --only firestore:rules
+npm run migrate:favorites -- --all --project=PROJECT_ID
+```
+
+工具會依 Firebase Auth 的已驗證手機號碼自動找出對應 UID；也可改用 `--phone=0912345678 --uid=FIREBASE_UID` 遷移單一帳號。遷移預設保留舊手機號碼路徑；確認新 UID 收藏正確後，可加上 `--delete-source`。管理工具使用 Application Default Credentials，或傳入 `--service-account=/path/key.json`。
 
 ---
 
-### 4. 前端開發伺服器啟動
+### 5. 前端開發伺服器啟動
 配置完成後，即可啟動前端程式：
 ```bash
 npm install
@@ -93,7 +152,7 @@ npm start
 ```
 或是使用 Angular CLI: `ng serve`。然後在瀏覽器開啟 `http://localhost:4200/`。
 
-### 5. 更新便利商店商品資料庫
+### 6. 更新便利商店商品資料庫
 若需要更新全家與 7-11 的最新商品清單（可配合排程操作）：
 ```bash
 cd scripts

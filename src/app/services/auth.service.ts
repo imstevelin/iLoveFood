@@ -1,11 +1,19 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
-import { getDatabase, ref, get } from 'firebase/database';
+import {
+  ConfirmationResult,
+  RecaptchaVerifier,
+  onAuthStateChanged,
+  signInWithPhoneNumber,
+  signOut
+} from 'firebase/auth';
+import { firebaseAuth } from './firebase-client';
 
 export interface LocalUser {
-  uid: string; // The phone number acts as the UID
+  uid: string;
   displayName: string;
+  phoneNumber: string;
 }
 
 @Injectable({
@@ -13,20 +21,20 @@ export interface LocalUser {
 })
 export class AuthService {
   private userSubject = new BehaviorSubject<LocalUser | null>(null);
+  private confirmationResult: ConfirmationResult | null = null;
+  private pendingPhoneNumber = '';
+  private recaptchaVerifier: RecaptchaVerifier | null = null;
+
+  private readonly auth = firebaseAuth;
 
   constructor() {
-    this.restoreSession();
-  }
-
-  // Check localStorage on init
-  private restoreSession() {
-    const storedPhone = localStorage.getItem('iLoveFood_phone_user');
-    if (storedPhone) {
-      this.userSubject.next({
-        uid: storedPhone,
-        displayName: storedPhone
-      });
-    }
+    onAuthStateChanged(this.auth, firebaseUser => {
+      if (!firebaseUser?.phoneNumber) {
+        this.userSubject.next(null);
+        return;
+      }
+      this.userSubject.next(this.toLocalUser(firebaseUser.uid, firebaseUser.phoneNumber));
+    });
   }
 
   // Observable for components to subscribe to
@@ -39,18 +47,42 @@ export class AuthService {
     return this.userSubject.asObservable();
   }
 
-  // Login simply saves the phone number
-  login(phone: string): Promise<LocalUser> {
-    return new Promise((resolve) => {
-      localStorage.setItem('iLoveFood_phone_user', phone);
-      const user = { uid: phone, displayName: phone };
-      this.userSubject.next(user);
-      resolve(user);
+  async sendVerificationCode(phone: string, recaptchaContainerId: string): Promise<void> {
+    const e164Phone = this.toTaiwanE164(phone);
+    this.clearRecaptcha();
+    this.recaptchaVerifier = new RecaptchaVerifier(this.auth, recaptchaContainerId, {
+      size: 'invisible'
     });
+
+    try {
+      this.confirmationResult = await signInWithPhoneNumber(
+        this.auth,
+        e164Phone,
+        this.recaptchaVerifier
+      );
+      this.pendingPhoneNumber = phone;
+    } catch (error) {
+      this.clearRecaptcha();
+      throw error;
+    }
   }
 
-  logout(): void {
-    localStorage.removeItem('iLoveFood_phone_user');
+  async verifyCode(code: string): Promise<LocalUser> {
+    if (!this.confirmationResult) {
+      throw new Error('尚未發送簡訊驗證碼');
+    }
+    const credential = await this.confirmationResult.confirm(code);
+    const phoneNumber = credential.user.phoneNumber || this.toTaiwanE164(this.pendingPhoneNumber);
+    const user = this.toLocalUser(credential.user.uid, phoneNumber);
+    this.userSubject.next(user);
+    this.confirmationResult = null;
+    this.pendingPhoneNumber = '';
+    this.clearRecaptcha();
+    return user;
+  }
+
+  async logout(): Promise<void> {
+    await signOut(this.auth);
     this.userSubject.next(null);
   }
 
@@ -61,10 +93,28 @@ export class AuthService {
     );
   }
 
-  // Keeping this for backward compatibility if used elsewhere, though currently unused for favorites
-  getUserData(uid: string): Promise<any> {
-    const db = getDatabase();
-    const userRef = ref(db, `users/${uid}`);
-    return get(userRef).then((snapshot) => snapshot.val());
+  resetVerification(): void {
+    this.confirmationResult = null;
+    this.pendingPhoneNumber = '';
+    this.clearRecaptcha();
+  }
+
+  private toTaiwanE164(phone: string): string {
+    const normalized = phone.replace(/\s+/g, '');
+    if (!/^09\d{8}$/.test(normalized)) {
+      throw new Error('手機號碼格式不正確');
+    }
+    return `+886${normalized.slice(1)}`;
+  }
+
+  private toLocalUser(uid: string, e164Phone: string): LocalUser {
+    const localPhone = e164Phone.startsWith('+886') ? `0${e164Phone.slice(4)}` : e164Phone;
+    const maskedPhone = localPhone.replace(/^(09\d{2})\d{4}(\d{2})$/, '$1••••$2');
+    return { uid, displayName: maskedPhone, phoneNumber: localPhone };
+  }
+
+  private clearRecaptcha(): void {
+    this.recaptchaVerifier?.clear();
+    this.recaptchaVerifier = null;
   }
 }

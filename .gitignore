@@ -31,6 +31,7 @@ yarn-error.log
 
 # Miscellaneous
 /.angular/cache
+.wrangler/
 .sass-cache/
 /connect.lock
 /coverage
@@ -44,6 +45,8 @@ Thumbs.db
 
 # Python
 venv/
+__pycache__/
+*.py[cod]
 
 # Environments with sensitive keys
 src/environments/environment.ts

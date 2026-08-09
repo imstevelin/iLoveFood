@@ -1,0 +1,50 @@
+{
+  "$schema": "../node_modules/wrangler/config-schema.json",
+  "name": "ilovefood",
+  "main": "./worker.js",
+  "compatibility_date": "2026-08-08",
+  "compatibility_flags": ["nodejs_compat"],
+  "workers_dev": false,
+  "routes": [
+    {
+      "pattern": "ilovefood.imstevelin.com/*",
+      "zone_name": "imstevelin.com"
+    },
+    {
+      "pattern": "ilovefood-api.imstevelin.com/*",
+      "zone_name": "imstevelin.com"
+    }
+  ],
+  "assets": {
+    "directory": "../dist/ilovefood",
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application",
+    "html_handling": "none",
+    "run_worker_first": ["/api/*", "/health"]
+  },
+  "vars": {
+    "ALLOWED_ORIGINS": "https://ilovefood.imstevelin.com",
+    "TOKEN_FARM_URL": "https://your-private-token-farm.example.com"
+  },
+  "ratelimits": [
+    {
+      "name": "API_RATE_LIMITER",
+      "namespace_id": "1001",
+      "simple": {
+        "limit": 120,
+        "period": 60
+      }
+    }
+  ],
+  "observability": {
+    "enabled": true,
+    "logs": {
+      "enabled": true,
+      "head_sampling_rate": 1
+    },
+    "traces": {
+      "enabled": true,
+      "head_sampling_rate": 0.01
+    }
+  }
+}

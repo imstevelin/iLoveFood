@@ -42,10 +42,13 @@
 
                     <!-- 商品細節 -->
                     <ng-container *ngIf="foodDetailCache[item.ItemName] && foodDetailCache[item.ItemName]?.image !== 'assets/no-image.jpeg'">
-                      <div class="product-price">
+                      <div class="product-price" *ngIf="foodDetailCache[item.ItemName]?.discountedPrice !== null; else regularPrice">
                         <span>折扣價${{ foodDetailCache[item.ItemName]?.discountedPrice | round:-1 }}元</span>
                         <del>原價 ${{ foodDetailCache[item.ItemName]?.originalPrice }}</del>
                       </div>
+                      <ng-template #regularPrice>
+                        <div class="product-price"><span>原價 ${{ foodDetailCache[item.ItemName]?.originalPrice }}元</span></div>
+                      </ng-template>
                       <p class="product-description">{{ foodDetailCache[item.ItemName]?.content | emptyInfo}}</p>
                       <p class="product-meta-line">熱量 {{ foodDetailCache[item.ItemName]?.kcal | emptyInfo}}</p>
                     </ng-container>

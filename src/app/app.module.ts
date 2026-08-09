@@ -24,12 +24,6 @@ import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { MessageDialogComponent } from './components/message-dialog/message-dialog.component';
 import { LoginPageComponent } from './components/login-page/login-page.component'
 
-import { provideFirebaseApp, initializeApp } from '@angular/fire/app';
-import { provideAnalytics, getAnalytics } from '@angular/fire/analytics';
-import { AngularFireModule } from '@angular/fire/compat';
-import { AngularFireDatabaseModule } from '@angular/fire/compat/database';
-
-import { environment } from 'src/environments/environment';
 import { ChatbotComponent } from './chatbot/chatbot.component';
 import { MotionDirective } from './directives/motion.directive';
 import { GestureDirective } from './directives/gesture.directive';
@@ -50,8 +44,6 @@ import { GestureDirective } from './directives/gesture.directive';
     MatButtonModule,
     FormsModule,
     ReactiveFormsModule,
-    AngularFireModule.initializeApp(environment.firebaseConfig),  // 初始化 Firebase
-    AngularFireDatabaseModule,
     MatDividerModule,
     MatCardModule,
     MatMenuModule,
@@ -61,8 +53,6 @@ import { GestureDirective } from './directives/gesture.directive';
   ],
   providers: [
     provideHttpClient(withInterceptorsFromDi()),
-    provideFirebaseApp(() => initializeApp(environment.firebaseConfig)),  // 提供 Firebase 初始化
-    provideAnalytics(() => getAnalytics()),
   ],
 })
 export class AppModule {}

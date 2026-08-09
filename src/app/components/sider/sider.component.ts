@@ -13,6 +13,7 @@ import { getDistance } from 'geolib';
 import { HapticService } from 'src/app/services/haptic.service';
 
 @Component({
+  standalone: false,
   selector: 'app-sider',
   templateUrl: './sider.component.html',
   styleUrls: ['./sider.component.scss'],
@@ -271,11 +272,10 @@ export class SiderComponent {
 
   // 執行食物搜尋
   performFoodSearch(searchTerm: string) {
-    return from(this.sevenElevenService.getAccessToken())
+    return from(this.sevenElevenService.ensureGatewayReady())
       .pipe(
         switchMap((token: any) => {
           if (token && token.element) {
-            sessionStorage.setItem('711Token', token.element);
             return this.searchFoodInBothStores(searchTerm);
           } else {
             return of([]);

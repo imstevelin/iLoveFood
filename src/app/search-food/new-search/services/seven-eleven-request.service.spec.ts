@@ -1,51 +1,37 @@
 import { TestBed } from '@angular/core/testing';
 import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
-import { of } from 'rxjs';
 
 import { SevenElevenRequestService } from './seven-eleven-request.service';
 
 describe('SevenElevenRequestService', () => {
   let service: SevenElevenRequestService;
-  let httpTestingController: HttpTestingController;
+  let http: HttpTestingController;
 
   beforeEach(() => {
     TestBed.configureTestingModule({ imports: [HttpClientTestingModule] });
     service = TestBed.inject(SevenElevenRequestService);
-    httpTestingController = TestBed.inject(HttpTestingController);
-    sessionStorage.removeItem('711Token');
+    http = TestBed.inject(HttpTestingController);
   });
 
-  afterEach(() => {
-    sessionStorage.removeItem('711Token');
-    httpTestingController.verify({ ignoreCancelled: true });
-  });
+  afterEach(() => http.verify());
 
-  it('should be created', () => {
-    expect(service).toBeTruthy();
-  });
-
-  it('reuses the session access token without another network round trip', (done) => {
-    sessionStorage.setItem('711Token', 'cached-token');
-
-    service.getAccessToken().subscribe(response => {
-      expect(response.element).toBe('cached-token');
-      expect(response.fromCache).toBeTrue();
+  it('never retrieves an access token in the browser', done => {
+    service.ensureGatewayReady().subscribe(response => {
+      expect(response.element).toBe('worker-managed');
+      http.expectNone(request => request.url.includes('AccessToken') || request.url.includes('get_token'));
       done();
     });
   });
 
-  it('releases the refresh lock when an outer timeout cancels token refresh', () => {
-    const refresh$ = (service as any).handleTokenError(
-      new Error('expired token'),
-      () => of({ isSuccess: true, element: {} })
-    );
-    const subscription = refresh$.subscribe({ error: () => undefined });
-    const request = httpTestingController.expectOne('https://ilovefood-api.imstevelin.com/get_token');
-
-    expect((service as any).isRefreshing).toBeTrue();
-    subscription.unsubscribe();
-
-    expect(request.cancelled).toBeTrue();
-    expect((service as any).isRefreshing).toBeFalse();
+  it('sends nearby searches to the protected gateway without a token', () => {
+    const location = {
+      CurrentLocation: { Latitude: 25.03, Longitude: 121.56 },
+      SearchLocation: { Latitude: 25.03, Longitude: 121.56 }
+    };
+    service.getNearByStoreList(location).subscribe();
+    const request = http.expectOne('/api/7eleven/stores/nearby');
+    expect(request.request.body).toEqual(location);
+    expect(request.request.urlWithParams).not.toContain('token=');
+    request.flush({ isSuccess: true, element: { StoreStockItemList: [] } });
   });
 });

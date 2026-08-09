@@ -1,6 +1,6 @@
 # 7‑ELEVEN `mid_v` Token 農場部署與維運指南
 
-本指南說明如何在無圖形介面的 Linux 主機部署 7‑ELEVEN Token 農場，以及如何把已存在的舊版農場升級到 2026‑08‑07 的長時間穩定版本。
+本指南說明如何在無圖形介面的 Linux 主機部署 7‑ELEVEN Token 農場，以及如何把已存在的舊版農場升級到 2026‑08‑09 的自癒版本。
 
 正式程式碼已獨立存放在 [`scripts/op-farmer`](./op-farmer/)；文件不再複製另一份容易過期的程式碼。日後更新或重新部署時，直接安裝該目錄中的四個檔案：
 
@@ -8,6 +8,21 @@
 - `reactive_farmer.py`：可重複使用的 Token 快取、App 休眠、ADB/Frida 自癒、資源看門與 HTTP API。
 - `start_farmer.sh`：單例監督、模擬器冷啟動、Frida 驗證與程序自動重建。
 - `op-farmer.service`：systemd 系統服務，在開機、supervisor 崩潰或被 OOM 中止後重建農場。
+
+## 2026‑08‑09 Frida teardown 死鎖修復
+
+2026‑08‑08 23:01:17 農場已成功擷取並發布 Token，23:01:18 進入 App 休眠；但之後 App PID 仍存在，且不再出現更新日誌。Token 於 240 秒後過期，API 從 23:57 起持續逾時。當時 `/health` 顯示 `fetching=true`、`pool_size=0`，造成程序與 Port 都活著、實際服務卻永久失效的假活狀態。
+
+根因不是 Android 畫面或網路：GDB 顯示 token worker 已在 `_frida.abi3.so` 的條件等待中卡住超過 4000 秒。舊版在寫入新 Token 後同步呼叫 `Script.unload()` 與 `Session.detach()`，其中一個原生 teardown RPC 永不返回，因此後續 Android `force-stop`、`is_fetching=false` 與下一次更新都無法執行。
+
+2026‑08‑09 版做了兩層修正：
+
+- 休眠順序改為先由 Android `am force-stop` 終止目標程序；目標死亡會一併銷毀 injected agent。Python 只丟棄舊 client reference，不再於更新關鍵路徑同步呼叫 Frida unload/detach。
+- 每個更新工作記錄 `fetch_started_at` 與 `fetch_stage`。任何階段超過 45 秒仍未結束，獨立 maintainer 會以 exit 75 要求 supervisor 完整重建，原生函式即使再度卡住也不可能永久假活。
+- `/health` 新增 `fetch_stage`、`fetch_age_seconds` 與 `fetch_timeout_seconds`，可直接判斷工作正在排程、初始化、擷取或休眠。
+- 實機修復後第一枚 `mid_v` 對外取得耗時 243.77ms，同一值連續兌換兩次 access token 均為 HTTP 200、`isSuccess=true`。
+
+目前仍固定 Frida client/server 16.2.1。Frida 17 已不再於 GumJS 內建 Java bridge，不能只替換 client/server 而沿用現有 `hook_mid.js`；若要升級，必須先用 `frida-java-bridge` 編譯 bundle 並另做完整回歸，不要在正式主機直接原地升級。
 
 ## 2026‑08‑07 長時間穩定化摘要
 
@@ -22,7 +37,7 @@
 2026‑08‑07 版的處理方式：
 
 - `mid_v` 在過期前可重複使用，因此預設只保留 1 枚快取。所有短時間併發請求都直接回傳同一枚，不會每次查詢就啟動 App 另取新值。
-- 只在快取更新時啟動 App 與 Frida attach；新值就緒後 unload/detach、`am force-stop`，使 App 大多數時間維持休眠，每一次更新都從乾淨的 WebView 進程開始。
+- 只在快取更新時啟動 App 與 Frida attach；新值就緒後先 `am force-stop`，再丟棄已隨目標程序失效的 Frida client，使 App 大多數時間維持休眠，每一次更新都從乾淨的 WebView 進程開始。
 - Token 在 180 秒時就背景滾動更新，240 秒後絕不對外回傳；新 Token 成功擷取前，舊快取仍可繼續服務，成功後再原子替換。
 - API 最多等待 15 秒，失敗就明確回傳 HTTP 503 與 `Retry-After: 2`，不讓使用者無限等待。
 - 連續 3 次擷取失敗時完整冷啟動；主機可用記憶體或 QEMU RSS 連續越界時也會主動重建。
@@ -232,7 +247,7 @@ vm.heapSize = 512M
 mkdir -p ~/op-farmer
 python3 -m venv ~/op-farmer/venv
 ~/op-farmer/venv/bin/pip install \
-  flask flask-cors waitress \
+  flask waitress \
   frida==16.2.1 frida-tools==12.3.0
 ```
 
@@ -313,6 +328,9 @@ Token 已就緒時：
 ```json
 {
   "consecutive_failures": 0,
+  "fetch_age_seconds": null,
+  "fetch_stage": "idle",
+  "fetch_timeout_seconds": 45,
   "fetching": false,
   "app_state": "hibernating",
   "last_error": null,
@@ -330,7 +348,8 @@ Token 已就緒時：
 ### 取得 Token
 
 ```bash
-curl -X POST http://127.0.0.1:5000/get_token
+curl -X POST http://127.0.0.1:5000/get_token \
+  -H "Authorization: Bearer ${FARMER_API_KEY}"
 ```
 
 成功格式：
@@ -344,11 +363,13 @@ curl -X POST http://127.0.0.1:5000/get_token
 
 有快取時會立即回傳，並不會移除該 Token；併發請求可重複取得同一值。只有快取接近過期時才在背景更新。如果 15 秒內仍無法取得任何有效 Token，API 回傳 HTTP 503 與 `Retry-After: 2`。
 
-可用環境變數調整但通常不需更改：`FARMER_TOKEN_REFRESH_SECONDS=180`、`FARMER_TOKEN_TTL_SECONDS=240`、`FARMER_API_WAIT_TIMEOUT_SECONDS=15`、`FARMER_MIN_HOST_AVAILABLE_MIB=640`與 `FARMER_MAX_QEMU_RSS_MIB=4608`。快取容量固定為 1，因為增加容量只會多做無必要的 App 查詢。
+`FARMER_API_KEY` 為必填，請產生至少 32 bytes 的隨機值並存入 `/etc/ilovefood/op-farmer.env`（權限 `0600`）；Worker 的 `TOKEN_FARM_API_KEY` secret 必須使用相同值。服務預設只監聽 `127.0.0.1`，如有特殊網路拓撲才透過 `FARMER_BIND_HOST` 調整。
+
+其他可調環境變數通常不需更改：`FARMER_TOKEN_REFRESH_SECONDS=180`、`FARMER_TOKEN_TTL_SECONDS=240`、`FARMER_FETCH_JOB_TIMEOUT_SECONDS=45`、`FARMER_API_WAIT_TIMEOUT_SECONDS=15`、`FARMER_MIN_HOST_AVAILABLE_MIB=640`與 `FARMER_MAX_QEMU_RSS_MIB=4608`。快取容量固定為 1，因為增加容量只會多做無必要的 App 查詢。
 
 ### 對外服務
 
-若使用 Cloudflare Tunnel 或其他 reverse proxy，將公開 hostname 指向 `http://127.0.0.1:5000`。不要直接把 ADB、模擬器 console 或 Frida Port 暴露到公網。
+若使用 Cloudflare Tunnel 或其他 reverse proxy，將只有 Worker 知道的私有 hostname 指向 `http://127.0.0.1:5000`，並保留 Bearer 驗證。不要把 Token Farm、ADB、模擬器 console 或 Frida Port 直接暴露到公網。
 
 ---
 
@@ -363,9 +384,10 @@ TokenCache(1) ──有效──▶ 併發請求重複回傳同一 Token
     └─180s 滾動更新或無快取──▶ 單一 fetch_token_job
                      │
                      ├─開始更新──▶ 啟動 App/Frida 擷取一枚新 Token
-                     ├─原子替換──▶ detach + force-stop App
+                     ├─原子替換──▶ force-stop App + 丟棄失效 Frida client
                      ├─ADB timeout──▶ 重啟 ADB server/transport 後重試
                      ├─App/Frida 問題──▶ 重啟 App、Frida attach 與 hook
+                     ├─任一階段超過 45s──▶ exit 75
                      └─連續 3 次失敗──▶ exit 75
                                              │
                                              ▼
@@ -380,7 +402,8 @@ TokenCache(1) ──有效──▶ 併發請求重複回傳同一 Token
 
 - `emulator_lock` 保證同一時間只有一個執行緒操作 Android UI。
 - `pool.condition` 直接喚醒 API 等待者，不再每 0.5 秒盲目輪詢。
-- Frida 重新初始化前會 unload/detach 舊 client，避免反覆注入造成資源洩漏。
+- Android `force-stop` 會終止 agent；Python 不在 refresh thread 同步 unload/detach，避免原生 teardown 死鎖。
+- 45 秒 fetch watchdog 獨立於 token worker；即使 worker 卡在釋放 GIL 的原生函式，maintainer 仍能要求完整重建。
 - 快取已就緒後 App 進程不存在是預期行為；可避免 WebView、socket 與軟體 GPU 長時間累積。
 - Frida Server 用 `pidof asdf` 驗證，不會把 `grep` 自己誤認為 server。
 - `wait-for-device` 後還會做真實 `adb shell` round trip，避免「顯示 device、實際已卡死」。

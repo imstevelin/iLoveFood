@@ -6,6 +6,7 @@ export interface DiscountPeriod {
   timeLabel: string;
   discountLabel: string;
   productLabel: string;
+  discountRate: number;
 }
 
 export interface DiscountSchedule {
@@ -31,16 +32,16 @@ export const DISCOUNT_SCHEDULES: Record<DiscountChain, DiscountSchedule> = {
   '7-11': {
     programName: 'i珍食',
     periods: [
-      { startMinute: 10 * 60, endMinute: 17 * 60, timeLabel: '10:00–17:00', discountLabel: '65 折', productLabel: '鮮食' },
-      { startMinute: 19 * 60, endMinute: 20 * 60, timeLabel: '19:00–19:59', discountLabel: '8 折', productLabel: '鮮食' },
-      { startMinute: 20 * 60, endMinute: 3 * 60, timeLabel: '20:00–03:00', discountLabel: '65 折', productLabel: '鮮食、麵包、三角與圓形飯糰' }
+      { startMinute: 10 * 60, endMinute: 17 * 60, timeLabel: '10:00–17:00', discountLabel: '65 折', discountRate: 0.65, productLabel: '鮮食' },
+      { startMinute: 19 * 60, endMinute: 20 * 60, timeLabel: '19:00–19:59', discountLabel: '8 折', discountRate: 0.8, productLabel: '鮮食' },
+      { startMinute: 20 * 60, endMinute: 3 * 60, timeLabel: '20:00–03:00', discountLabel: '65 折', discountRate: 0.65, productLabel: '鮮食、麵包、三角與圓形飯糰' }
     ]
   },
   '全家': {
     programName: '友善食光',
     periods: [
-      { startMinute: 10 * 60, endMinute: 17 * 60, timeLabel: '10:00–17:00', discountLabel: '7 折', productLabel: '飯糰、壽司、手卷' },
-      { startMinute: 17 * 60, endMinute: 24 * 60, timeLabel: '17:00–00:00', discountLabel: '7 折', productLabel: '各種鮮食、生鮮蔬果' }
+      { startMinute: 10 * 60, endMinute: 17 * 60, timeLabel: '10:00–17:00', discountLabel: '7 折', discountRate: 0.7, productLabel: '飯糰、壽司、手卷' },
+      { startMinute: 17 * 60, endMinute: 24 * 60, timeLabel: '17:00–00:00', discountLabel: '7 折', discountRate: 0.7, productLabel: '各種鮮食、生鮮蔬果' }
     ]
   }
 };
@@ -93,4 +94,15 @@ export function getDiscountTimeSnapshot(now: Date = new Date()): DiscountTimeSna
     statuses: (['7-11', '全家'] as DiscountChain[])
       .map(chain => resolveDiscountTimeStatus(chain, minuteOfDay))
   };
+}
+
+export function calculateDiscountedPrice(
+  chain: DiscountChain,
+  originalPrice: number,
+  now: Date = new Date()
+): number | null {
+  if (!Number.isFinite(originalPrice) || originalPrice < 0) return null;
+  const snapshot = getDiscountTimeSnapshot(now);
+  const activePeriod = snapshot.statuses.find(status => status.chain === chain)?.activePeriod;
+  return activePeriod ? originalPrice * activePeriod.discountRate : null;
 }

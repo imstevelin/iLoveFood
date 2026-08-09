@@ -12,6 +12,9 @@ import socket
 import statistics
 import subprocess
 import time
+import urllib.error
+import urllib.parse
+import urllib.request
 from collections import Counter
 from datetime import datetime
 from pathlib import Path
@@ -19,6 +22,11 @@ from typing import Any
 
 
 STOP_REQUESTED = False
+BROWSER_USER_AGENT = (
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+    "AppleWebKit/537.36 (KHTML, like Gecko) "
+    "Chrome/138.0.0.0 Safari/537.36"
+)
 
 
 def iso_now() -> str:
@@ -68,9 +76,9 @@ def process_metrics(pid: int | None) -> dict[str, Any]:
         return {}
 
 
-def adb_pid(adb_path: str, package_name: str) -> int | None:
+def adb_pid(adb_path: str, serial: str, package_name: str) -> int | None:
     return_code, output, _ = run_command(
-        [adb_path, "shell", "pidof", package_name], timeout_seconds=4
+        [adb_path, "-s", serial, "shell", "pidof", package_name], timeout_seconds=4
     )
     if return_code != 0 or not output:
         return None
@@ -158,7 +166,9 @@ class IncrementalLogMonitor:
         return counts
 
 
-def request_mid_v(endpoint: str, response_path: Path, timeout_seconds: int) -> dict[str, Any]:
+def request_mid_v(
+    endpoint: str, response_path: Path, timeout_seconds: int, api_key: str
+) -> dict[str, Any]:
     response_path.unlink(missing_ok=True)
     write_out = "\t".join(
         [
@@ -185,6 +195,10 @@ def request_mid_v(endpoint: str, response_path: Path, timeout_seconds: int) -> d
         endpoint,
         "--header",
         "content-type: application/json",
+        "--header",
+        f"authorization: Bearer {api_key}",
+        "--header",
+        f"user-agent: {BROWSER_USER_AGENT}",
         "--data",
         "{}",
     ]
@@ -231,6 +245,9 @@ def request_mid_v(endpoint: str, response_path: Path, timeout_seconds: int) -> d
         )
         if isinstance(mid_v, str) and mid_v:
             result["mid_v_hash"] = hashlib.sha256(mid_v.encode("utf-8")).hexdigest()[:16]
+            # Private, in-memory only. The caller removes this before writing
+            # samples so no credential reaches disk.
+            result["_mid_v"] = mid_v
         if not result["valid"] and not result["error"]:
             result["error"] = str(payload.get("message") or payload.get("status") or "invalid response")[:240]
     except (OSError, UnicodeDecodeError, json.JSONDecodeError) as error:
@@ -239,6 +256,85 @@ def request_mid_v(endpoint: str, response_path: Path, timeout_seconds: int) -> d
     finally:
         response_path.unlink(missing_ok=True)
     return result
+
+
+def request_access_token(mid_v: str, timeout_seconds: int) -> dict[str, Any]:
+    endpoint = (
+        "https://lovefood.openpoint.com.tw/LoveFood/api/"
+        "Auth/FrontendAuth/AccessToken?"
+        + urllib.parse.urlencode({"mid_v": mid_v})
+    )
+    request = urllib.request.Request(
+        endpoint,
+        data=b"{}",
+        method="POST",
+        headers={
+            "User-Agent": BROWSER_USER_AGENT,
+            "Content-Type": "application/json",
+            "Accept": "application/json, text/plain, */*",
+            "Origin": "https://lovefood.openpoint.com.tw",
+            "Referer": "https://lovefood.openpoint.com.tw/",
+        },
+    )
+    started = time.monotonic()
+    result: dict[str, Any] = {
+        "valid": False,
+        "http_code": 0,
+        "latency_ms": None,
+        "is_success": False,
+        "access_token_present": False,
+        "error": None,
+    }
+    try:
+        with urllib.request.urlopen(request, timeout=timeout_seconds) as response:
+            payload = json.load(response)
+            result["http_code"] = response.status
+        result["is_success"] = payload.get("isSuccess") is True
+        result["access_token_present"] = bool(payload.get("element"))
+        result["valid"] = (
+            result["http_code"] == 200
+            and result["is_success"]
+            and result["access_token_present"]
+        )
+        if not result["valid"]:
+            result["error"] = str(payload.get("message") or "invalid response")[:240]
+    except urllib.error.HTTPError as error:
+        result["http_code"] = error.code
+        result["error"] = f"HTTP {error.code}"
+    except (OSError, ValueError, json.JSONDecodeError) as error:
+        result["error"] = str(error)[:240]
+    finally:
+        result["latency_ms"] = round((time.monotonic() - started) * 1000, 2)
+    return result
+
+
+def request_health(timeout_seconds: int = 4) -> dict[str, Any]:
+    try:
+        with urllib.request.urlopen(
+            "http://127.0.0.1:5000/health", timeout=timeout_seconds
+        ) as response:
+            payload = json.load(response)
+            payload["http_code"] = response.status
+            return payload
+    except urllib.error.HTTPError as error:
+        try:
+            payload = json.load(error)
+        except (ValueError, json.JSONDecodeError):
+            payload = {}
+        payload["http_code"] = error.code
+        return payload
+    except (OSError, ValueError, json.JSONDecodeError) as error:
+        return {"http_code": 0, "status": "unreachable", "error": str(error)[:240]}
+
+
+def systemd_restart_count() -> int | None:
+    return_code, output, _ = run_command(
+        ["systemctl", "show", "-p", "NRestarts", "--value", "op-farmer.service"]
+    )
+    try:
+        return int(output) if return_code == 0 else None
+    except ValueError:
+        return None
 
 
 def atomic_write_json(path: Path, payload: dict[str, Any]) -> None:
@@ -271,6 +367,13 @@ def build_summary(
     token_changes = sum(
         1 for index in range(1, len(token_hashes)) if token_hashes[index] != token_hashes[index - 1]
     )
+    redemptions = [
+        sample["access_token_validation"]
+        for sample in samples
+        if sample.get("access_token_validation") is not None
+    ]
+    valid_redemptions = [result for result in redemptions if result["valid"]]
+    health_samples = [sample.get("health", {}) for sample in samples]
     return {
         "started_at": started_at,
         "updated_at": iso_now(),
@@ -294,7 +397,37 @@ def build_summary(
         "farm_outage_samples": sum(1 for sample in samples if not sample["farm"]["farmer_pids"]),
         "emulator_outage_samples": sum(1 for sample in samples if not sample["farm"]["qemu_pids"]),
         "adb_outage_samples": sum(1 for sample in samples if sample["farm"]["adb_device_count"] == 0),
-        "android_app_outage_samples": sum(1 for sample in samples if sample["farm"]["android_app_pid"] is None),
+        "access_token_validation": {
+            "attempts": len(redemptions),
+            "successes": len(valid_redemptions),
+            "failures": len(redemptions) - len(valid_redemptions),
+            "latency": latency_summary(
+                [float(result["latency_ms"]) for result in valid_redemptions]
+            ),
+        },
+        "health_degraded_samples": sum(
+            1 for health in health_samples if health.get("status") != "ok"
+        ),
+        "fetch_watchdog_risk_samples": sum(
+            1
+            for health in health_samples
+            if health.get("fetch_age_seconds") is not None
+            and health.get("fetch_timeout_seconds") is not None
+            and float(health["fetch_age_seconds"])
+            >= float(health["fetch_timeout_seconds"])
+        ),
+        "app_present_while_hibernating_samples": sum(
+            1
+            for sample in samples
+            if sample.get("health", {}).get("app_state") == "hibernating"
+            and sample["farm"]["android_app_pid"] is not None
+        ),
+        "app_missing_while_active_samples": sum(
+            1
+            for sample in samples
+            if sample.get("health", {}).get("app_state") == "active"
+            and sample["farm"]["android_app_pid"] is None
+        ),
         "farmer_pid_changes": sum(
             1
             for index in range(1, len(samples))
@@ -319,15 +452,22 @@ def parse_arguments() -> argparse.Namespace:
     parser.add_argument("--duration-seconds", type=int, default=21600)
     parser.add_argument("--interval-seconds", type=int, default=30)
     parser.add_argument("--request-timeout-seconds", type=int, default=25)
-    parser.add_argument("--endpoint", default="https://ilovefood-api.imstevelin.com/get_token")
+    parser.add_argument("--redemption-interval-samples", type=int, default=10)
+    parser.add_argument("--endpoint", default="http://127.0.0.1:5000/get_token")
+    parser.add_argument("--api-key", default=os.environ.get("FARMER_API_KEY", ""))
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--farm-dir", type=Path, default=Path("/home/imstevelin/op-farmer"))
-    parser.add_argument("--adb-path", default="/usr/bin/adb")
+    parser.add_argument(
+        "--adb-path", default="/home/imstevelin/android_sdk/platform-tools/adb"
+    )
+    parser.add_argument("--adb-serial", default="emulator-5554")
     return parser.parse_args()
 
 
 def main() -> int:
     arguments = parse_arguments()
+    if not arguments.api_key:
+        raise SystemExit("FARMER_API_KEY or --api-key is required")
     output_dir: Path = arguments.output_dir
     output_dir.mkdir(parents=True, exist_ok=True)
     samples_path = output_dir / "samples.jsonl"
@@ -357,6 +497,7 @@ def main() -> int:
             "duration_seconds": arguments.duration_seconds,
             "interval_seconds": arguments.interval_seconds,
             "request_timeout_seconds": arguments.request_timeout_seconds,
+            "redemption_interval_samples": arguments.redemption_interval_samples,
             "expected_samples": expected_samples,
             "endpoint": arguments.endpoint,
             "farm_dir": str(arguments.farm_dir),
@@ -376,8 +517,21 @@ def main() -> int:
                 break
 
             request_result = request_mid_v(
-                arguments.endpoint, response_path, arguments.request_timeout_seconds
+                arguments.endpoint,
+                response_path,
+                arguments.request_timeout_seconds,
+                arguments.api_key,
             )
+            mid_v = request_result.pop("_mid_v", None)
+            access_token_validation = None
+            if (
+                sample_index % max(1, arguments.redemption_interval_samples) == 0
+                and isinstance(mid_v, str)
+            ):
+                access_token_validation = request_access_token(
+                    mid_v, arguments.request_timeout_seconds
+                )
+            health_result = request_health()
             farmer_pids = matching_pids("[r]eactive_farmer.py")
             qemu_pids = matching_pids("[q]emu-system.*token_farmer")
             device_count = adb_device_count(arguments.adb_path)
@@ -394,9 +548,20 @@ def main() -> int:
                     "qemu_pids": qemu_pids,
                     "qemu_process": process_metrics(qemu_pids[0] if qemu_pids else None),
                     "adb_device_count": device_count,
-                    "android_frida_pid": adb_pid(arguments.adb_path, "frida-server") if device_count else None,
-                    "android_app_pid": adb_pid(arguments.adb_path, "ecowork.seven") if device_count else None,
+                    "android_frida_pid": adb_pid(
+                        arguments.adb_path, arguments.adb_serial, "asdf"
+                    )
+                    if device_count
+                    else None,
+                    "android_app_pid": adb_pid(
+                        arguments.adb_path, arguments.adb_serial, "ecowork.seven"
+                    )
+                    if device_count
+                    else None,
+                    "systemd_restarts": systemd_restart_count(),
                 },
+                "health": health_result,
+                "access_token_validation": access_token_validation,
                 "system": {
                     "load_average": [round(value, 3) for value in os.getloadavg()],
                     "memory_available_kib": memory_available_kib(),
@@ -420,8 +585,15 @@ def main() -> int:
                 event_reasons.append("emulator_missing")
             if device_count == 0:
                 event_reasons.append("adb_offline")
-            if sample["farm"]["android_app_pid"] is None:
-                event_reasons.append("android_app_missing")
+            if health_result.get("status") != "ok":
+                event_reasons.append("health_degraded")
+            if (
+                health_result.get("app_state") == "hibernating"
+                and sample["farm"]["android_app_pid"] is not None
+            ):
+                event_reasons.append("app_present_while_hibernating")
+            if access_token_validation is not None and not access_token_validation["valid"]:
+                event_reasons.append("access_token_validation_failed")
             if previous_farmer_pids is not None and farmer_pids != previous_farmer_pids:
                 event_reasons.append("farmer_pid_changed")
             if farmer_counts["prefetch_failure"] or farmer_counts["token_timeout"]:
@@ -436,6 +608,7 @@ def main() -> int:
                             "sample_index": sample_index,
                             "reasons": event_reasons,
                             "request": request_result,
+                            "access_token_validation": access_token_validation,
                             "farm": sample["farm"],
                             "new_log_events": sample["new_log_events"],
                         },

@@ -7,7 +7,6 @@ import { AgentCoreService } from './core/agent-core.service';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { marked } from 'marked';
 import { MotionDirective } from '../directives/motion.directive';
-import { GestureDirective } from '../directives/gesture.directive';
 import { HapticService } from '../services/haptic.service';
 import { Subscription } from 'rxjs';
 
@@ -16,7 +15,7 @@ import { Subscription } from 'rxjs';
   templateUrl: './chatbot.component.html',
   styleUrls: ['./chatbot.component.scss'],
   standalone: true,
-  imports: [FormsModule, CommonModule, SearchFoodModule, MotionDirective, GestureDirective],
+  imports: [FormsModule, CommonModule, SearchFoodModule, MotionDirective],
 })
 export class ChatbotComponent implements OnInit, OnDestroy {
   @ViewChild('chatBody') chatBody!: ElementRef;
@@ -24,7 +23,7 @@ export class ChatbotComponent implements OnInit, OnDestroy {
   isLogin = false;
   isOpen = false;
   isMounted = false;
-  chatEnabled = true;
+  chatEnabled = false;
   userInput = '';
   userName = '';
   messages: { text: string; safeHtml?: SafeHtml; sender: string; isLoading?: boolean }[] = [];
@@ -35,7 +34,7 @@ export class ChatbotComponent implements OnInit, OnDestroy {
   private welcomeInitialized = false;
   private onStorageChange = (event: StorageEvent) => {
     if (event.key === 'chatEnabled') {
-      this.chatEnabled = event.newValue ? JSON.parse(event.newValue) : true;
+      this.chatEnabled = event.newValue ? JSON.parse(event.newValue) : false;
       if (!this.chatEnabled) this.isOpen = false;
     }
   };
@@ -61,7 +60,7 @@ export class ChatbotComponent implements OnInit, OnDestroy {
   ngOnInit() {
     // 讀取實驗室開關
     const saved = localStorage.getItem('chatEnabled');
-    this.chatEnabled = saved ? JSON.parse(saved) : true;
+    this.chatEnabled = saved ? JSON.parse(saved) : false;
 
     // 監聽其他組件透過 localStorage 改變此設定（跨分頁）
     window.addEventListener('storage', this.onStorageChange);

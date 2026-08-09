@@ -1,0 +1,39 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isOwner(userId) {
+      return request.auth != null && request.auth.uid == userId;
+    }
+
+    function validFavorite() {
+      return request.resource.data.keys().hasOnly([
+          'storeName', 'store711Name', 'storeFLongitude', 'storeFLatitude', 'label'
+        ])
+        && request.resource.data.storeName is string
+        && request.resource.data.storeName.size() > 0
+        && request.resource.data.storeName.size() <= 120
+        && (!request.resource.data.keys().hasAny(['store711Name'])
+          || request.resource.data.store711Name is string)
+        && (!request.resource.data.keys().hasAny(['storeFLongitude'])
+          || request.resource.data.storeFLongitude is number)
+        && (!request.resource.data.keys().hasAny(['storeFLatitude'])
+          || request.resource.data.storeFLatitude is number)
+        && (!request.resource.data.keys().hasAny(['label'])
+          || request.resource.data.label in ['7-11', '全家']);
+    }
+
+    match /users/{userId} {
+      allow read, write: if isOwner(userId);
+
+      match /favorites/{favoriteId} {
+        allow read, delete: if isOwner(userId);
+        allow create, update: if isOwner(userId) && validFavorite();
+      }
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

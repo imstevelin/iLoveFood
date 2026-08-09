@@ -16,6 +16,11 @@ AVD_NAME="token_farmer"
 EMULATOR_GPU_MODE="${FARMER_GPU_MODE:-swiftshader_indirect}"
 export ADB_BIN EMULATOR_SERIAL
 
+if [[ -z "${FARMER_API_KEY:-}" ]]; then
+    printf 'FARMER_API_KEY is required\n' >&2
+    exit 78
+fi
+
 case "$EMULATOR_GPU_MODE" in
     auto|host|software|lavapipe|swiftshader|swiftshader_indirect|swangle) ;;
     *)
@@ -31,6 +36,18 @@ log() {
 stop_farmer_processes() {
     if [[ -n "${child_pid:-}" ]] && kill -0 "$child_pid" 2>/dev/null; then
         kill -TERM "$child_pid" 2>/dev/null || true
+        # Frida native calls may ignore SIGTERM. Never let systemd stop hang
+        # forever waiting for a wedged worker.
+        for _ in $(seq 1 20); do
+            if ! kill -0 "$child_pid" 2>/dev/null; then
+                break
+            fi
+            sleep 0.25
+        done
+        if kill -0 "$child_pid" 2>/dev/null; then
+            log "[!] 農場工作程序未回應 SIGTERM，強制終止"
+            kill -KILL "$child_pid" 2>/dev/null || true
+        fi
         wait "$child_pid" 2>/dev/null || true
     fi
     timeout 5 "$ADB_BIN" -s "$EMULATOR_SERIAL" emu kill >/dev/null 2>&1 || true

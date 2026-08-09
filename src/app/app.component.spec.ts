@@ -22,10 +22,10 @@ describe('AppComponent', () => {
     expect(app).toBeTruthy();
   });
 
-  it(`should have as title 'friendly-time'`, () => {
+  it(`should have the official brand as title`, () => {
     const fixture = TestBed.createComponent(AppComponent);
     const app = fixture.componentInstance;
-    expect(app.title).toEqual('friendly-time');
+    expect(app.title).toEqual('友善超人');
   });
 
   it('should render the application shell', () => {

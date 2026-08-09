@@ -2,7 +2,6 @@ import { NO_ERRORS_SCHEMA } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { HttpClientTestingModule } from '@angular/common/http/testing';
 import { MatDialogModule } from '@angular/material/dialog';
-import { AngularFirestore } from '@angular/fire/compat/firestore';
 import { SearchFoodModule } from '../search-food.module';
 
 import { NewSearchComponent } from './new-search.component';
@@ -15,9 +14,6 @@ describe('NewSearchComponent', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [SearchFoodModule, HttpClientTestingModule, MatDialogModule],
-      providers: [
-        { provide: AngularFirestore, useValue: {} }
-      ],
       schemas: [NO_ERRORS_SCHEMA]
     })
     .compileComponents();
@@ -28,6 +24,15 @@ describe('NewSearchComponent', () => {
 
   it('should create', () => {
     expect(component).toBeTruthy();
+  });
+
+  it('caps route samples while preserving both endpoints', () => {
+    const points = Array.from({ length: 100 }, (_, index) => ({ lat: index, lng: index }));
+    const limited = (component as any).limitRouteSamplePoints(points, 40);
+
+    expect(limited.length).toBe(40);
+    expect(limited[0]).toEqual(points[0]);
+    expect(limited[limited.length - 1]).toEqual(points[99]);
   });
 
   it('keeps the mobile menu open while the user scrolls inside it', () => {
@@ -255,7 +260,7 @@ describe('NewSearchComponent', () => {
 
   it('returns an impossible local keyword before requesting location or credentials', () => {
     const locationSpy = spyOn((component as any).geolocationService, 'getCurrentPosition');
-    const tokenSpy = spyOn((component as any).sevenElevenService, 'getAccessToken');
+    const tokenSpy = spyOn((component as any).sevenElevenService, 'ensureGatewayReady');
     const hideSpy = spyOn(component.loadingService, 'hide');
     component.storesDataReady = true;
     component.locationDenied = true;

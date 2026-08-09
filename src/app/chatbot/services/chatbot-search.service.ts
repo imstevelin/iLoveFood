@@ -55,8 +55,8 @@ export class ChatbotSearchService {
   // 資料載入
   // ============================================================
   private loadAllStores(): void {
-    const url711 = 'https://alan-cheng.github.io/Friendly-Cat/assets/seven_eleven_stores.json';
-    const urlFm = 'https://alan-cheng.github.io/Friendly-Cat/assets/family_mart_stores.json';
+    const url711 = 'assets/seven_eleven_stores.json';
+    const urlFm = 'assets/family_mart_stores.json';
 
     forkJoin({
       seven: this.http.get<any[]>(url711).pipe(catchError(() => of([]))),
@@ -129,7 +129,7 @@ export class ChatbotSearchService {
   // ============================================================
   queryStoreInventory(brand: string, storeId: string, lat: number, lng: number): Observable<any> {
     if (brand === '7-11') {
-      return this.ensure711Token().pipe(
+      return this.ensure711Gateway().pipe(
         switchMap(() => this.sevenService.getItemsByStoreNo(storeId, { Latitude: lat, Longitude: lng })),
         map(res => {
           const cats = res?.element?.StoreStockItem?.CategoryStockItems || [];
@@ -225,7 +225,7 @@ export class ChatbotSearchService {
         const lat = pos.lat;
         const lng = pos.lng;
 
-        return this.ensure711Token().pipe(
+        return this.ensure711Gateway().pipe(
           switchMap(() => {
             const loc711: LocationData = {
               CurrentLocation: { Latitude: lat, Longitude: lng },
@@ -366,10 +366,8 @@ export class ChatbotSearchService {
     return '其他';
   }
 
-  private ensure711Token(): Observable<any> {
-    if (sessionStorage.getItem('711Token')) return of(null);
-    return this.sevenService.getAccessToken().pipe(
-      tap((t: any) => { if (t?.element) sessionStorage.setItem('711Token', t.element); }),
+  private ensure711Gateway(): Observable<any> {
+    return this.sevenService.ensureGatewayReady().pipe(
       catchError(() => of(null))
     );
   }

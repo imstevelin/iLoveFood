@@ -15,11 +15,13 @@ Restart=always
 RestartSec=5
 TimeoutStopSec=30
 KillMode=control-group
+OOMPolicy=kill
 LimitNOFILE=8192
 UMask=0077
 Environment=PYTHONUNBUFFERED=1
 Environment=HOME=/home/imstevelin
 Environment=XDG_RUNTIME_DIR=/run/user/1000
+EnvironmentFile=-/etc/ilovefood/op-farmer.env
 StandardOutput=append:/home/imstevelin/op-farmer/farmer_live.log
 StandardError=append:/home/imstevelin/op-farmer/farmer_live.log
 

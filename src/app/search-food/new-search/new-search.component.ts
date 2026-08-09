@@ -35,10 +35,12 @@ import { MatDialog } from '@angular/material/dialog';
 
 import { getDistance } from 'geolib';
 
-import { AngularFirestore } from '@angular/fire/compat/firestore';
+import { collection, deleteDoc, doc, onSnapshot, setDoc } from 'firebase/firestore';
+import { firestoreDb } from 'src/app/services/firebase-client';
 import { pinyin } from 'pinyin-pro';
 
 @Component({
+  standalone: false,
   selector: 'app-new-search',
   templateUrl: './new-search.component.html',
   styleUrls: ['./new-search.component.scss']
@@ -82,7 +84,7 @@ export class NewSearchComponent implements OnInit, OnDestroy {
     const catId = category.ID || category.name || category.Name;
     return store.loadingCompleteCategoryName === catId;
   }
-  chatEnabled: boolean = true;    // 聊天室按鈕開關 (系統預設為開啟)
+  chatEnabled: boolean = false;   // AI Chatbot Beta 預設關閉，由使用者自行開啟
   darkModeEnabled: boolean = true; // 跟隨裝置深淺色主題 (預設為開啟)
   private darkModeMediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
   get isDarkSystemTheme(): boolean { return this.darkModeMediaQuery.matches; }
@@ -119,7 +121,7 @@ export class NewSearchComponent implements OnInit, OnDestroy {
   routeNoResults: boolean = false; // 導航路線搜尋無結果
   keywordMatchMode: 'any' | 'all' = 'any';
   private lastRouteUrl = '';
-  private lastRouteMode: 'DRIVING' | 'BICYCLING' = 'BICYCLING';
+  private lastRouteMode: 'DRIVING' | 'TWO_WHEELER' = 'TWO_WHEELER';
 
   productSearchStores: any[] = []; // 商品搜尋結果的門市列表（所有已找到的）
   productSearchIsCategory: boolean = false; // 是否為種類搜尋
@@ -167,6 +169,10 @@ export class NewSearchComponent implements OnInit, OnDestroy {
   private pinyinCache = new Map<string, string>();
   private searchDebounceTimer: any = null; // 自動完成防抖計時器
   private favoritesSubscription: Subscription | null = null; // 收藏清單的訂閱
+  private routeSearchSubscription: Subscription | null = null;
+  private readonly maxRouteSamplePoints = 40;
+  private readonly maxRouteDistanceMeters = 300_000;
+  private readonly firestore = firestoreDb;
   private onSystemThemeChange = () => this.applyTheme();
   private discountTimeTimer: number | null = null;
 
@@ -295,7 +301,6 @@ export class NewSearchComponent implements OnInit, OnDestroy {
     private authService: AuthService,
     public loadingService: LoadingService,
     public dialog: MatDialog,
-    private firestore: AngularFirestore,
     private storeDataService: StoreDataService,
     private ngZone: NgZone,
     private cdr: ChangeDetectorRef
@@ -330,6 +335,7 @@ export class NewSearchComponent implements OnInit, OnDestroy {
     if (this.favoritesSubscription) {
       this.favoritesSubscription.unsubscribe();
     }
+    this.routeSearchSubscription?.unsubscribe();
     window.removeEventListener('touchmove', this.onWindowTouchMove);
     window.removeEventListener('scroll', this.onWindowScroll);
     this.darkModeMediaQuery.removeEventListener('change', this.onSystemThemeChange);
@@ -440,9 +446,13 @@ export class NewSearchComponent implements OnInit, OnDestroy {
 
     // 訂閱 getUser 方法來獲取用戶資料
     this.authService.getUser().subscribe(user => {
+      this.user = user;
       if (user) {
-        this.user = user;  // 設定用戶資料
         this.loadFavoriteStores();
+      } else {
+        this.favoritesSubscription?.unsubscribe();
+        this.favoriteStores = [];
+        this.favoriteStoreNameSet.clear();
       }
     });
 
@@ -509,7 +519,7 @@ export class NewSearchComponent implements OnInit, OnDestroy {
   }
 
   private loadSevenElevenCategoriesInBackground(): void {
-    this.sevenElevenService.getAccessToken().pipe(
+    this.sevenElevenService.ensureGatewayReady().pipe(
       switchMap((token: any) => token?.element
         ? this.sevenElevenService.getFoodCategory()
         : of(null)),
@@ -1609,20 +1619,21 @@ export class NewSearchComponent implements OnInit, OnDestroy {
         return;
       }
       
-      const selectedMode = result.mode as 'DRIVING' | 'BICYCLING';
+      const selectedMode = result.mode as 'DRIVING' | 'TWO_WHEELER';
       this.beginRouteAnalysis(result.originalUrl, selectedMode, result.productKeywords || []);
     });
   }
 
   private beginRouteAnalysis(
     originalUrl: string,
-    selectedMode: 'DRIVING' | 'BICYCLING',
+    selectedMode: 'DRIVING' | 'TWO_WHEELER',
     productKeywords: string[]
   ): void {
     if (!this.canStartDiscountSearch()) return;
     this.lastRouteUrl = originalUrl;
     this.lastRouteMode = selectedMode;
     this.routeProductKeywords = productKeywords;
+    this.routeSearchSubscription?.unsubscribe();
 
     this.totalStoresShowList = [];
     this.allNearbyStores = [];
@@ -1645,9 +1656,9 @@ export class NewSearchComponent implements OnInit, OnDestroy {
     }
   }
 
-  private resolveMapsUrlAndFetchRoute(shortUrl: string, travelMode: 'DRIVING' | 'BICYCLING'): void {
-    // 使用專屬的 Cloudflare Worker 代理伺服器
-    const proxyUrl = `https://maps-proxy.imstevelin.workers.dev/?url=${encodeURIComponent(shortUrl)}`;
+  private resolveMapsUrlAndFetchRoute(shortUrl: string, travelMode: 'DRIVING' | 'TWO_WHEELER'): void {
+    // 與前端共用同一支 Cloudflare Worker，避免額外跨網域請求。
+    const proxyUrl = `/api/maps/resolve?url=${encodeURIComponent(shortUrl)}`;
     
     this.loadingService.update('正在展開 Maps 短網址', 18, '確認完整路線資訊');
     this.http.get<any>(proxyUrl).subscribe({
@@ -1659,14 +1670,8 @@ export class NewSearchComponent implements OnInit, OnDestroy {
           expandedUrl = res.url;
         }
 
-        // 檢查是否有 html 內含座標 (如果 Cloudflare worker 沒有正確跳轉而是拿回網頁)
-        if (res && res.html && expandedUrl === shortUrl) {
-          const regex = /!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/g;
-          let match;
-          const coords = [];
-          while ((match = regex.exec(res.html)) !== null) {
-            coords.push({ lat: parseFloat(match[1]), lng: parseFloat(match[2]) });
-          }
+        if (Array.isArray(res?.coordinates)) {
+          const coords = res.coordinates;
           if (coords.length >= 2) {
             this.fetchDirectionsWithCoords(coords[0], coords[coords.length - 1], travelMode);
             return;
@@ -1675,40 +1680,15 @@ export class NewSearchComponent implements OnInit, OnDestroy {
 
         this.parseAndFetchDirections(expandedUrl, travelMode);
       },
-      error: () => {
-        // Fallback proxy: 使用 codetabs 獲取重導向後的 HTML 內容
-        this.http.get(`https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(shortUrl)}`, { responseType: 'text' }).subscribe({
-          next: (htmlStr) => {
-            // 直接從回傳的 HTML 中解析 !3d<lat>!4d<lng>
-            const regex = /!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/g;
-            let match;
-            const coords = [];
-            while ((match = regex.exec(htmlStr)) !== null) {
-              coords.push({ lat: parseFloat(match[1]), lng: parseFloat(match[2]) });
-            }
-
-            if (coords.length >= 2) {
-              const origin = coords[0];
-              const destination = coords[coords.length - 1]; // 通常最後一個是終點
-              this.fetchDirectionsWithCoords(origin, destination, travelMode);
-            } else {
-              // 找不到座標，試著解析其中的 URL
-              const matchUrl = htmlStr.match(/URL='([^']+)'/i) || htmlStr.match(/href="([^"]+)"/i);
-              const resolvedUrl = matchUrl ? matchUrl[1] : shortUrl;
-              this.parseAndFetchDirections(resolvedUrl, travelMode);
-            }
-          },
-          error: (err) => {
-            console.error('Proxy 解析失敗，嘗試直接解析', err);
-            this.parseAndFetchDirections(shortUrl, travelMode);
-          }
-        });
+      error: (error) => {
+        console.error('Maps 連結解析服務失敗', error);
+        this.showRouteErrorDialog();
       }
     });
   }
 
   // 給 Codetabs 抓出經緯度後直接使用的入口
-  private fetchDirectionsWithCoords(origin: any, destination: any, travelMode: 'DRIVING' | 'BICYCLING'): void {
+  private fetchDirectionsWithCoords(origin: any, destination: any, travelMode: 'DRIVING' | 'TWO_WHEELER'): void {
     this.loadingService.update('正在規劃路線', 34, 'Google Maps 正在計算可行路徑');
     
     const directionsService = new (window as any).google.maps.DirectionsService();
@@ -1728,7 +1708,7 @@ export class NewSearchComponent implements OnInit, OnDestroy {
     });
   }
 
-  private parseAndFetchDirections(url: string, travelMode: 'DRIVING' | 'BICYCLING'): void {
+  private parseAndFetchDirections(url: string, travelMode: 'DRIVING' | 'TWO_WHEELER'): void {
     // Google Maps URL 通常長這樣：
     // https://www.google.com/maps/dir/起點/終點/...
     // 或 https://maps.google.com/?geocode=...&daddr=終點&saddr=起點
@@ -1849,10 +1829,18 @@ export class NewSearchComponent implements OnInit, OnDestroy {
   private processDirectionsResult(result: any, travelMode?: string): void {
     this.loadingService.update('正在取樣沿路位置', 50, '排除高架路段並建立查詢點');
     
-    const sampledPoints: {lat: number, lng: number}[] = [];
+    let sampledPoints: {lat: number, lng: number}[] = [];
     let lastSampledPoint: any = null;
 
     const legs = result.routes[0].legs;
+    const totalDistance = legs.reduce(
+      (sum: number, leg: any) => sum + Number(leg?.distance?.value || 0),
+      0
+    );
+    if (totalDistance > this.maxRouteDistanceMeters) {
+      this.loadingService.fail('路線超過 300 公里。請縮短路線後分段查詢，以免即時庫存服務過載。');
+      return;
+    }
     const isDriving = travelMode === 'DRIVING';
 
     for (const leg of legs) {
@@ -1911,6 +1899,8 @@ export class NewSearchComponent implements OnInit, OnDestroy {
       }
     }
 
+    sampledPoints = this.limitRouteSamplePoints(sampledPoints, this.maxRouteSamplePoints);
+
     this.searchMode = 'route';
     this.isLocationSearchMode = false;
     this.totalStoresShowList = [];
@@ -1923,36 +1913,34 @@ export class NewSearchComponent implements OnInit, OnDestroy {
     this.fmQueriedPKeys.clear();
     this.sevenQueriedStoreNos.clear();
 
-    const sevenRequests = sampledPoints.map(p => {
-      const loc: LocationData = {
-        CurrentLocation: { Latitude: p.lat, Longitude: p.lng },
-        SearchLocation: { Latitude: p.lat, Longitude: p.lng }
-      };
-      return this.sevenElevenService.getNearByStoreList(loc).pipe(
-        timeout(6000), catchError(() => of(null))
-      );
-    });
-
-    const fmRequests = sampledPoints.map(p => {
-      // 這裡無需傳遞 OldPKeys，只要傳遞經緯度，MapProductInfo 就會自動返回該座標半徑內的門市
-      return this.familyMartService.getNearByStoreList({
-        Latitude: p.lat, Longitude: p.lng
-      }, []).pipe(
-        timeout(6000),
-        catchError((err) => {
-          console.error('[RouteSearch] FM api request err:', err);
-          return of(null);
-        })
-      );
-    });
-
-    console.log(`[RouteSearch] Sent ${sevenRequests.length} 7-11 reqs and ${fmRequests.length} FM reqs`);
-
     this.loadingService.update('正在查詢沿路門市', 62, `共 ${sampledPoints.length} 個路線查詢點`);
-    forkJoin({
-      sevenResults: forkJoin(sevenRequests.length > 0 ? sevenRequests : [of([])]),
-      fmResults: forkJoin(fmRequests.length > 0 ? fmRequests : [of([])])
-    }).subscribe(({ sevenResults, fmResults }) => {
+    this.routeSearchSubscription = from(sampledPoints).pipe(
+      mergeMap(point => {
+        const location: LocationData = {
+          CurrentLocation: { Latitude: point.lat, Longitude: point.lng },
+          SearchLocation: { Latitude: point.lat, Longitude: point.lng }
+        };
+        return forkJoin({
+          sevenResult: this.sevenElevenService.getNearByStoreList(location).pipe(
+            timeout(6000),
+            catchError(() => of(null))
+          ),
+          familyMartResult: this.familyMartService.getNearByStoreList(
+            { Latitude: point.lat, Longitude: point.lng },
+            []
+          ).pipe(
+            timeout(6000),
+            catchError((err) => {
+              console.error('[RouteSearch] FM api request err:', err);
+              return of(null);
+            })
+          )
+        });
+      }, 4),
+      toArray()
+    ).subscribe(results => {
+      const sevenResults = results.map(result => result.sevenResult);
+      const fmResults = results.map(result => result.familyMartResult);
       const sevenHealthy = sevenResults.some(
         (response: any) => Array.isArray(response?.element?.StoreStockItemList)
       );
@@ -2085,6 +2073,18 @@ export class NewSearchComponent implements OnInit, OnDestroy {
         });
       }
     });
+  }
+
+  private limitRouteSamplePoints(
+    points: { lat: number; lng: number }[],
+    maximum: number
+  ): { lat: number; lng: number }[] {
+    if (points.length <= maximum) return points;
+    const selected = new Set<number>();
+    for (let index = 0; index < maximum; index += 1) {
+      selected.add(Math.round(index * (points.length - 1) / (maximum - 1)));
+    }
+    return [...selected].map(index => points[index]);
   }
 
   private finalizeRouteStores(allStores: any[]): void {
@@ -2238,7 +2238,7 @@ export class NewSearchComponent implements OnInit, OnDestroy {
         console.warn('無法取得定位，改用台北市中心作為搜尋起點。', error);
         return of(null);
       })),
-      token: this.sevenElevenService.getAccessToken().pipe(
+      token: this.sevenElevenService.ensureGatewayReady().pipe(
         timeout(4000),
         catchError(() => of(null))
       )
@@ -2891,16 +2891,13 @@ export class NewSearchComponent implements OnInit, OnDestroy {
     );
 
     const tokenReady$ = storeChips.some(chip => chip.label === '7-11')
-      ? this.sevenElevenService.getAccessToken().pipe(
+      ? this.sevenElevenService.ensureGatewayReady().pipe(
           timeout(3000),
           catchError(() => of(null))
         )
       : of(null);
 
     tokenReady$.pipe(
-      tap((token: any) => {
-        if (token?.element) sessionStorage.setItem('711Token', token.element);
-      }),
       switchMap(() => {
         this.loadingService.update('正在比對指定門市', 48, '憑證與門市資料已就緒');
         const requests = storeChips.map(chip => this.fetchSelectedStore(chip, productKeywords));
@@ -3303,7 +3300,7 @@ export class NewSearchComponent implements OnInit, OnDestroy {
 
   private fetchNearby711WithRecovery(locationData: LocationData): Observable<any | null> {
     const attempt = (forceTokenRefresh: boolean): Observable<any> =>
-      this.sevenElevenService.getAccessToken(forceTokenRefresh).pipe(
+      this.sevenElevenService.ensureGatewayReady(forceTokenRefresh).pipe(
         switchMap((token: any) => {
           if (!token?.element) throw new Error('7-11 access token is unavailable');
           return this.sevenElevenService.getNearByStoreList(locationData);
@@ -3756,23 +3753,32 @@ export class NewSearchComponent implements OnInit, OnDestroy {
       if (this.favoritesSubscription) {
         this.favoritesSubscription.unsubscribe();
       }
-      const userRef = this.firestore.collection('users').doc(this.user.uid);
-      this.favoritesSubscription = userRef.collection('favorites').valueChanges().subscribe(favorites => {
-        this.favoriteStores = favorites;
-        // 維護 Set 以供 O(1) 查詢
-        this.favoriteStoreNameSet = new Set(favorites.map((f: any) => f.storeName));
-      });
+      const favoritesRef = collection(this.firestore, 'users', this.user.uid, 'favorites');
+      this.favoritesSubscription = new Subscription(onSnapshot(
+        favoritesRef,
+        snapshot => {
+          const favorites = snapshot.docs.map(document => document.data());
+          this.favoriteStores = favorites;
+          this.favoriteStoreNameSet = new Set(favorites.map((favorite: any) => favorite.storeName));
+        },
+        error => console.error('收藏資料同步失敗', error)
+      ));
     }
   }
 
   toggleFavorite(store: any) {
     if (this.user) {
-      const userRef = this.firestore.collection('users').doc(this.user.uid);
-      const favoriteRef = userRef.collection('favorites').doc(store.storeName);
+      const favoriteRef = doc(
+        this.firestore,
+        'users',
+        this.user.uid,
+        'favorites',
+        encodeURIComponent(store.storeName)
+      );
 
       // 如果商店已經在喜愛清單內，刪除它
       if (this.isFavorite(store)) {
-        favoriteRef.delete();
+        void deleteDoc(favoriteRef);
       } else {
         const favoriteData: any = {
           storeName: store.storeName
@@ -3788,7 +3794,7 @@ export class NewSearchComponent implements OnInit, OnDestroy {
           favoriteData.label = '全家';
         }
 
-        favoriteRef.set(favoriteData);
+        void setDoc(favoriteRef, favoriteData);
       }
     } else {
     }

@@ -1,0 +1,11 @@
+/home/imstevelin/op-farmer/farmer_live.log /home/imstevelin/op-farmer/emulator.log {
+    daily
+    maxsize 20M
+    rotate 14
+    compress
+    delaycompress
+    missingok
+    notifempty
+    copytruncate
+    su imstevelin imstevelin
+}

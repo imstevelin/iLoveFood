@@ -107,7 +107,7 @@ export class RouteModeDialogComponent implements OnInit {
     this.dialogRef.close('CANCEL');
   }
 
-  selectMode(mode: 'DRIVING' | 'BICYCLING'): void {
+  selectMode(mode: 'DRIVING' | 'TWO_WHEELER'): void {
     const originalUrl = (this.routeUrlCtrl.value || '').trim();
     if (!this.isSupportedMapsUrl(originalUrl)) {
       this.urlError = '請貼上 Google Maps 的路線分享連結';

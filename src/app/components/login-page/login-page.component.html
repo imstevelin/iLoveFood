@@ -26,12 +26,12 @@
   </div>
 
   <p class="text-sm mb-6 leading-relaxed" style="color: var(--text-secondary)">
-    輸入您的手機號碼，即可開始收藏喜愛的門市。
+    {{ verificationSent ? '輸入簡訊中的驗證碼，即可查看與管理收藏門市。' : '輸入手機號碼，我們會傳送一次性驗證碼。' }}
   </p>
 
   <!-- Form -->
   <form [formGroup]="authForm" (ngSubmit)="submitForm()" class="space-y-5">
-    <div>
+    <div *ngIf="!verificationSent">
       <label for="phone" class="block text-sm font-semibold mb-2" style="color: var(--text-primary)">手機號碼</label>
       <div class="relative">
         <div class="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none text-gray-400 dark:text-slate-500">
@@ -63,6 +63,18 @@
       </div>
     </div>
 
+    <div *ngIf="verificationSent">
+      <div class="flex items-center justify-between mb-2">
+        <label for="code" class="block text-sm font-semibold" style="color: var(--text-primary)">簡訊驗證碼</label>
+        <button type="button" class="text-sm underline" (click)="editPhone()">更換手機號碼</button>
+      </div>
+      <input type="text" id="code" formControlName="code" placeholder="6 碼驗證碼" maxlength="6"
+        inputmode="numeric" autocomplete="one-time-code" class="input-field w-full px-4 py-3 text-base" />
+      <small class="text-red-500 font-medium" *ngIf="f['code'].touched && f['code'].invalid">請輸入 6 碼數字驗證碼</small>
+    </div>
+
+    <div id="phone-recaptcha"></div>
+
     <!-- Error Message -->
     <div *ngIf="errorMessage" class="error-wrapper mb-4 p-3 rounded-xl"
       style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.2);">
@@ -74,9 +86,9 @@
       </p>
     </div>
 
-    <button type="submit"
+    <button type="submit" [disabled]="isSubmitting"
       class="login-btn w-full py-3.5 px-4 font-semibold rounded-xl mt-4 flex justify-center items-center gap-2">
-      登入 / 開始收藏
+      {{ isSubmitting ? '處理中…' : (verificationSent ? '驗證並登入' : '傳送驗證碼') }}
       <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" stroke="currentColor"
         stroke-width="2.5" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
         <path d="M5 12h14M12 5l7 7-7 7" />

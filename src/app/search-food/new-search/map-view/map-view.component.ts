@@ -14,6 +14,7 @@ import { getDistance } from 'geolib';
 declare var google: any;
 
 @Component({
+  standalone: false,
   selector: 'app-map-view',
   templateUrl: './map-view.component.html',
   styleUrls: ['./map-view.component.scss']

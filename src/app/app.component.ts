@@ -3,12 +3,13 @@ import { DOCUMENT } from '@angular/common';
 import { environment } from '../environments/environment';
 
 @Component({
+  standalone: false,
   selector: 'app-root',
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.scss']
 })
 export class AppComponent implements OnInit {
-  title = 'friendly-time';
+  title = '友善超人';
 
   constructor(
     @Inject(DOCUMENT) private document: Document,
