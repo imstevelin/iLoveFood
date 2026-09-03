@@ -1,6 +1,6 @@
 # 7‑ELEVEN `mid_v` Token 農場部署與維運指南
 
-本指南說明如何在無圖形介面的 Linux 主機部署 7‑ELEVEN Token 農場，以及如何把已存在的舊版農場升級到 2026‑08‑09 的自癒版本。
+本指南說明如何在無圖形介面的 Linux 主機部署 7‑ELEVEN Token 農場。新部署建議使用 2026‑09‑04 的 Docker 版；後半部仍保留舊 AVD/systemd 架構的升級與回滾說明。
 
 正式程式碼已獨立存放在 [`scripts/op-farmer`](./op-farmer/)；文件不再複製另一份容易過期的程式碼。日後更新或重新部署時，直接安裝該目錄中的四個檔案：
 
@@ -8,6 +8,163 @@
 - `reactive_farmer.py`：可重複使用的 Token 快取、App 休眠、ADB/Frida 自癒、資源看門與 HTTP API。
 - `start_farmer.sh`：單例監督、模擬器冷啟動、Frida 驗證與程序自動重建。
 - `op-farmer.service`：systemd 系統服務，在開機、supervisor 崩潰或被 OOM 中止後重建農場。
+
+## 2026‑09‑04 Docker 可攜部署（建議方式）
+
+農場現已封裝為單一容器，映像同時包含 Android 12 reDroid、OPENPOINT App、Frida 16.2.1、Python API 與自癒監督器。不再需要手動安裝 Android SDK、建立 AVD、配對 Frida Server 或保留特定 PVE VM；只要目標是支援 BinderFS 的 Linux Docker 主機即可部署。
+
+封裝檔位於 [`scripts/op-farmer/docker`](./op-farmer/docker/)：
+
+- `Dockerfile`：同時建置 `linux/amd64` 與 `linux/arm64`，並針對目標架構放入正確的 Frida Server。
+- `compose.yaml`：預設 1 vCPU、1.25GiB RAM、自動重啟、持久化 Android `/data`、Docker secret 與健康檢查。
+- `setup-linux-host.sh`：在新 Linux 主機啟用 `binder_linux` 與 BinderFS。
+- `build-multiarch.sh`：產生離線 OCI 封存檔或直接發布多架構映像。
+- `export-bootstrap-state.py`：從已正常運作的 App 中只擷取啟動所需的 6 個匿名狀態欄位，不把整份 SharedPreferences 放入映像。
+
+### Docker 主機要求
+
+- 正式運行：x86_64 或 ARM64 Linux，核心需啟用 `CONFIG_ANDROID_BINDER_IPC` 與 `CONFIG_ANDROID_BINDERFS`。
+- 建議最低配置：1 vCPU、1.25GiB 可用 RAM；主機還要為 Docker 與 Linux 保留額外空間。
+- 1GiB 在實測冷啟動時曾達約 993MiB，幾乎觸頂，不適合長期使用。
+- macOS 的 Docker Desktop 可建置映像，但其 Linux VM 不預設提供農場需要的 Binder 環境，不列為運行平台。x86_64 Linux 是目前完整運行驗收平台。
+
+新 Linux 主機先安裝 Docker Engine，然後執行：
+
+```bash
+cd scripts/op-farmer/docker
+./setup-linux-host.sh
+```
+
+若腳本回報 `binder_linux was already loaded without Android devices`，重開機一次後重跑。若回報核心未提供 BinderFS，需改用已啟用上述 kernel config 的主機，這無法在一般容器內補上。
+
+### 私密建置資產
+
+下列檔案已被 `.gitignore` 排除，不得提交到 Git 或放入公開 registry：
+
+```text
+scripts/op-farmer/docker/private/openpoint.apk
+scripts/op-farmer/docker/private/bootstrap-prefs.xml
+scripts/op-farmer/docker/private/farmer_api_key.txt
+```
+
+`bootstrap-prefs.xml` 並不是 Token，而是讓新 Android `/data` 能以原有匿名 OPENPOINT 身分啟動的最小狀態。如需從另一座已正常運作的模擬器重新產生：
+
+```bash
+adb root
+adb pull /data/data/ecowork.seven/shared_prefs/ecowork.seven_preferences.xml /tmp/openpoint-preferences.xml
+python3 scripts/op-farmer/docker/export-bootstrap-state.py /tmp/openpoint-preferences.xml
+rm -f /tmp/openpoint-preferences.xml
+chmod 600 scripts/op-farmer/docker/private/bootstrap-prefs.xml
+```
+
+啟動時不會直接覆寫 App 正在使用的 SharedPreferences；Frida hook 會在記憶體層提供這些啟動值，避免 App/Firebase 背景 writer 把檔案覆蓋而造成偶發登入跳轉。
+
+API key 以 Docker secret 檔案提供：
+
+```bash
+cd scripts/op-farmer/docker
+install -d -m 700 private
+umask 077
+read -rsp 'Farmer API key: ' FARMER_API_KEY
+printf '%s\n' "$FARMER_API_KEY" > private/farmer_api_key.txt
+unset FARMER_API_KEY
+```
+
+### 啟動、健康檢查與關閉
+
+```bash
+cd scripts/op-farmer/docker
+cp .env.example .env
+docker compose up -d --build
+docker compose ps
+docker compose logs -f farmer
+```
+
+若主機只安裝 Docker Engine、沒有 `docker compose` 外掛，可以使用附帶的等價腳本；它會套用同一份 `.env`、secret、資源限制、持久 volume 與 `unless-stopped` 自動重啟策略：
+
+```bash
+./run-standalone.sh
+```
+
+完全全新的 `/data` volume 約需 45‑120 秒安裝 App、啟動 Android 並產生第一枚 Token。正常後：
+
+```bash
+curl -fsS http://127.0.0.1:5000/health
+api_key="$(sed -n '1p' private/farmer_api_key.txt)"
+curl -fsS -X POST http://127.0.0.1:5000/get_token \
+  -H "Authorization: Bearer ${api_key}"
+unset api_key
+```
+
+停止但保留 Android 狀態：
+
+```bash
+docker compose down
+```
+
+連 `/data` volume 一併重置為全新農場：
+
+```bash
+docker compose down --volumes
+```
+
+最後一個指令會刪除容器內的 Android 持久狀態，只有在確定要冷啟動重建時才使用。
+
+### 查看 Android 實體畫面
+
+ADB 預設只綁定在主機 `127.0.0.1:5555`。在主機本機執行：
+
+```bash
+adb connect 127.0.0.1:5555
+scrcpy -s 127.0.0.1:5555
+```
+
+從其他電腦觀看時，先建立 SSH tunnel，不要將 5555 公開到網際網路：
+
+```bash
+ssh -L 5555:127.0.0.1:5555 user@docker-host
+adb connect 127.0.0.1:5555
+scrcpy -s 127.0.0.1:5555
+```
+
+### 多架構映像與搬遷
+
+本機產生同時含 x86_64 與 ARM64 的 OCI 封存檔：
+
+```bash
+cd scripts/op-farmer/docker
+./build-multiarch.sh --oci
+shasum -a 256 dist/op-farmer-multiarch.oci.tar
+```
+
+目前已驗證的封存檔索引同時包含 `linux/amd64` 與 `linux/arm64`。正式搬遷建議發布到私有 registry，Docker 會依目標主機自動拉取正確架構：
+
+```bash
+FARMER_IMAGE=registry.example.com/ilovefood/op-farmer:2026.09 \
+  ./build-multiarch.sh --push
+```
+
+如需離線將 OCI 封存匯入 x86_64 Docker Engine，可在目標 Linux 主機安裝 `skopeo` 後執行：
+
+```bash
+skopeo copy --override-arch amd64 \
+  oci-archive:op-farmer-multiarch.oci.tar \
+  docker-daemon:ilovefood/op-farmer:2026.09
+```
+
+映像內含受驗證的 APK 與匿名啟動狀態，封存檔及 registry 都應設為私密。運行時的 Android 狀態在 `ilovefood-op-farmer-data` volume；搬遷後不復原 volume 也可由內建 bootstrap 自動建立全新環境。
+
+### Docker 版實測結果
+
+2026‑09‑04 在 x86_64 Linux Docker Engine 上以全新 volume 實測：
+
+- 從容器啟動到第一枚可兌換 `mid_v` 約 46 秒。
+- 連續 4 個背景更新週期成功，0 次擷取失敗、0 次兌換驗證失敗、0 次 OOM，容器無重啟。
+- 單次 App 擷取約 0.23‑0.43 秒，Token 實際兌換驗證約 0.11‑0.40 秒。
+- 20 路併發、100 次 API 查詢全數成功；p50 13.44ms、p95 437.70ms、最大 447.52ms，全部低於 1.5 秒。
+- 1 vCPU / 1.25GiB 限制下尖峰記憶體約 1.15GiB，安全通過冷啟動與週期更新。
+
+與舊 AVD 版相比，Docker 版額外修正了三個會讓「容器看似正常、Token 實際不可用」的問題：Android 預設 UTC 導致加密時間差 8 小時、首頁固定座標輕觸誤開外部 WebView、以及 SharedPreferences 與 Firebase writer 的競爭。新版固定 `Asia/Taipei`、移除危險觸控並在每次啟動前清掉外部 WebView，同時改用記憶體層 bootstrap。
 
 ## 2026‑08‑09 Frida teardown 死鎖修復
 

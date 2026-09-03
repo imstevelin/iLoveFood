@@ -9,10 +9,25 @@ Java.perform(function () {
         }
     }
 
+    function traceUrl(value) {
+        try {
+            var text = String(value || "");
+            if (!/openpoint\.com\.tw/i.test(text)) {
+                return;
+            }
+            var safePath = text.split("?")[0].slice(0, 160);
+            console.log(
+                "[*] WebView 載入: " + safePath +
+                " (mid_v=" + (/mid_v=/.test(text) ? "yes" : "no") + ")"
+            );
+        } catch (error) {}
+    }
+
     // Capture both WebView overloads without logging the URL/token to disk.
     var WebView = Java.use("android.webkit.WebView");
     var loadUrlString = WebView.loadUrl.overload("java.lang.String");
     loadUrlString.implementation = function (url) {
+        traceUrl(url);
         sendMidV(url);
         return loadUrlString.call(this, url);
     };
@@ -22,9 +37,42 @@ Java.perform(function () {
         "java.util.Map"
     );
     loadUrlHeaders.implementation = function (url, headers) {
+        traceUrl(url);
         sendMidV(url);
         return loadUrlHeaders.call(this, url, headers);
     };
+
+    // A clean container can race with the old app's preference writer. Return
+    // the migrated anonymous identity in memory so iMap remains deterministic;
+    // values are never printed or sent outside the target process.
+    try {
+        var Preferences = Java.use("L4.e");
+        if (FARMER_BOOTSTRAP_STATE) {
+            var midMethod = Preferences.o.overload();
+            midMethod.implementation = function () {
+                return FARMER_BOOTSTRAP_STATE.mid;
+            };
+            var gidMethod = Preferences.l.overload();
+            gidMethod.implementation = function () {
+                return FARMER_BOOTSTRAP_STATE.gid;
+            };
+            var vcodeMethod = Preferences.A.overload();
+            vcodeMethod.implementation = function () {
+                return FARMER_BOOTSTRAP_STATE.vcode;
+            };
+            var statusMethod = Preferences.B.overload();
+            statusMethod.implementation = function () {
+                return true;
+            };
+            var firstRunPromptMethod = Preferences.p.overload();
+            firstRunPromptMethod.implementation = function () {
+                return true;
+            };
+            console.log("[*] OPENPOINT 匿名狀態已在記憶體就緒");
+        }
+    } catch (error) {
+        console.log("[!] 無法安裝匿名狀態防護: " + error);
+    }
 
     var CookieManager = Java.use("android.webkit.CookieManager");
     var TextView = Java.use("android.widget.TextView");

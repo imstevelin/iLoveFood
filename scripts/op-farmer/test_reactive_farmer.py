@@ -99,6 +99,17 @@ class TokenPoolTests(unittest.TestCase):
         script.unload.assert_not_called()
         session.detach.assert_not_called()
 
+    def test_hook_source_embeds_container_bootstrap_without_logging_values(self):
+        bootstrap = {"mid": "m" * 32, "vcode": "v" * 14, "gid": "g" * 17}
+        with mock.patch.object(
+            farmer, "load_bootstrap_state", return_value=bootstrap
+        ):
+            source = farmer.build_hook_source()
+
+        self.assertIn('var FARMER_BOOTSTRAP_STATE = {"mid":', source)
+        self.assertIn("OPENPOINT 匿名狀態已在記憶體就緒", source)
+        self.assertNotIn("console.log(FARMER_BOOTSTRAP_STATE", source)
+
     def test_hibernate_force_stops_before_dropping_frida_references(self):
         events = []
 
@@ -124,6 +135,35 @@ class TokenPoolTests(unittest.TestCase):
             ],
         )
         self.assertEqual(farmer.pool.app_state, "hibernating")
+
+    def test_launch_clears_external_webview_task_before_openpoint(self):
+        commands = []
+
+        def fake_adb_shell(args, **kwargs):
+            commands.append(tuple(args))
+
+        with (
+            mock.patch.object(farmer, "adb_shell", side_effect=fake_adb_shell),
+            mock.patch.object(farmer, "wait_for_app_pid", return_value=123),
+            mock.patch.object(farmer.time, "sleep"),
+        ):
+            self.assertEqual(farmer.launch_app(), 123)
+
+        self.assertEqual(
+            commands[0],
+            ("am", "force-stop", "org.chromium.webview_shell"),
+        )
+        self.assertEqual(commands[1], ("am", "force-stop", farmer.PKG_NAME))
+        self.assertEqual(
+            commands[2],
+            (
+                "am",
+                "start",
+                "-W",
+                "-n",
+                f"{farmer.PKG_NAME}/.activity.SplashActivity",
+            ),
+        )
 
     def test_hibernate_failure_requests_immediate_full_recovery(self):
         farmer.pool.tokens.append(farmer.TokenEntry("still-valid", time.monotonic()))
@@ -250,6 +290,60 @@ class TokenPoolTests(unittest.TestCase):
 
         self.assertEqual(response.status_code, 401)
         self.assertNotIn("mid_v", response.get_json())
+
+    def test_reset_adb_reconnects_tcp_device(self):
+        with (
+            mock.patch.object(farmer, "ADB_CONNECT_ADDRESS", "127.0.0.1:5555"),
+            mock.patch.object(farmer.subprocess, "run") as run,
+        ):
+            farmer.reset_adb_transport()
+
+        commands = [call.args[0] for call in run.call_args_list]
+        self.assertIn(
+            [farmer.ADB_BIN, "connect", "127.0.0.1:5555"], commands
+        )
+
+    def test_container_mode_skips_conflicting_adb_forward(self):
+        original = farmer.SKIP_ADB_FORWARD
+        farmer.SKIP_ADB_FORWARD = True
+        try:
+            with (
+                mock.patch.object(farmer, "adb_shell") as adb_shell,
+                mock.patch.object(farmer, "ensure_frida_server"),
+                mock.patch.object(farmer, "launch_app", return_value=123),
+                mock.patch.object(farmer, "prepare_home_screen"),
+                mock.patch.object(farmer, "cleanup_frida_client"),
+                mock.patch.object(farmer.frida, "get_device_manager") as manager,
+            ):
+                adb_shell.return_value.stdout = "FARMER_ADB_OK"
+                session = manager.return_value.add_remote_device.return_value.attach.return_value
+                session.create_script.return_value = mock.Mock()
+                self.assertTrue(farmer.init_frida())
+        finally:
+            farmer.SKIP_ADB_FORWARD = original
+
+        forwarded = [
+            call for call in adb_shell.call_args_list
+            if call.args and call.args[0] and call.args[0][0] == "forward"
+        ]
+        self.assertEqual(forwarded, [])
+
+    def test_api_key_can_be_loaded_from_docker_secret(self):
+        with (
+            mock.patch.dict(
+                farmer.os.environ,
+                {"EXAMPLE_SECRET_FILE": "/run/secrets/example"},
+                clear=False,
+            ),
+            mock.patch.object(
+                farmer.Path,
+                "read_text",
+                return_value="  secret-from-file\n",
+            ),
+        ):
+            self.assertEqual(
+                farmer.env_or_secret("EXAMPLE_SECRET"), "secret-from-file"
+            )
 
 
 if __name__ == "__main__":

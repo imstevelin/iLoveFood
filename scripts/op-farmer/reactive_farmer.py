@@ -8,6 +8,7 @@ import time
 import urllib.error
 import urllib.parse
 import urllib.request
+import xml.etree.ElementTree as ET
 from collections import deque
 from dataclasses import dataclass
 from pathlib import Path
@@ -22,10 +23,31 @@ ADB_BIN = os.environ.get(
     "ADB_BIN", str(Path.home() / "android_sdk" / "platform-tools" / "adb")
 )
 EMULATOR_SERIAL = os.environ.get("EMULATOR_SERIAL", "emulator-5554")
+ADB_CONNECT_ADDRESS = os.environ.get("ADB_CONNECT_ADDRESS", "")
+SKIP_ADB_FORWARD = os.environ.get("FARMER_SKIP_ADB_FORWARD", "0").lower() in {
+    "1",
+    "true",
+    "yes",
+}
 PKG_NAME = "ecowork.seven"
 APP_NAME = "7-ELEVEN"
-FARMER_API_KEY = os.environ.get("FARMER_API_KEY", "")
+AUXILIARY_PACKAGES = ("org.chromium.webview_shell",)
+
+
+def env_or_secret(name):
+    value = os.environ.get(name, "")
+    secret_path = os.environ.get(f"{name}_FILE", "")
+    if value or not secret_path:
+        return value
+    try:
+        return Path(secret_path).read_text(encoding="utf-8").strip()
+    except OSError:
+        return ""
+
+
+FARMER_API_KEY = env_or_secret("FARMER_API_KEY")
 FARMER_BIND_HOST = os.environ.get("FARMER_BIND_HOST", "127.0.0.1")
+BOOTSTRAP_PREFS_FILE = os.environ.get("FARMER_BOOTSTRAP_PREFS_FILE", "")
 
 
 def env_int(name, default, *, minimum=1):
@@ -68,7 +90,6 @@ MIN_HOST_AVAILABLE_MIB = env_int("FARMER_MIN_HOST_AVAILABLE_MIB", 640, minimum=1
 MAX_QEMU_RSS_MIB = env_int("FARMER_MAX_QEMU_RSS_MIB", 4608, minimum=1024)
 
 # 320x640 emulator coordinates.
-SAFE_BLANK_X, SAFE_BLANK_Y = 288, 139
 HOME_TAB_X, HOME_TAB_Y = 160, 583
 I_MAP_X, I_MAP_Y = 96, 583
 log_lock = threading.Lock()
@@ -104,6 +125,11 @@ def reset_adb_transport():
     for command, timeout in (
         ([ADB_BIN, "kill-server"], 5),
         ([ADB_BIN, "start-server"], 10),
+        *(
+            (([ADB_BIN, "connect", ADB_CONNECT_ADDRESS], 10),)
+            if ADB_CONNECT_ADDRESS
+            else ()
+        ),
         ([ADB_BIN, "-s", EMULATOR_SERIAL, "wait-for-device"], 15),
     ):
         try:
@@ -262,11 +288,35 @@ def cleanup_frida_client():
     frida_session = None
 
 
+def load_bootstrap_state():
+    """Load only the anonymous identifiers used to construct the iMap URL."""
+    if not BOOTSTRAP_PREFS_FILE:
+        return None
+    root = ET.parse(BOOTSTRAP_PREFS_FILE).getroot()
+    values = {
+        node.attrib.get("name"): node.attrib.get("value", node.text or "")
+        for node in root
+    }
+    required = ("mid", "vcode", "GID")
+    missing = [name for name in required if not values.get(name)]
+    if missing:
+        raise RuntimeError("匿名啟動資料缺少: " + ", ".join(missing))
+    return {"mid": values["mid"], "vcode": values["vcode"], "gid": values["GID"]}
+
+
+def build_hook_source():
+    state = load_bootstrap_state()
+    prelude = "var FARMER_BOOTSTRAP_STATE = " + json.dumps(
+        state, ensure_ascii=False, separators=(",", ":")
+    ) + ";\n"
+    return prelude + (BASE_DIR / "hook_mid.js").read_text(encoding="utf-8")
+
+
 FRIDA_SERVER_CMD = (
     "setenforce 0; chmod 755 /data/local/tmp/asdf; "
     "export LD_LIBRARY_PATH=/apex/com.android.runtime/lib64:"
     "/apex/com.android.art/lib64:/system/lib64:/vendor/lib64; "
-    "nohup /data/local/tmp/asdf -l 0.0.0.0:12345 "
+    f"nohup /data/local/tmp/asdf -l {'127.0.0.1' if SKIP_ADB_FORWARD else '0.0.0.0'}:12345 "
     ">/data/local/tmp/frida-server.log 2>&1 &"
 )
 
@@ -320,10 +370,15 @@ def wait_for_app_pid(timeout=20):
 
 def launch_app():
     log(f"[*] 啟動 {APP_NAME} 進行 Token 補貨...")
+    # Links opened by the old APK are delegated to reDroid's WebView shell.
+    # If that external task is left on top, Android can deliver the next launch
+    # intent into it instead of creating the OPENPOINT process.
+    for package_name in AUXILIARY_PACKAGES:
+        adb_shell(["am", "force-stop", package_name], timeout=8, check=False)
     adb_shell(["am", "force-stop", PKG_NAME], timeout=8)
     time.sleep(0.5)
     adb_shell(
-        ["monkey", "-p", PKG_NAME, "-c", "android.intent.category.LAUNCHER", "1"],
+        ["am", "start", "-W", "-n", f"{PKG_NAME}/.activity.SplashActivity"],
         timeout=12,
     )
     return wait_for_app_pid()
@@ -336,8 +391,6 @@ def prepare_home_screen():
         ["am", "start", "-n", f"{PKG_NAME}/.activity.MainActivity"], timeout=8
     )
     time.sleep(4)
-    adb_shell(["input", "tap", str(SAFE_BLANK_X), str(SAFE_BLANK_Y)], timeout=6)
-    time.sleep(0.5)
     adb_shell(["input", "tap", str(HOME_TAB_X), str(HOME_TAB_Y)], timeout=6)
     time.sleep(1)
 
@@ -385,14 +438,14 @@ def init_frida():
             raise RuntimeError("ADB shell 健康檢查失敗")
 
         ensure_frida_server()
-        adb_command(["forward", "tcp:12345", "tcp:12345"], timeout=8)
+        if not SKIP_ADB_FORWARD:
+            adb_command(["forward", "tcp:12345", "tcp:12345"], timeout=8)
         app_pid = launch_app()
         log(f"[+] 找到 {PKG_NAME} PID: {app_pid}")
 
         device = frida.get_device_manager().add_remote_device("127.0.0.1:12345")
         frida_session = device.attach(app_pid)
-        hook_path = BASE_DIR / "hook_mid.js"
-        frida_script = frida_session.create_script(hook_path.read_text(encoding="utf-8"))
+        frida_script = frida_session.create_script(build_hook_source())
         frida_script.on("message", on_message)
         frida_script.load()
         prepare_home_screen()

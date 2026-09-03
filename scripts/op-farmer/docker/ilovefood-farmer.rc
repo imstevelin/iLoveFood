@@ -1,0 +1,8 @@
+service ilovefood_farmer /bootstrap/busybox sh /bootstrap/farmer-launch.sh
+    class late_start
+    user root
+    group root shell log readproc
+    disabled
+
+on property:sys.boot_completed=1
+    start ilovefood_farmer

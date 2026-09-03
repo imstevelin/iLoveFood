@@ -1,0 +1,9 @@
+__pycache__/
+*.pyc
+farmer_live.log
+emulator.log
+backups/
+docker/dist/
+docker/private/*
+!docker/private/openpoint.apk
+!docker/private/bootstrap-prefs.xml
