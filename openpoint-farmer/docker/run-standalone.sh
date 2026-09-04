@@ -10,7 +10,7 @@ if [[ -f "$SCRIPT_DIR/.env" ]]; then
     set +a
 fi
 
-IMAGE_REF="${FARMER_IMAGE:-ilovefood/op-farmer:2026.09}"
+IMAGE_REF="${FARMER_IMAGE:-imstevelin/ilovefood-openpoint-farmer:2026.09}"
 CONTAINER_NAME="${FARMER_CONTAINER_NAME:-ilovefood-op-farmer}"
 DATA_VOLUME="${FARMER_DATA_VOLUME:-ilovefood-op-farmer-data}"
 SECRET_PATH="$SCRIPT_DIR/private/farmer_api_key.txt"
@@ -19,6 +19,8 @@ if [[ ! -s "$SECRET_PATH" ]]; then
     echo "Missing $SECRET_PATH" >&2
     exit 66
 fi
+
+docker pull "$IMAGE_REF"
 
 if docker container inspect "$CONTAINER_NAME" >/dev/null 2>&1; then
     docker container rm --force "$CONTAINER_NAME" >/dev/null

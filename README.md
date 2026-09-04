@@ -131,7 +131,7 @@ Worker 名稱必須與根目錄 `wrangler.jsonc` 的 `name` 同為 `ilovefood`�
 ### 🚜 3. LINUX 超商驗證農場環境 (OPENPOINT Token Farm)
 為確保自動且無縫地獲取 7-Eleven OPENPOINT 系統的動態加密保護 Token (`mid_v`)，我們設計了一套自動化農場：
 - **原理**: 使用 Proxmox VE (PVE) 部署一台 Ubuntu Server，啟用 KVM 硬體加速執行 Android x86 模擬器，並透過 Frida Injection 與 Waitress API Server 打造零延遲伺服器。
-- **教學**: 詳細部署流程請參閱 `scripts/OPENPOINT_token_deploy.md`。Token Farm 預設只綁 `127.0.0.1`，`/get_token` 必須使用與 Worker 相同的 Bearer key；前端不可直接連線。
+- **教學**: 農場程式與部署文件已獨立至 [`openpoint-farmer`](./openpoint-farmer/)，詳細流程請參閱 [`DEPLOYMENT.md`](./openpoint-farmer/DEPLOYMENT.md)。Token Farm 預設只綁 `127.0.0.1`，`/get_token` 必須使用與 Worker 相同的 Bearer key；前端不可直接連線。
 
 ### 4. Firebase 規則與舊收藏遷移
 

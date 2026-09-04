@@ -1,9 +1,6 @@
 services:
   farmer:
-    image: ${FARMER_IMAGE:-ilovefood/op-farmer:2026.09}
-    build:
-      context: ..
-      dockerfile: docker/Dockerfile
+    image: ${FARMER_IMAGE:-imstevelin/ilovefood-openpoint-farmer:2026.09}
     container_name: ilovefood-op-farmer
     privileged: true
     restart: unless-stopped
