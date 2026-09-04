@@ -6,7 +6,7 @@
 
 ## 從 Docker Hub 部署
 
-目標主機必須是支援 BinderFS 的 Linux。先取得部署檔後執行：
+目標主機必須是支援 BinderFS 的 Linux。完整 Linux VM 可由腳本自動設定；Proxmox LXC 必須先由 PVE 宿主機提供 Binder 核心模組與裝置，LXC 內的 `root` 無法自行安裝。先取得部署檔後執行：
 
 ```bash
 git clone https://github.com/imstevelin/iLoveFood.git

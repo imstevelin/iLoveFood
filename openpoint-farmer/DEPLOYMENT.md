@@ -24,6 +24,7 @@
 ### Docker 主機要求
 
 - 正式運行：x86_64 或 ARM64 Linux，核心需啟用 `CONFIG_ANDROID_BINDER_IPC` 與 `CONFIG_ANDROID_BINDERFS`。
+- 建議使用完整 Linux VM 或實體主機。在 Proxmox LXC 內運行 Docker 時，Binder 核心模組必須由 PVE 宿主機載入並將裝置傳入 LXC；LXC 內的 `root` 也無法取代宿主機完成這一步。
 - 建議最低配置：1 vCPU、1.25GiB 可用 RAM；主機還要為 Docker 與 Linux 保留額外空間。
 - 1GiB 在實測冷啟動時曾達約 993MiB，幾乎觸頂，不適合長期使用。
 - macOS 的 Docker Desktop 可建置映像，但其 Linux VM 不預設提供農場需要的 Binder 環境，不列為運行平台。x86_64 Linux 是目前完整運行驗收平台。
@@ -36,6 +37,29 @@ cd openpoint-farmer/docker
 ```
 
 若腳本回報 `binder_linux was already loaded without Android devices`，重開機一次後重跑。若回報核心未提供 BinderFS，需改用已啟用上述 kernel config 的主機，這無法在一般容器內補上。
+
+### Proxmox LXC 特別處理
+
+可先在目標 Linux 環境執行 `systemd-detect-virt`。如果結果是 `lxc`，`uname` 顯示的是 PVE 宿主機核心，但 LXC 內不會擁有該核心的 `/lib/modules`。此時不要在 LXC 內安裝另一個 Linux kernel，因為 LXC 不會開機使用它。
+
+最穩定的處理是改用完整 Linux VM。若必須使用 LXC，需由 PVE 管理者在「PVE 實體宿主機」完成：
+
+1. 確認當前 PVE kernel 有 `binder_linux` 與 BinderFS，並載入 `binder_linux devices=binder,hwbinder,vndbinder`。
+2. 確認宿主機上的 `/dev/binder`、`/dev/hwbinder`、`/dev/vndbinder` 都是 character device。
+3. 停止該 LXC，在 `/etc/pve/lxc/<CTID>.conf` 允許 Binder device major，並將三個裝置 bind mount 到 LXC 的同名路徑。LXC 還需啟用 Docker nesting；實際的 device major 必須在 PVE 宿主機上由 `stat` 取得，不可猜測。
+4. 重新啟動 LXC，確認三個 `/dev/*binder` 裝置可見後，才在 LXC 內重跑 `setup-linux-host.sh`。
+
+參考的 LXC 裝置傳入項目如下；`<BINDER_MAJOR>` 必須以 PVE 宿主機上 `stat -c '%t' /dev/binder` 的十六進位結果轉為十進位：
+
+```text
+features: nesting=1,keyctl=1
+lxc.cgroup2.devices.allow: c <BINDER_MAJOR>:* rwm
+lxc.mount.entry: /dev/binder dev/binder none bind,create=file
+lxc.mount.entry: /dev/hwbinder dev/hwbinder none bind,create=file
+lxc.mount.entry: /dev/vndbinder dev/vndbinder none bind,create=file
+```
+
+如果在 PVE 宿主機上執行 `modprobe binder_linux` 仍顯示模組不存在，代表該 PVE kernel 本身不符合條件；需由 PVE 管理者換用包含這些功能的核心，或直接將負載改部署在完整 VM。
 
 ### 建置資產與發布邊界
 

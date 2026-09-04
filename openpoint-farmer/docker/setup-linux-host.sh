@@ -12,6 +12,36 @@ if ! command -v docker >/dev/null 2>&1; then
     exit 69
 fi
 
+virtualization="$(systemd-detect-virt --container 2>/dev/null || true)"
+if [[ "$virtualization" == "lxc" ]]; then
+    missing_devices=()
+    for binder_device in /dev/binder /dev/hwbinder /dev/vndbinder; do
+        [[ -c "$binder_device" ]] || missing_devices+=("$binder_device")
+    done
+
+    if (( ${#missing_devices[@]} > 0 )); then
+        cat >&2 <<EOF
+This server is a Proxmox LXC container and cannot load host kernel modules.
+Missing Binder devices: ${missing_devices[*]}
+
+Run the PVE-host steps in openpoint-farmer/DEPLOYMENT.md, then restart this
+LXC container. Alternatively deploy the farmer in a full Linux VM whose
+kernel provides binder_linux and BinderFS.
+EOF
+        exit 78
+    fi
+
+    sudo systemctl enable --now docker
+    docker info >/dev/null
+    echo "Linux LXC guest is ready with Binder devices supplied by its PVE host."
+    exit 0
+fi
+
+if [[ ! -d "/lib/modules/$(uname -r)" ]]; then
+    echo "Kernel modules for $(uname -r) are unavailable; install the matching modules package or use a full Linux VM." >&2
+    exit 78
+fi
+
 sudo install -d -m 0755 /etc/modules-load.d /etc/modprobe.d
 printf '%s\n' 'binder_linux' | sudo tee /etc/modules-load.d/ilovefood-binder.conf >/dev/null
 printf '%s\n' 'options binder_linux devices=binder,hwbinder,vndbinder' \

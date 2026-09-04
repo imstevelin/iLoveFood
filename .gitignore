@@ -55,3 +55,4 @@ src/environments/environment.prod.ts
 # Private farmer deployment assets and generated container archives
 /openpoint-farmer/docker/private/
 /openpoint-farmer/docker/dist/
+/openpoint-farmer/docker/.env
