@@ -36,5 +36,8 @@ if [ "$status" -eq 75 ]; then
     echo "$(date '+%Y-%m-%d %H:%M:%S') [*] 要求容器完整重啟" >>"$LOG_FILE"
     /system/bin/setprop sys.powerctl reboot,farmer-recovery
     $BB sleep 10
+else
+    echo "$(date '+%Y-%m-%d %H:%M:%S') [*] 異常退出後等待 10 秒再重試" >>"$LOG_FILE"
+    $BB sleep 10
 fi
 exit "$status"

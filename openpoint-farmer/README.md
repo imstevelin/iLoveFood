@@ -2,7 +2,7 @@
 
 農場相關的程式、Docker 部署檔與維運文件都集中在這個目錄。公開映像同時支援 `linux/amd64` 與 `linux/arm64`，其中 x86_64 Linux 已完成實機驗收。
 
-映像：[`imstevelin/ilovefood-openpoint-farmer`](https://hub.docker.com/r/imstevelin/ilovefood-openpoint-farmer) (`2026.09.1` 為固定版本，`latest` 指向目前穩定版)
+映像：[`imstevelin/ilovefood-openpoint-farmer`](https://hub.docker.com/r/imstevelin/ilovefood-openpoint-farmer) (`2026.09.2` 為固定版本，`latest` 指向目前穩定版)
 
 ## 從 Docker Hub 部署
 
@@ -58,7 +58,7 @@ cd docker
 發布到 Docker Hub：
 
 ```bash
-FARMER_IMAGE=imstevelin/ilovefood-openpoint-farmer:2026.09.1 \
+FARMER_IMAGE=imstevelin/ilovefood-openpoint-farmer:2026.09.2 \
   ./build-multiarch.sh --push
 ```
 

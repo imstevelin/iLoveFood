@@ -75,20 +75,39 @@ fi
 
 # reDroid initially exposes adbd as the shell user. Package installation works
 # in that mode, but restoring the minimal app bootstrap state does not.
-timeout 12 "$ADB_BIN" -s "$EMULATOR_SERIAL" root >/dev/null
-timeout 15 "$ADB_BIN" -s "$EMULATOR_SERIAL" wait-for-device
-if [ "$(timeout 5 "$ADB_BIN" -s "$EMULATOR_SERIAL" shell id -u 2>/dev/null | tr -d '\r')" != "0" ]; then
+adb_root_ready=0
+adb_root_deadline=$(( $(date +%s) + 90 ))
+while [ "$(date +%s)" -lt "$adb_root_deadline" ]; do
+    timeout 20 "$ADB_BIN" -s "$EMULATOR_SERIAL" root >/dev/null 2>&1 || true
+    timeout 20 "$ADB_BIN" -s "$EMULATOR_SERIAL" wait-for-device >/dev/null 2>&1 || true
+    if [ "$(timeout 10 "$ADB_BIN" -s "$EMULATOR_SERIAL" shell id -u 2>/dev/null | tr -d '\r')" = "0" ]; then
+        adb_root_ready=1
+        break
+    fi
+    log "[*] ADB root 尚未就緒，5 秒後重試"
+    sleep 5
+done
+if [ "$adb_root_ready" -ne 1 ]; then
     log "[!] 容器內 ADB 無法取得 root 權限"
     exit 75
 fi
 
 # OPENPOINT encrypts a locally formatted timestamp into mid_v. reDroid defaults
 # to UTC, which makes otherwise well-formed tokens eight hours stale in Taiwan.
-timeout 8 "$ADB_BIN" -s "$EMULATOR_SERIAL" shell \
-    setprop persist.sys.timezone Asia/Taipei
-android_timezone="$(timeout 5 "$ADB_BIN" -s "$EMULATOR_SERIAL" shell \
-    getprop persist.sys.timezone 2>/dev/null | tr -d '\r')"
-if [ "$android_timezone" != "Asia/Taipei" ]; then
+timezone_ready=0
+timezone_deadline=$(( $(date +%s) + 60 ))
+while [ "$(date +%s)" -lt "$timezone_deadline" ]; do
+    timeout 20 "$ADB_BIN" -s "$EMULATOR_SERIAL" shell \
+        setprop persist.sys.timezone Asia/Taipei >/dev/null 2>&1 || true
+    android_timezone="$(timeout 10 "$ADB_BIN" -s "$EMULATOR_SERIAL" shell \
+        getprop persist.sys.timezone 2>/dev/null | tr -d '\r' || true)"
+    if [ "$android_timezone" = "Asia/Taipei" ]; then
+        timezone_ready=1
+        break
+    fi
+    sleep 5
+done
+if [ "$timezone_ready" -ne 1 ]; then
     log "[!] Android 時區設定失敗: ${android_timezone:-empty}"
     exit 75
 fi
@@ -113,13 +132,14 @@ if ! timeout 8 "$ADB_BIN" -s "$EMULATOR_SERIAL" shell pm path ecowork.seven >/de
         log "[!] OPENPOINT APK 在 180 秒內無法安裝"
         exit 75
     fi
-    timeout 5 "$ADB_BIN" -s "$EMULATOR_SERIAL" shell \
-        "printf '%s' '$desired_apk_sha' > /data/local/tmp/openpoint-apk.sha256"
+    timeout 20 "$ADB_BIN" -s "$EMULATOR_SERIAL" shell \
+        "printf '%s' '$desired_apk_sha' > /data/local/tmp/openpoint-apk.sha256" \
+        || true
 fi
 
 # Installing the package can start its Firebase components. Stop every package
 # process before the farmer attaches so initialization is deterministic.
-timeout 8 "$ADB_BIN" -s "$EMULATOR_SERIAL" shell am force-stop ecowork.seven
+timeout 20 "$ADB_BIN" -s "$EMULATOR_SERIAL" shell am force-stop ecowork.seven
 for _ in 1 2 3 4 5; do
     if ! timeout 5 "$ADB_BIN" -s "$EMULATOR_SERIAL" shell pidof ecowork.seven \
         2>/dev/null | grep -q .; then

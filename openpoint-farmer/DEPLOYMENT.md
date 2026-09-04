@@ -16,7 +16,7 @@
 封裝檔位於 [`docker`](./docker/)：
 
 - `Dockerfile`：同時建置 `linux/amd64` 與 `linux/arm64`，並針對目標架構放入正確的 Frida Server。
-- `compose.yaml`：預設 1 vCPU、1.25GiB RAM、自動重啟、持久化 Android `/data`、Docker secret 與健康檢查。
+- `compose.yaml`：預設最多 2 vCPU、1.25GiB RAM、自動重啟、持久化 Android `/data`、Docker secret 與健康檢查。
 - `setup-linux-host.sh`：在新 Linux 主機啟用 `binder_linux` 與 BinderFS。
 - `build-multiarch.sh`：產生離線 OCI 封存檔或直接發布多架構映像。
 - `export-bootstrap-state.py`：從已正常運作的 App 中只擷取啟動所需的 6 個匿名狀態欄位，不把整份 SharedPreferences 放入映像。
@@ -25,7 +25,7 @@
 
 - 正式運行：x86_64 或 ARM64 Linux，核心需啟用 `CONFIG_ANDROID_BINDER_IPC` 與 `CONFIG_ANDROID_BINDERFS`。
 - 建議使用完整 Linux VM 或實體主機。在 Proxmox LXC 內運行 Docker 時，Binder 核心模組必須由 PVE 宿主機載入並將裝置傳入 LXC；LXC 內的 `root` 也無法取代宿主機完成這一步。
-- 建議最低配置：1 vCPU、1.25GiB 可用 RAM；主機還要為 Docker 與 Linux 保留額外空間。
+- 建議最低配置：2 vCPU、1.25GiB 可用 RAM；主機還要為 Docker 與 Linux 保留額外空間。2 vCPU 是啟動時的最高額度，不是預留或持續佔用；Token 就緒並休眠後只會使用實際需要的 CPU。
 - 1GiB 在實測冷啟動時曾達約 993MiB，幾乎觸頂，不適合長期使用。
 - macOS 的 Docker Desktop 可建置映像，但其 Linux VM 不預設提供農場需要的 Binder 環境，不列為運行平台。x86_64 Linux 是目前完整運行驗收平台。
 
@@ -164,10 +164,10 @@ cd openpoint-farmer/docker
 shasum -a 256 dist/op-farmer-multiarch.oci.tar
 ```
 
-目前已驗證的封存檔索引同時包含 `linux/amd64` 與 `linux/arm64`。正式映像發布於 [Docker Hub](https://hub.docker.com/r/imstevelin/ilovefood-openpoint-farmer)，Docker 會依目標主機自動拉取正確架構；`2026.09.1` 是可重現的固定版本，`latest` 指向目前穩定版：
+目前已驗證的封存檔索引同時包含 `linux/amd64` 與 `linux/arm64`。正式映像發布於 [Docker Hub](https://hub.docker.com/r/imstevelin/ilovefood-openpoint-farmer)，Docker 會依目標主機自動拉取正確架構；`2026.09.2` 是可重現的固定版本，`latest` 指向目前穩定版：
 
 ```bash
-FARMER_IMAGE=imstevelin/ilovefood-openpoint-farmer:2026.09.1 \
+FARMER_IMAGE=imstevelin/ilovefood-openpoint-farmer:2026.09.2 \
   ./build-multiarch.sh --push
 ```
 
@@ -176,7 +176,7 @@ FARMER_IMAGE=imstevelin/ilovefood-openpoint-farmer:2026.09.1 \
 ```bash
 skopeo copy --override-arch amd64 \
   oci-archive:op-farmer-multiarch.oci.tar \
-  docker-daemon:imstevelin/ilovefood-openpoint-farmer:2026.09.1
+  docker-daemon:imstevelin/ilovefood-openpoint-farmer:2026.09.2
 ```
 
 映像內依擁有者授權包含受驗證的 APK 與假名化啟動狀態，所以公開映像能在全新 volume 中直接建立農場。運行時的 Android 狀態在 `ilovefood-op-farmer-data` volume；搬遷後不復原 volume 也可由內建 bootstrap 自動建立全新環境。Farmer API key 不在映像中，每台主機仍應自行產生。
@@ -553,7 +553,7 @@ curl -X POST http://127.0.0.1:5000/get_token \
 
 `FARMER_API_KEY` 為必填，請產生至少 32 bytes 的隨機值並存入 `/etc/ilovefood/op-farmer.env`（權限 `0600`）；Worker 的 `TOKEN_FARM_API_KEY` secret 必須使用相同值。服務預設只監聽 `127.0.0.1`，如有特殊網路拓撲才透過 `FARMER_BIND_HOST` 調整。
 
-其他可調環境變數通常不需更改：`FARMER_TOKEN_REFRESH_SECONDS=180`、`FARMER_TOKEN_TTL_SECONDS=240`、`FARMER_FETCH_JOB_TIMEOUT_SECONDS=45`、`FARMER_API_WAIT_TIMEOUT_SECONDS=15`、`FARMER_MIN_HOST_AVAILABLE_MIB=640`與 `FARMER_MAX_QEMU_RSS_MIB=4608`。快取容量固定為 1，因為增加容量只會多做無必要的 App 查詢。
+其他可調環境變數通常不需更改：`FARMER_TOKEN_REFRESH_SECONDS=180`、`FARMER_TOKEN_TTL_SECONDS=240`、Docker 版 `FARMER_FETCH_JOB_TIMEOUT_SECONDS=120`、`FARMER_API_WAIT_TIMEOUT_SECONDS=15`、`FARMER_MIN_HOST_AVAILABLE_MIB=128`。快取容量固定為 1，因為增加容量只會多做無必要的 App 查詢。
 
 ### 對外服務
 
@@ -575,7 +575,7 @@ TokenCache(1) ──有效──▶ 併發請求重複回傳同一 Token
                      ├─原子替換──▶ force-stop App + 丟棄失效 Frida client
                      ├─ADB timeout──▶ 重啟 ADB server/transport 後重試
                      ├─App/Frida 問題──▶ 重啟 App、Frida attach 與 hook
-                     ├─任一階段超過 45s──▶ exit 75
+                     ├─任一階段超過設定上限──▶ exit 75
                      └─連續 3 次失敗──▶ exit 75
                                              │
                                              ▼
@@ -591,7 +591,7 @@ TokenCache(1) ──有效──▶ 併發請求重複回傳同一 Token
 - `emulator_lock` 保證同一時間只有一個執行緒操作 Android UI。
 - `pool.condition` 直接喚醒 API 等待者，不再每 0.5 秒盲目輪詢。
 - Android `force-stop` 會終止 agent；Python 不在 refresh thread 同步 unload/detach，避免原生 teardown 死鎖。
-- 45 秒 fetch watchdog 獨立於 token worker；即使 worker 卡在釋放 GIL 的原生函式，maintainer 仍能要求完整重建。
+- fetch watchdog 獨立於 token worker；Docker 版預設 120 秒，舊 AVD 版預設 45 秒。即使 worker 卡在釋放 GIL 的原生函式，maintainer 仍能要求完整重建。
 - 快取已就緒後 App 進程不存在是預期行為；可避免 WebView、socket 與軟體 GPU 長時間累積。
 - Frida Server 用 `pidof asdf` 驗證，不會把 `grep` 自己誤認為 server。
 - `wait-for-device` 後還會做真實 `adb shell` round trip，避免「顯示 device、實際已卡死」。
