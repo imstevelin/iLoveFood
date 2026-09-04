@@ -57,14 +57,6 @@ def env_int(name, default, *, minimum=1):
         return default
 
 
-def env_float(name, default, *, minimum=0.1, maximum=10.0):
-    try:
-        value = float(os.environ.get(name, default))
-    except (TypeError, ValueError):
-        return default
-    return min(maximum, max(minimum, value))
-
-
 TOKEN_TTL_SECONDS = env_int("FARMER_TOKEN_TTL_SECONDS", 240, minimum=60)
 TOKEN_REFRESH_SECONDS = min(
     env_int("FARMER_TOKEN_REFRESH_SECONDS", 180, minimum=30),
@@ -96,9 +88,6 @@ RESOURCE_CHECK_INTERVAL_SECONDS = env_int(
 RESOURCE_PRESSURE_SAMPLES = env_int("FARMER_RESOURCE_PRESSURE_SAMPLES", 4, minimum=2)
 MIN_HOST_AVAILABLE_MIB = env_int("FARMER_MIN_HOST_AVAILABLE_MIB", 640, minimum=128)
 MAX_QEMU_RSS_MIB = env_int("FARMER_MAX_QEMU_RSS_MIB", 4608, minimum=1024)
-ADB_TIMEOUT_MULTIPLIER = env_float(
-    "FARMER_ADB_TIMEOUT_MULTIPLIER", 1.0, minimum=1.0, maximum=5.0
-)
 
 # 320x640 emulator coordinates.
 HOME_TAB_X, HOME_TAB_Y = 160, 583
@@ -123,11 +112,10 @@ def log(message):
 
 
 def safe_subprocess_run(command, *, timeout=15, **kwargs):
-    effective_timeout = timeout * ADB_TIMEOUT_MULTIPLIER
     try:
-        return subprocess.run(command, timeout=effective_timeout, **kwargs)
+        return subprocess.run(command, timeout=timeout, **kwargs)
     except subprocess.TimeoutExpired:
-        log(f"[!] 指令逾時 ({effective_timeout:g}s): {' '.join(command[:4])}")
+        log(f"[!] 指令逾時 ({timeout}s): {' '.join(command[:4])}")
         raise
 
 
@@ -147,7 +135,7 @@ def reset_adb_transport():
         try:
             subprocess.run(
                 command,
-                timeout=timeout * ADB_TIMEOUT_MULTIPLIER,
+                timeout=timeout,
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.DEVNULL,
             )
@@ -364,8 +352,7 @@ def ensure_frida_server():
 
 
 def wait_for_app_pid(timeout=20):
-    effective_timeout = timeout * ADB_TIMEOUT_MULTIPLIER
-    deadline = time.monotonic() + effective_timeout
+    deadline = time.monotonic() + timeout
     while time.monotonic() < deadline:
         result = adb_shell(
             ["pidof", PKG_NAME],
@@ -378,26 +365,20 @@ def wait_for_app_pid(timeout=20):
         if pid:
             return int(pid.split()[0])
         time.sleep(0.5)
-    raise RuntimeError(f"{PKG_NAME} 在 {effective_timeout:g}s 內未啟動")
-
-
-def stop_app_tasks():
-    # Links opened by the old APK are delegated to reDroid's WebView shell.
-    # If that external task is left on top, Android can deliver the next launch
-    # intent into it instead of creating the OPENPOINT process.
-    packages_to_stop = (*AUXILIARY_PACKAGES, PKG_NAME)
-    stop_command = "; ".join(
-        f"am force-stop {package_name}" for package_name in packages_to_stop
-    )
-    adb_shell(["sh", "-c", stop_command], timeout=12)
+    raise RuntimeError(f"{PKG_NAME} 在 {timeout}s 內未啟動")
 
 
 def launch_app():
     log(f"[*] 啟動 {APP_NAME} 進行 Token 補貨...")
-    stop_app_tasks()
+    # Links opened by the old APK are delegated to reDroid's WebView shell.
+    # If that external task is left on top, Android can deliver the next launch
+    # intent into it instead of creating the OPENPOINT process.
+    for package_name in AUXILIARY_PACKAGES:
+        adb_shell(["am", "force-stop", package_name], timeout=8, check=False)
+    adb_shell(["am", "force-stop", PKG_NAME], timeout=8)
     time.sleep(0.5)
     adb_shell(
-        ["am", "start", "-n", f"{PKG_NAME}/.activity.SplashActivity"],
+        ["am", "start", "-W", "-n", f"{PKG_NAME}/.activity.SplashActivity"],
         timeout=12,
     )
     return wait_for_app_pid()
@@ -459,20 +440,14 @@ def init_frida():
         ensure_frida_server()
         if not SKIP_ADB_FORWARD:
             adb_command(["forward", "tcp:12345", "tcp:12345"], timeout=8)
-        # Establish the Frida transport and inject into a suspended spawn. On a
-        # slow software-rendered host, attaching after SplashActivity begins
-        # competes with WebView startup and can hit Frida's fixed native agent
-        # synchronization timeout even though both endpoints are healthy.
-        device = frida.get_device_manager().add_remote_device("127.0.0.1:12345")
-        log(f"[*] 以 Frida 啟動 {APP_NAME} 進行 Token 補貨...")
-        stop_app_tasks()
-        app_pid = device.spawn(PKG_NAME)
+        app_pid = launch_app()
         log(f"[+] 找到 {PKG_NAME} PID: {app_pid}")
+
+        device = frida.get_device_manager().add_remote_device("127.0.0.1:12345")
         frida_session = device.attach(app_pid)
         frida_script = frida_session.create_script(build_hook_source())
         frida_script.on("message", on_message)
         frida_script.load()
-        device.resume(app_pid)
         prepare_home_screen()
 
         set_app_state("active")

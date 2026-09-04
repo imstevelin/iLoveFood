@@ -4,7 +4,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CONTEXT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
-IMAGE_REF="${FARMER_IMAGE:-imstevelin/ilovefood-openpoint-farmer:2026.09.5}"
+IMAGE_REF="${FARMER_IMAGE:-imstevelin/ilovefood-openpoint-farmer:2026.09.2}"
 BUILDER_NAME="${FARMER_BUILDER_NAME:-ilovefood-multiarch}"
 MODE="${1:---oci}"
 

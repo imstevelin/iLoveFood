@@ -5,26 +5,6 @@ from unittest import mock
 import reactive_farmer as farmer
 
 
-class RuntimeTuningTests(unittest.TestCase):
-    def test_env_float_clamps_and_rejects_invalid_values(self):
-        with mock.patch.dict(farmer.os.environ, {"TEST_FLOAT": "99"}):
-            self.assertEqual(
-                farmer.env_float("TEST_FLOAT", 1.0, minimum=1.0, maximum=5.0),
-                5.0,
-            )
-        with mock.patch.dict(farmer.os.environ, {"TEST_FLOAT": "invalid"}):
-            self.assertEqual(farmer.env_float("TEST_FLOAT", 2.0), 2.0)
-
-    def test_adb_subprocess_timeout_uses_configured_multiplier(self):
-        with (
-            mock.patch.object(farmer, "ADB_TIMEOUT_MULTIPLIER", 3.0),
-            mock.patch.object(farmer.subprocess, "run") as run,
-        ):
-            farmer.safe_subprocess_run(["adb", "devices"], timeout=4)
-
-        self.assertEqual(run.call_args.kwargs["timeout"], 12.0)
-
-
 class TokenPoolTests(unittest.TestCase):
     def setUp(self):
         self.original_pool = farmer.pool
@@ -169,14 +149,17 @@ class TokenPoolTests(unittest.TestCase):
         ):
             self.assertEqual(farmer.launch_app(), 123)
 
-        self.assertEqual(commands[0][0:2], ("sh", "-c"))
-        self.assertIn("am force-stop org.chromium.webview_shell", commands[0][2])
-        self.assertIn(f"am force-stop {farmer.PKG_NAME}", commands[0][2])
         self.assertEqual(
-            commands[1],
+            commands[0],
+            ("am", "force-stop", "org.chromium.webview_shell"),
+        )
+        self.assertEqual(commands[1], ("am", "force-stop", farmer.PKG_NAME))
+        self.assertEqual(
+            commands[2],
             (
                 "am",
                 "start",
+                "-W",
                 "-n",
                 f"{farmer.PKG_NAME}/.activity.SplashActivity",
             ),
@@ -327,19 +310,15 @@ class TokenPoolTests(unittest.TestCase):
             with (
                 mock.patch.object(farmer, "adb_shell") as adb_shell,
                 mock.patch.object(farmer, "ensure_frida_server"),
-                mock.patch.object(farmer, "stop_app_tasks"),
+                mock.patch.object(farmer, "launch_app", return_value=123),
                 mock.patch.object(farmer, "prepare_home_screen"),
                 mock.patch.object(farmer, "cleanup_frida_client"),
                 mock.patch.object(farmer.frida, "get_device_manager") as manager,
             ):
                 adb_shell.return_value.stdout = "FARMER_ADB_OK"
-                device = manager.return_value.add_remote_device.return_value
-                device.spawn.return_value = 123
-                session = device.attach.return_value
+                session = manager.return_value.add_remote_device.return_value.attach.return_value
                 session.create_script.return_value = mock.Mock()
                 self.assertTrue(farmer.init_frida())
-                device.spawn.assert_called_once_with(farmer.PKG_NAME)
-                device.resume.assert_called_once_with(123)
         finally:
             farmer.SKIP_ADB_FORWARD = original
 

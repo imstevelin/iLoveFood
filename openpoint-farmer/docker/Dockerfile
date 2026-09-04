@@ -83,7 +83,7 @@ COPY docker/ilovefood-farmer.rc /vendor/etc/init/ilovefood-farmer.rc
 
 EXPOSE 5000 5555
 STOPSIGNAL SIGRTMIN+3
-HEALTHCHECK --interval=15s --timeout=3s --start-period=900s --retries=4 \
+HEALTHCHECK --interval=15s --timeout=3s --start-period=420s --retries=4 \
   CMD ["/bootstrap/busybox", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:5000/health"]
 
 ENTRYPOINT ["/bootstrap/busybox", "sh", "/bootstrap/android-entrypoint.sh"]
