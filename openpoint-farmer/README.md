@@ -2,7 +2,7 @@
 
 農場相關的程式、Docker 部署檔與維運文件都集中在這個目錄。公開映像同時支援 `linux/amd64` 與 `linux/arm64`，其中 x86_64 Linux 已完成實機驗收。
 
-映像：[`imstevelin/ilovefood-openpoint-farmer`](https://hub.docker.com/r/imstevelin/ilovefood-openpoint-farmer) (`2026.09.2` 為固定版本，`latest` 指向目前穩定版)
+映像：[`imstevelin/ilovefood-openpoint-farmer`](https://hub.docker.com/r/imstevelin/ilovefood-openpoint-farmer) (`2026.09.4` 為固定版本，`latest` 指向目前穩定版)
 
 ## 從 Docker Hub 部署
 
@@ -20,6 +20,7 @@ sudo docker compose pull
 sudo docker compose up -d
 sudo docker compose ps
 curl -fsS http://127.0.0.1:5000/health
+python3 verify-deployment.py --requests 500 --concurrency 32
 ```
 
 目標主機不需要 APK、bootstrap 檔案、舊 VM 或舊 Android volume；這些執行所需狀態已包含在發布映像中。`farmer_api_key.txt` 是每個部署自行建立的 API 存取金鑰，不是 OPENPOINT 身分。
@@ -30,6 +31,10 @@ curl -fsS http://127.0.0.1:5000/health
 ./run-standalone.sh
 ```
 
+若映像已用 `docker load` 離線載入，則可用
+`FARMER_SKIP_PULL=1 ./run-standalone.sh` 跳過 Registry 拉取；腳本會先確認指定的
+本機映像存在。
+
 查詢 Token：
 
 ```bash
@@ -38,6 +43,11 @@ curl -fsS -X POST http://127.0.0.1:5000/get_token \
   -H "Authorization: Bearer ${api_key}"
 unset api_key
 ```
+
+`verify-deployment.py` 會等待農場 healthy、確認錯誤 API key 被拒絕，並在不輸出
+API key 或 `mid_v` 的前提下執行併發查詢測試。預設容器上限為 1 vCPU 與
+1.25GiB RAM；若要暫時診斷每筆請求，可在 `.env` 設定
+`FARMER_LOG_API_REQUESTS=1`，平時維持 `0` 可避免持久日誌與 I/O 隨流量增長。
 
 ## 從原始碼重新建置
 
@@ -58,7 +68,7 @@ cd docker
 發布到 Docker Hub：
 
 ```bash
-FARMER_IMAGE=imstevelin/ilovefood-openpoint-farmer:2026.09.2 \
+FARMER_IMAGE=imstevelin/ilovefood-openpoint-farmer:2026.09.4 \
   ./build-multiarch.sh --push
 ```
 

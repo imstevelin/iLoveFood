@@ -7,6 +7,16 @@ LOG_FILE="$LOG_DIR/farmer_live.log"
 
 $BB mkdir -p "$LOG_DIR" "$ROOT/dev" "$ROOT/proc" "$ROOT/sys"
 
+# Android's soft reboot does not reliably reap a Frida Server that lives
+# outside Android init's service tree. Reusing that unresponsive process made
+# recovery loops consume a full CPU forever while the API stayed offline.
+stale_frida_pids="$($BB pidof asdf 2>/dev/null || true)"
+if [ -n "$stale_frida_pids" ]; then
+    echo "$(date '+%Y-%m-%d %H:%M:%S') [*] 清除舊 Frida Server: $stale_frida_pids" >>"$LOG_FILE"
+    $BB kill -9 $stale_frida_pids 2>/dev/null || true
+    $BB sleep 1
+fi
+
 mount_if_needed() {
     source_path="$1"
     target_path="$2"

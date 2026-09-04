@@ -31,7 +31,21 @@ RUN apt-get update \
 
 COPY docker/requirements.txt /tmp/requirements.txt
 RUN python -m pip install --no-cache-dir -r /tmp/requirements.txt \
-    && rm -f /tmp/requirements.txt
+    && rm -f /tmp/requirements.txt \
+    && rm -rf \
+      /usr/local/lib/python3.11/ensurepip \
+      /usr/local/lib/python3.11/idlelib \
+      /usr/local/lib/python3.11/lib2to3 \
+      /usr/local/lib/python3.11/tkinter \
+      /usr/local/lib/python3.11/unittest \
+      /usr/local/lib/python3.11/site-packages/pip \
+      /usr/local/lib/python3.11/site-packages/pip-*.dist-info \
+      /usr/local/lib/python3.11/site-packages/setuptools \
+      /usr/local/lib/python3.11/site-packages/setuptools-*.dist-info \
+      /usr/local/lib/python3.11/site-packages/wheel \
+      /usr/local/lib/python3.11/site-packages/wheel-*.dist-info \
+      /usr/share/doc/* \
+      /usr/share/man/*
 
 WORKDIR /opt/farmer
 COPY reactive_farmer.py hook_mid.js ./
@@ -77,9 +91,9 @@ LABEL org.opencontainers.image.title="iLoveFood OPENPOINT mid_v farmer" \
 COPY --from=bootstrap /bin/busybox /bootstrap/busybox
 COPY --from=frida-server /frida-server /bootstrap/frida-server
 COPY --from=farmer-rootfs / /farmer-rootfs
-COPY docker/android-entrypoint.sh /bootstrap/android-entrypoint.sh
-COPY docker/farmer-launch.sh /bootstrap/farmer-launch.sh
-COPY docker/ilovefood-farmer.rc /vendor/etc/init/ilovefood-farmer.rc
+COPY --chmod=0755 docker/android-entrypoint.sh /bootstrap/android-entrypoint.sh
+COPY --chmod=0755 docker/farmer-launch.sh /bootstrap/farmer-launch.sh
+COPY --chmod=0644 docker/ilovefood-farmer.rc /vendor/etc/init/ilovefood-farmer.rc
 
 EXPOSE 5000 5555
 STOPSIGNAL SIGRTMIN+3

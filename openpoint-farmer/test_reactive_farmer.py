@@ -284,12 +284,50 @@ class TokenPoolTests(unittest.TestCase):
         )
         self.assertEqual(farmer.pool.served_requests, 2)
 
+    def test_cached_api_request_logging_is_disabled_by_default(self):
+        farmer.pool.tokens.append(
+            farmer.TokenEntry("reusable-token", time.monotonic())
+        )
+
+        with (
+            mock.patch.object(farmer, "LOG_API_REQUESTS", False),
+            mock.patch.object(farmer, "start_prefetch", return_value=False),
+            mock.patch.object(farmer, "log") as log,
+            farmer.app.test_client() as client,
+        ):
+            response = client.post(
+                "/get_token",
+                json={},
+                headers={"Authorization": "Bearer test-secret"},
+            )
+
+        self.assertEqual(response.status_code, 200)
+        log.assert_not_called()
+
     def test_api_rejects_requests_without_bearer_key(self):
         with farmer.app.test_client() as client:
             response = client.post("/get_token", json={})
 
         self.assertEqual(response.status_code, 401)
         self.assertNotIn("mid_v", response.get_json())
+
+    def test_cgroup_resources_are_reported_in_health(self):
+        now = time.monotonic()
+        farmer.pool.tokens.append(farmer.TokenEntry("valid", now))
+        farmer.pool.maintainer_heartbeat_at = now
+        farmer.pool.watchdog_heartbeat_at = now
+        farmer.pool.container_memory_mib = 768.5
+        farmer.pool.container_memory_limit_mib = 1280.0
+        farmer.pool.container_pids = 900
+        farmer.pool.container_pids_limit = 2048
+
+        with farmer.app.test_client() as client:
+            payload = client.get("/health").get_json()
+
+        self.assertEqual(payload["container_memory_mib"], 768.5)
+        self.assertEqual(payload["container_memory_limit_mib"], 1280.0)
+        self.assertEqual(payload["container_pids"], 900)
+        self.assertEqual(payload["container_pids_limit"], 2048)
 
     def test_reset_adb_reconnects_tcp_device(self):
         with (

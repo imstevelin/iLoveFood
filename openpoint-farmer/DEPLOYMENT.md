@@ -16,7 +16,7 @@
 封裝檔位於 [`docker`](./docker/)：
 
 - `Dockerfile`：同時建置 `linux/amd64` 與 `linux/arm64`，並針對目標架構放入正確的 Frida Server。
-- `compose.yaml`：預設最多 2 vCPU、1.25GiB RAM、自動重啟、持久化 Android `/data`、Docker secret 與健康檢查。
+- `compose.yaml`：預設最多 1 vCPU、1.25GiB RAM、自動重啟、持久化 Android `/data`、Docker secret 與健康檢查。
 - `setup-linux-host.sh`：在新 Linux 主機啟用 `binder_linux` 與 BinderFS。
 - `build-multiarch.sh`：產生離線 OCI 封存檔或直接發布多架構映像。
 - `export-bootstrap-state.py`：從已正常運作的 App 中只擷取啟動所需的 6 個匿名狀態欄位，不把整份 SharedPreferences 放入映像。
@@ -25,7 +25,7 @@
 
 - 正式運行：x86_64 或 ARM64 Linux，核心需啟用 `CONFIG_ANDROID_BINDER_IPC` 與 `CONFIG_ANDROID_BINDERFS`。
 - 建議使用完整 Linux VM 或實體主機。在 Proxmox LXC 內運行 Docker 時，Binder 核心模組必須由 PVE 宿主機載入並將裝置傳入 LXC；LXC 內的 `root` 也無法取代宿主機完成這一步。
-- 建議最低配置：2 vCPU、1.25GiB 可用 RAM；主機還要為 Docker 與 Linux 保留額外空間。2 vCPU 是啟動時的最高額度，不是預留或持續佔用；Token 就緒並休眠後只會使用實際需要的 CPU。
+- 建議主機至少提供 2 vCPU、1.25GiB 可用 RAM，並為 Docker 與 Linux 保留額外空間。容器預設只允許使用最多 1 vCPU；這是上限而非預留量，Token 就緒並休眠後只會使用實際需要的 CPU。特別慢的巢狀虛擬化主機可將 `FARMER_CPUS=2.0`。
 - 1GiB 在實測冷啟動時曾達約 993MiB，幾乎觸頂，不適合長期使用。
 - macOS 的 Docker Desktop 可建置映像，但其 Linux VM 不預設提供農場需要的 Binder 環境，不列為運行平台。x86_64 Linux 是目前完整運行驗收平台。
 
@@ -107,10 +107,29 @@ sudo docker compose ps
 sudo docker compose logs -f farmer
 ```
 
+等待服務健康後，可執行不會顯示 API key 或 Token 的整合與負載驗證：
+
+```bash
+python3 verify-deployment.py --requests 500 --concurrency 32
+```
+
+正式環境預設不逐筆記錄成功的快取查詢，也不記錄 Waitress 的瞬時佇列警告，
+避免高流量時持久 volume 產生大量無診斷價值的 I/O。需要短期除錯時，可在
+`.env` 設定 `FARMER_LOG_API_REQUESTS=1` 或
+`FARMER_LOG_QUEUE_WARNINGS=1`；HTTP worker 數可用 `FARMER_HTTP_THREADS`
+調整，預設為 16。
+
 若主機只安裝 Docker Engine、沒有 `docker compose` 外掛，可以使用附帶的等價腳本；它會套用同一份 `.env`、secret、資源限制、持久 volume 與 `unless-stopped` 自動重啟策略：
 
 ```bash
 ./run-standalone.sh
+```
+
+若映像已由 `docker load` 離線載入，可設定 `FARMER_SKIP_PULL=1`，腳本會先確認
+本機確實存在 `.env` 指定的映像，再跳過 Registry 拉取：
+
+```bash
+FARMER_SKIP_PULL=1 ./run-standalone.sh
 ```
 
 完全全新的 `/data` volume 約需 45‑120 秒安裝 App、啟動 Android 並產生第一枚 Token。正常後：
@@ -164,10 +183,10 @@ cd openpoint-farmer/docker
 shasum -a 256 dist/op-farmer-multiarch.oci.tar
 ```
 
-目前已驗證的封存檔索引同時包含 `linux/amd64` 與 `linux/arm64`。正式映像發布於 [Docker Hub](https://hub.docker.com/r/imstevelin/ilovefood-openpoint-farmer)，Docker 會依目標主機自動拉取正確架構；`2026.09.2` 是可重現的固定版本，`latest` 指向目前穩定版：
+目前已驗證的封存檔索引同時包含 `linux/amd64` 與 `linux/arm64`。正式映像發布於 [Docker Hub](https://hub.docker.com/r/imstevelin/ilovefood-openpoint-farmer)，Docker 會依目標主機自動拉取正確架構；`2026.09.4` 是可重現的固定版本，`latest` 指向目前穩定版：
 
 ```bash
-FARMER_IMAGE=imstevelin/ilovefood-openpoint-farmer:2026.09.2 \
+FARMER_IMAGE=imstevelin/ilovefood-openpoint-farmer:2026.09.4 \
   ./build-multiarch.sh --push
 ```
 
@@ -176,12 +195,33 @@ FARMER_IMAGE=imstevelin/ilovefood-openpoint-farmer:2026.09.2 \
 ```bash
 skopeo copy --override-arch amd64 \
   oci-archive:op-farmer-multiarch.oci.tar \
-  docker-daemon:imstevelin/ilovefood-openpoint-farmer:2026.09.2
+  docker-daemon:imstevelin/ilovefood-openpoint-farmer:2026.09.4
 ```
 
 映像內依擁有者授權包含受驗證的 APK 與假名化啟動狀態，所以公開映像能在全新 volume 中直接建立農場。運行時的 Android 狀態在 `ilovefood-op-farmer-data` volume；搬遷後不復原 volume 也可由內建 bootstrap 自動建立全新環境。Farmer API key 不在映像中，每台主機仍應自行產生。
 
 ### Docker 版實測結果
+
+2026‑09‑04 在全新 Ubuntu 26.04.1、2 vCPU、3.3GiB RAM 的無圖形 KVM
+測試機 B，從零安裝 Docker 29.1.3 與 Compose 2.40.3，執行
+`setup-linux-host.sh` 後以全新 `/data` volume 驗收本次原始碼映像：
+
+- 1 vCPU / 1.25GiB 限額下，最慢一次從建立容器到可查詢 Token 為 81 秒；首次 Token 兌換驗證成功，0 重啟、0 OOM。
+- 1,000 次、32 路併發查詢全數成功，p50 20.81ms、p95 31.13ms、最大 47.58ms。
+- 5,000 次、64 路併發查詢全數成功，p50 40.83ms、p95 51.37ms、最大 145.85ms；高流量測試沒有產生逐筆 Token 或 Waitress queue 日誌。
+- App 休眠後有效記憶體約 748‑788MiB，閒置 CPU 約 0.2‑0.4%；冷啟動取樣峰值約 795MiB。`/health` 另直接回報 cgroup memory 與 PID 用量／上限。
+- 刻意 `SIGSTOP` Frida Server 後，watchdog 觸發軟重啟，啟動器清除失去回應的 PID 1819、建立新 PID 3960，約 85 秒內自行恢復 healthy，無需重建 Docker 容器。
+- 映像內容大小由 785,900,729 bytes 降至 778,912,568 bytes（減少 6,988,161 bytes，約 0.89%）。Dockerfile 明確固定 init／啟動腳本權限，避免 Linux umask 造成 Android init 忽略服務。
+
+同日將完全相同的映像（ID
+`sha256:ba50ccfc840f67e05d6532f0c8f26df3917bc89d06643d43bb984c92590f8961`）
+離線載入並修復正式主機 A，沿用既有 API key 與 `/data` volume：
+
+- 容器在切換後 11.06 秒內可查詢，首次擷取與兌換驗證成功，0 重啟、0 OOM。
+- 1,000 次、32 路併發全數成功，p95 28.39ms、最大 42.56ms。
+- 5,000 次、64 路併發全數成功，p95 50.86ms、最大 90.85ms。
+- 休眠後取樣為 CPU 0.49%、有效記憶體 653MiB；cgroup memory 768.7MiB、PID 921/2048。
+- API 與 ADB 仍只綁定 `127.0.0.1`，API key 以唯讀 bind mount 提供；舊映像保留為 `ilovefood/op-farmer:rollback-20260904`。
 
 2026-09-04 的公開倉庫驗收：從 Docker Hub 匿名拉取 `2026.09` 成功，執行的 RepoDigest 與發布索引 `sha256:bcf45710a9d0705033bdcec83880c33924a9606fa761f6dca25df5c02e1aeecd` 一致。公開映像在 x86_64 Linux 的全新 volume 約 40 秒進入 healthy，首次內部 Token 兑換驗證成功，0 重啟、0 OOM；冷啟動後連續 20 次 API 查詢全數成功，p50 0.90ms、p95 1.17ms、最大 1.23ms。
 
@@ -553,7 +593,7 @@ curl -X POST http://127.0.0.1:5000/get_token \
 
 `FARMER_API_KEY` 為必填，請產生至少 32 bytes 的隨機值並存入 `/etc/ilovefood/op-farmer.env`（權限 `0600`）；Worker 的 `TOKEN_FARM_API_KEY` secret 必須使用相同值。服務預設只監聽 `127.0.0.1`，如有特殊網路拓撲才透過 `FARMER_BIND_HOST` 調整。
 
-其他可調環境變數通常不需更改：`FARMER_TOKEN_REFRESH_SECONDS=180`、`FARMER_TOKEN_TTL_SECONDS=240`、Docker 版 `FARMER_FETCH_JOB_TIMEOUT_SECONDS=120`、`FARMER_API_WAIT_TIMEOUT_SECONDS=15`、`FARMER_MIN_HOST_AVAILABLE_MIB=128`。快取容量固定為 1，因為增加容量只會多做無必要的 App 查詢。
+其他可調環境變數通常不需更改：`FARMER_TOKEN_REFRESH_SECONDS=180`、`FARMER_TOKEN_TTL_SECONDS=240`、Docker 版 `FARMER_FETCH_JOB_TIMEOUT_SECONDS=120`、`FARMER_API_WAIT_TIMEOUT_SECONDS=15`、`FARMER_MIN_HOST_AVAILABLE_MIB=128`、`FARMER_HTTP_THREADS=16`。`FARMER_LOG_API_REQUESTS` 與 `FARMER_LOG_QUEUE_WARNINGS` 預設皆為 `0`。快取容量固定為 1，因為增加容量只會多做無必要的 App 查詢。
 
 ### 對外服務
 

@@ -1,5 +1,6 @@
-import json
 import hmac
+import json
+import logging
 import os
 import subprocess
 import sys
@@ -57,6 +58,13 @@ def env_int(name, default, *, minimum=1):
         return default
 
 
+def env_bool(name, default=False):
+    value = os.environ.get(name)
+    if value is None:
+        return default
+    return value.strip().lower() in {"1", "true", "yes", "on"}
+
+
 TOKEN_TTL_SECONDS = env_int("FARMER_TOKEN_TTL_SECONDS", 240, minimum=60)
 TOKEN_REFRESH_SECONDS = min(
     env_int("FARMER_TOKEN_REFRESH_SECONDS", 180, minimum=30),
@@ -79,6 +87,9 @@ VALIDATION_TIMEOUT_SECONDS = env_int(
     "FARMER_VALIDATION_TIMEOUT_SECONDS", 5, minimum=2
 )
 API_WAIT_TIMEOUT_SECONDS = env_int("FARMER_API_WAIT_TIMEOUT_SECONDS", 15, minimum=1)
+LOG_API_REQUESTS = env_bool("FARMER_LOG_API_REQUESTS", False)
+HTTP_THREADS = env_int("FARMER_HTTP_THREADS", 16, minimum=4)
+LOG_QUEUE_WARNINGS = env_bool("FARMER_LOG_QUEUE_WARNINGS", False)
 MAX_CONSECUTIVE_FETCH_FAILURES = env_int(
     "FARMER_MAX_CONSECUTIVE_FAILURES", 3, minimum=1
 )
@@ -102,6 +113,9 @@ BROWSER_USER_AGENT = (
     "AppleWebKit/537.36 (KHTML, like Gecko) "
     "Chrome/138.0.0.0 Safari/537.36"
 )
+
+if not LOG_QUEUE_WARNINGS:
+    logging.getLogger("waitress.queue").setLevel(logging.ERROR)
 
 
 def log(message):
@@ -224,6 +238,10 @@ class TokenPool:
         self.last_validation_error = None
         self.host_available_mib = None
         self.qemu_rss_mib = None
+        self.container_memory_mib = None
+        self.container_memory_limit_mib = None
+        self.container_pids = None
+        self.container_pids_limit = None
         self.started_at = time.monotonic()
         self.lock = threading.Lock()
         self.condition = threading.Condition(self.lock)
@@ -782,6 +800,29 @@ def read_host_resources():
     return available_mib, qemu_rss_mib
 
 
+def read_cgroup_value(name):
+    try:
+        value = Path("/sys/fs/cgroup", name).read_text(encoding="utf-8").strip()
+        return None if value == "max" else int(value)
+    except (OSError, ValueError):
+        return None
+
+
+def read_container_resources():
+    memory_bytes = read_cgroup_value("memory.current")
+    memory_limit_bytes = read_cgroup_value("memory.max")
+    return (
+        round(memory_bytes / 1024 / 1024, 1)
+        if memory_bytes is not None
+        else None,
+        round(memory_limit_bytes / 1024 / 1024, 1)
+        if memory_limit_bytes is not None
+        else None,
+        read_cgroup_value("pids.current"),
+        read_cgroup_value("pids.max"),
+    )
+
+
 def maintain_pool():
     next_resource_check = 0.0
     pressure_samples = 0
@@ -796,9 +837,19 @@ def maintain_pool():
         now = time.monotonic()
         if now >= next_resource_check:
             available_mib, qemu_rss_mib = read_host_resources()
+            (
+                container_memory_mib,
+                container_memory_limit_mib,
+                container_pids,
+                container_pids_limit,
+            ) = read_container_resources()
             with pool.condition:
                 pool.host_available_mib = available_mib
                 pool.qemu_rss_mib = qemu_rss_mib
+                pool.container_memory_mib = container_memory_mib
+                pool.container_memory_limit_mib = container_memory_limit_mib
+                pool.container_pids = container_pids
+                pool.container_pids_limit = container_pids_limit
 
             under_pressure = (
                 available_mib is not None and available_mib < MIN_HOST_AVAILABLE_MIB
@@ -908,6 +959,10 @@ def health():
             "waiting_requests": pool.waiting_requests,
             "host_available_mib": pool.host_available_mib,
             "qemu_rss_mib": pool.qemu_rss_mib,
+            "container_memory_mib": pool.container_memory_mib,
+            "container_memory_limit_mib": pool.container_memory_limit_mib,
+            "container_pids": pool.container_pids,
+            "container_pids_limit": pool.container_pids_limit,
             "uptime_seconds": round(now - pool.started_at, 1),
         }
     return jsonify(payload), 200 if ready and control_plane_ready else 503
@@ -938,9 +993,10 @@ def get_token():
                     # same current value until the background refresh swaps it.
                     token_entry = pool.tokens[-1]
                     token = token_entry.value
-                    token_age = time.monotonic() - token_entry.created_at
                     pool.served_requests += 1
-                    remaining_inventory = len(pool.tokens)
+                    if LOG_API_REQUESTS:
+                        token_age = time.monotonic() - token_entry.created_at
+                        remaining_inventory = len(pool.tokens)
                     break
 
                 remaining = deadline - time.monotonic()
@@ -968,11 +1024,13 @@ def get_token():
                 pool.waiting_requests = max(0, pool.waiting_requests - 1)
 
     start_prefetch()
-    elapsed = time.monotonic() - started_at
-    log(
-        f"[+] API 回傳 Token，等待 {elapsed:.3f}s；"
-        f"快取年齡 {token_age:.1f}s，快取 {remaining_inventory}/{TOKEN_POOL_CAPACITY}"
-    )
+    if LOG_API_REQUESTS:
+        elapsed = time.monotonic() - started_at
+        log(
+            f"[+] API 回傳 Token，等待 {elapsed:.3f}s；"
+            f"快取年齡 {token_age:.1f}s，"
+            f"快取 {remaining_inventory}/{TOKEN_POOL_CAPACITY}"
+        )
     return jsonify({"status": "success", "mid_v": token})
 
 
@@ -998,10 +1056,10 @@ if __name__ == "__main__":
                 target=maintain_pool, name="pool-maintainer", daemon=True
             ).start()
             log(
-                f"[+] 啟動 Waitress 服務 (Port 5000, 8 threads, "
+                f"[+] 啟動 Waitress 服務 (Port 5000, {HTTP_THREADS} threads, "
                 f"pool={TOKEN_POOL_CAPACITY})"
             )
-            serve(app, host=FARMER_BIND_HOST, port=5000, threads=8)
+            serve(app, host=FARMER_BIND_HOST, port=5000, threads=HTTP_THREADS)
             break
 
         if attempt < max_init_retries:

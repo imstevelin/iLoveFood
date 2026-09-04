@@ -10,7 +10,7 @@ if [[ -f "$SCRIPT_DIR/.env" ]]; then
     set +a
 fi
 
-IMAGE_REF="${FARMER_IMAGE:-imstevelin/ilovefood-openpoint-farmer:2026.09.2}"
+IMAGE_REF="${FARMER_IMAGE:-imstevelin/ilovefood-openpoint-farmer:2026.09.4}"
 CONTAINER_NAME="${FARMER_CONTAINER_NAME:-ilovefood-op-farmer}"
 DATA_VOLUME="${FARMER_DATA_VOLUME:-ilovefood-op-farmer-data}"
 SECRET_PATH="$SCRIPT_DIR/private/farmer_api_key.txt"
@@ -29,7 +29,14 @@ if [[ ! -s "$SECRET_PATH" ]]; then
     exit 66
 fi
 
-"${DOCKER[@]}" pull "$IMAGE_REF"
+if [[ "${FARMER_SKIP_PULL:-0}" == "1" ]]; then
+    if ! "${DOCKER[@]}" image inspect "$IMAGE_REF" >/dev/null 2>&1; then
+        echo "Local image $IMAGE_REF is unavailable while FARMER_SKIP_PULL=1." >&2
+        exit 69
+    fi
+else
+    "${DOCKER[@]}" pull "$IMAGE_REF"
+fi
 
 if "${DOCKER[@]}" container inspect "$CONTAINER_NAME" >/dev/null 2>&1; then
     "${DOCKER[@]}" container rm --force "$CONTAINER_NAME" >/dev/null
@@ -40,7 +47,7 @@ fi
     --name "$CONTAINER_NAME" \
     --privileged \
     --restart unless-stopped \
-    --cpus "${FARMER_CPUS:-2.0}" \
+    --cpus "${FARMER_CPUS:-1.0}" \
     --memory "${FARMER_MEMORY_LIMIT:-1280m}" \
     --pids-limit 2048 \
     --stop-timeout 30 \
@@ -53,6 +60,9 @@ fi
     -e "FARMER_MIN_HOST_AVAILABLE_MIB=${FARMER_MIN_HOST_AVAILABLE_MIB:-128}" \
     -e "FARMER_ANDROID_BOOT_TIMEOUT_SECONDS=${FARMER_ANDROID_BOOT_TIMEOUT_SECONDS:-300}" \
     -e "FARMER_FETCH_JOB_TIMEOUT_SECONDS=${FARMER_FETCH_JOB_TIMEOUT_SECONDS:-120}" \
+    -e "FARMER_LOG_API_REQUESTS=${FARMER_LOG_API_REQUESTS:-0}" \
+    -e "FARMER_HTTP_THREADS=${FARMER_HTTP_THREADS:-16}" \
+    -e "FARMER_LOG_QUEUE_WARNINGS=${FARMER_LOG_QUEUE_WARNINGS:-0}" \
     --mount "type=bind,source=$SECRET_PATH,target=/farmer-rootfs/run/secrets/farmer_api_key,readonly" \
     -v "$DATA_VOLUME:/data" \
     --tmpfs /cache:size=64m,mode=0770 \
