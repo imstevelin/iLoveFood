@@ -32,7 +32,14 @@ EOF
     fi
 
     sudo systemctl enable --now docker
-    docker info >/dev/null
+    if docker info >/dev/null 2>&1; then
+        :
+    elif sudo -n docker info >/dev/null 2>&1; then
+        echo "Docker is available through sudo for the current user."
+    else
+        echo "Docker is installed but the current user cannot access its daemon." >&2
+        exit 77
+    fi
     echo "Linux LXC guest is ready with Binder devices supplied by its PVE host."
     exit 0
 fi
@@ -60,5 +67,12 @@ if ! grep -qw binder /proc/filesystems; then
 fi
 
 sudo systemctl enable --now docker
-docker info >/dev/null
+if docker info >/dev/null 2>&1; then
+    :
+elif sudo -n docker info >/dev/null 2>&1; then
+    echo "Docker is available through sudo for the current user."
+else
+    echo "Docker is installed but the current user cannot access its daemon." >&2
+    exit 77
+fi
 echo "Linux host is ready for the iLoveFood farmer container."

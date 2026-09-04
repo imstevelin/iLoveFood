@@ -101,10 +101,10 @@ unset FARMER_API_KEY
 ```bash
 cd openpoint-farmer/docker
 cp .env.example .env
-docker compose pull
-docker compose up -d
-docker compose ps
-docker compose logs -f farmer
+sudo docker compose pull
+sudo docker compose up -d
+sudo docker compose ps
+sudo docker compose logs -f farmer
 ```
 
 若主機只安裝 Docker Engine、沒有 `docker compose` 外掛，可以使用附帶的等價腳本；它會套用同一份 `.env`、secret、資源限制、持久 volume 與 `unless-stopped` 自動重啟策略：
@@ -126,13 +126,13 @@ unset api_key
 停止但保留 Android 狀態：
 
 ```bash
-docker compose down
+sudo docker compose down
 ```
 
 連 `/data` volume 一併重置為全新農場：
 
 ```bash
-docker compose down --volumes
+sudo docker compose down --volumes
 ```
 
 最後一個指令會刪除容器內的 Android 持久狀態，只有在確定要冷啟動重建時才使用。

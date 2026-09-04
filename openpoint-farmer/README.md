@@ -16,9 +16,9 @@ cp .env.example .env
 install -d -m 700 private
 umask 077
 openssl rand -hex 32 > private/farmer_api_key.txt
-docker compose pull
-docker compose up -d
-docker compose ps
+sudo docker compose pull
+sudo docker compose up -d
+sudo docker compose ps
 curl -fsS http://127.0.0.1:5000/health
 ```
 

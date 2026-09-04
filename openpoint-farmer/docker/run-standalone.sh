@@ -15,19 +15,28 @@ CONTAINER_NAME="${FARMER_CONTAINER_NAME:-ilovefood-op-farmer}"
 DATA_VOLUME="${FARMER_DATA_VOLUME:-ilovefood-op-farmer-data}"
 SECRET_PATH="$SCRIPT_DIR/private/farmer_api_key.txt"
 
+if docker info >/dev/null 2>&1; then
+    DOCKER=(docker)
+elif sudo -n docker info >/dev/null 2>&1; then
+    DOCKER=(sudo docker)
+else
+    echo "Cannot access the Docker daemon as the current user or through passwordless sudo." >&2
+    exit 77
+fi
+
 if [[ ! -s "$SECRET_PATH" ]]; then
     echo "Missing $SECRET_PATH" >&2
     exit 66
 fi
 
-docker pull "$IMAGE_REF"
+"${DOCKER[@]}" pull "$IMAGE_REF"
 
-if docker container inspect "$CONTAINER_NAME" >/dev/null 2>&1; then
-    docker container rm --force "$CONTAINER_NAME" >/dev/null
+if "${DOCKER[@]}" container inspect "$CONTAINER_NAME" >/dev/null 2>&1; then
+    "${DOCKER[@]}" container rm --force "$CONTAINER_NAME" >/dev/null
 fi
-docker volume create "$DATA_VOLUME" >/dev/null
+"${DOCKER[@]}" volume create "$DATA_VOLUME" >/dev/null
 
-docker run -d \
+"${DOCKER[@]}" run -d \
     --name "$CONTAINER_NAME" \
     --privileged \
     --restart unless-stopped \
