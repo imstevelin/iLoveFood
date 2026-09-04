@@ -164,10 +164,10 @@ cd openpoint-farmer/docker
 shasum -a 256 dist/op-farmer-multiarch.oci.tar
 ```
 
-目前已驗證的封存檔索引同時包含 `linux/amd64` 與 `linux/arm64`。正式映像發布於 [Docker Hub](https://hub.docker.com/r/imstevelin/ilovefood-openpoint-farmer)，Docker 會依目標主機自動拉取正確架構；`2026.09.4` 是可重現的固定版本，`latest` 指向目前穩定版：
+目前已驗證的封存檔索引同時包含 `linux/amd64` 與 `linux/arm64`。正式映像發布於 [Docker Hub](https://hub.docker.com/r/imstevelin/ilovefood-openpoint-farmer)，Docker 會依目標主機自動拉取正確架構；`2026.09.5` 是可重現的固定版本，`latest` 指向目前穩定版：
 
 ```bash
-FARMER_IMAGE=imstevelin/ilovefood-openpoint-farmer:2026.09.4 \
+FARMER_IMAGE=imstevelin/ilovefood-openpoint-farmer:2026.09.5 \
   ./build-multiarch.sh --push
 ```
 
@@ -176,7 +176,7 @@ FARMER_IMAGE=imstevelin/ilovefood-openpoint-farmer:2026.09.4 \
 ```bash
 skopeo copy --override-arch amd64 \
   oci-archive:op-farmer-multiarch.oci.tar \
-  docker-daemon:imstevelin/ilovefood-openpoint-farmer:2026.09.4
+  docker-daemon:imstevelin/ilovefood-openpoint-farmer:2026.09.5
 ```
 
 映像內依擁有者授權包含受驗證的 APK 與假名化啟動狀態，所以公開映像能在全新 volume 中直接建立農場。運行時的 Android 狀態在 `ilovefood-op-farmer-data` volume；搬遷後不復原 volume 也可由內建 bootstrap 自動建立全新環境。Farmer API key 不在映像中，每台主機仍應自行產生。
@@ -553,7 +553,7 @@ curl -X POST http://127.0.0.1:5000/get_token \
 
 `FARMER_API_KEY` 為必填，請產生至少 32 bytes 的隨機值並存入 `/etc/ilovefood/op-farmer.env`（權限 `0600`）；Worker 的 `TOKEN_FARM_API_KEY` secret 必須使用相同值。服務預設只監聽 `127.0.0.1`，如有特殊網路拓撲才透過 `FARMER_BIND_HOST` 調整。
 
-其他可調環境變數通常不需更改：`FARMER_TOKEN_REFRESH_SECONDS=180`、`FARMER_TOKEN_TTL_SECONDS=240`、Docker 版 `FARMER_FETCH_JOB_TIMEOUT_SECONDS=420`、`FARMER_ADB_TIMEOUT_MULTIPLIER=4`、`FARMER_API_WAIT_TIMEOUT_SECONDS=15`、`FARMER_MIN_HOST_AVAILABLE_MIB=128`。ADB 倍率同時套用到啟動監督與 Python 農場的 Android 操作，不改變對外 API 與 Token 兌換驗證的 timeout。預設 4 CPU 是冷啟動可使用的上限，不是保留量；服務休眠後只使用實際需要的 CPU。快取容量固定為 1，因為增加容量只會多做無必要的 App 查詢。
+其他可調環境變數通常不需更改：`FARMER_TOKEN_REFRESH_SECONDS=180`、`FARMER_TOKEN_TTL_SECONDS=240`、Docker 版 `FARMER_FETCH_JOB_TIMEOUT_SECONDS=420`、`FARMER_ADB_TIMEOUT_MULTIPLIER=4`、`FARMER_API_WAIT_TIMEOUT_SECONDS=15`、`FARMER_MIN_HOST_AVAILABLE_MIB=128`。ADB 倍率同時套用到啟動監督與 Python 農場的 Android 操作，不改變對外 API 與 Token 兌換驗證的 timeout。預設 3 CPU 是冷啟動可使用的上限，不是保留量；服務休眠後只使用實際需要的 CPU。Frida 會在 APP 尚未執行前完成注入，再恢復程序，避免慢速軟體繪圖與 agent 初始化互相爭用。快取容量固定為 1，因為增加容量只會多做無必要的 App 查詢。
 
 ### 對外服務
 

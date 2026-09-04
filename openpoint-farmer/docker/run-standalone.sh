@@ -10,7 +10,7 @@ if [[ -f "$SCRIPT_DIR/.env" ]]; then
     set +a
 fi
 
-IMAGE_REF="${FARMER_IMAGE:-imstevelin/ilovefood-openpoint-farmer:2026.09.4}"
+IMAGE_REF="${FARMER_IMAGE:-imstevelin/ilovefood-openpoint-farmer:2026.09.5}"
 CONTAINER_NAME="${FARMER_CONTAINER_NAME:-ilovefood-op-farmer}"
 DATA_VOLUME="${FARMER_DATA_VOLUME:-ilovefood-op-farmer-data}"
 SECRET_PATH="$SCRIPT_DIR/private/farmer_api_key.txt"
@@ -40,7 +40,7 @@ fi
     --name "$CONTAINER_NAME" \
     --privileged \
     --restart unless-stopped \
-    --cpus "${FARMER_CPUS:-4.0}" \
+    --cpus "${FARMER_CPUS:-3.0}" \
     --memory "${FARMER_MEMORY_LIMIT:-1280m}" \
     --pids-limit 2048 \
     --stop-timeout 30 \

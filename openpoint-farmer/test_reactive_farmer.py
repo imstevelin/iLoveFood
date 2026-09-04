@@ -327,15 +327,19 @@ class TokenPoolTests(unittest.TestCase):
             with (
                 mock.patch.object(farmer, "adb_shell") as adb_shell,
                 mock.patch.object(farmer, "ensure_frida_server"),
-                mock.patch.object(farmer, "launch_app", return_value=123),
+                mock.patch.object(farmer, "stop_app_tasks"),
                 mock.patch.object(farmer, "prepare_home_screen"),
                 mock.patch.object(farmer, "cleanup_frida_client"),
                 mock.patch.object(farmer.frida, "get_device_manager") as manager,
             ):
                 adb_shell.return_value.stdout = "FARMER_ADB_OK"
-                session = manager.return_value.add_remote_device.return_value.attach.return_value
+                device = manager.return_value.add_remote_device.return_value
+                device.spawn.return_value = 123
+                session = device.attach.return_value
                 session.create_script.return_value = mock.Mock()
                 self.assertTrue(farmer.init_frida())
+                device.spawn.assert_called_once_with(farmer.PKG_NAME)
+                device.resume.assert_called_once_with(123)
         finally:
             farmer.SKIP_ADB_FORWARD = original
 

@@ -381,8 +381,7 @@ def wait_for_app_pid(timeout=20):
     raise RuntimeError(f"{PKG_NAME} 在 {effective_timeout:g}s 內未啟動")
 
 
-def launch_app():
-    log(f"[*] 啟動 {APP_NAME} 進行 Token 補貨...")
+def stop_app_tasks():
     # Links opened by the old APK are delegated to reDroid's WebView shell.
     # If that external task is left on top, Android can deliver the next launch
     # intent into it instead of creating the OPENPOINT process.
@@ -391,6 +390,11 @@ def launch_app():
         f"am force-stop {package_name}" for package_name in packages_to_stop
     )
     adb_shell(["sh", "-c", stop_command], timeout=12)
+
+
+def launch_app():
+    log(f"[*] 啟動 {APP_NAME} 進行 Token 補貨...")
+    stop_app_tasks()
     time.sleep(0.5)
     adb_shell(
         ["am", "start", "-n", f"{PKG_NAME}/.activity.SplashActivity"],
@@ -455,17 +459,20 @@ def init_frida():
         ensure_frida_server()
         if not SKIP_ADB_FORWARD:
             adb_command(["forward", "tcp:12345", "tcp:12345"], timeout=8)
-        # Establish the Frida transport while OPENPOINT is stopped. On a slow
-        # software-rendered Android host, connecting after SplashActivity has
-        # begun competes with WebView startup and can hit Frida's fixed native
-        # connection timeout even though both endpoints are healthy.
+        # Establish the Frida transport and inject into a suspended spawn. On a
+        # slow software-rendered host, attaching after SplashActivity begins
+        # competes with WebView startup and can hit Frida's fixed native agent
+        # synchronization timeout even though both endpoints are healthy.
         device = frida.get_device_manager().add_remote_device("127.0.0.1:12345")
-        app_pid = launch_app()
+        log(f"[*] 以 Frida 啟動 {APP_NAME} 進行 Token 補貨...")
+        stop_app_tasks()
+        app_pid = device.spawn(PKG_NAME)
         log(f"[+] 找到 {PKG_NAME} PID: {app_pid}")
         frida_session = device.attach(app_pid)
         frida_script = frida_session.create_script(build_hook_source())
         frida_script.on("message", on_message)
         frida_script.load()
+        device.resume(app_pid)
         prepare_home_screen()
 
         set_app_state("active")

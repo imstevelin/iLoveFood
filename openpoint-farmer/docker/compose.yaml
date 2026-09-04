@@ -1,10 +1,10 @@
 services:
   farmer:
-    image: ${FARMER_IMAGE:-imstevelin/ilovefood-openpoint-farmer:2026.09.4}
+    image: ${FARMER_IMAGE:-imstevelin/ilovefood-openpoint-farmer:2026.09.5}
     container_name: ilovefood-op-farmer
     privileged: true
     restart: unless-stopped
-    cpus: ${FARMER_CPUS:-4.0}
+    cpus: ${FARMER_CPUS:-3.0}
     mem_limit: ${FARMER_MEMORY_LIMIT:-1280m}
     pids_limit: 2048
     stop_grace_period: 30s
