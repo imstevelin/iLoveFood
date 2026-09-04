@@ -169,17 +169,14 @@ class TokenPoolTests(unittest.TestCase):
         ):
             self.assertEqual(farmer.launch_app(), 123)
 
+        self.assertEqual(commands[0][0:2], ("sh", "-c"))
+        self.assertIn("am force-stop org.chromium.webview_shell", commands[0][2])
+        self.assertIn(f"am force-stop {farmer.PKG_NAME}", commands[0][2])
         self.assertEqual(
-            commands[0],
-            ("am", "force-stop", "org.chromium.webview_shell"),
-        )
-        self.assertEqual(commands[1], ("am", "force-stop", farmer.PKG_NAME))
-        self.assertEqual(
-            commands[2],
+            commands[1],
             (
                 "am",
                 "start",
-                "-W",
                 "-n",
                 f"{farmer.PKG_NAME}/.activity.SplashActivity",
             ),

@@ -386,12 +386,14 @@ def launch_app():
     # Links opened by the old APK are delegated to reDroid's WebView shell.
     # If that external task is left on top, Android can deliver the next launch
     # intent into it instead of creating the OPENPOINT process.
-    for package_name in AUXILIARY_PACKAGES:
-        adb_shell(["am", "force-stop", package_name], timeout=8, check=False)
-    adb_shell(["am", "force-stop", PKG_NAME], timeout=8)
+    packages_to_stop = (*AUXILIARY_PACKAGES, PKG_NAME)
+    stop_command = "; ".join(
+        f"am force-stop {package_name}" for package_name in packages_to_stop
+    )
+    adb_shell(["sh", "-c", stop_command], timeout=12)
     time.sleep(0.5)
     adb_shell(
-        ["am", "start", "-W", "-n", f"{PKG_NAME}/.activity.SplashActivity"],
+        ["am", "start", "-n", f"{PKG_NAME}/.activity.SplashActivity"],
         timeout=12,
     )
     return wait_for_app_pid()
@@ -453,10 +455,13 @@ def init_frida():
         ensure_frida_server()
         if not SKIP_ADB_FORWARD:
             adb_command(["forward", "tcp:12345", "tcp:12345"], timeout=8)
+        # Establish the Frida transport while OPENPOINT is stopped. On a slow
+        # software-rendered Android host, connecting after SplashActivity has
+        # begun competes with WebView startup and can hit Frida's fixed native
+        # connection timeout even though both endpoints are healthy.
+        device = frida.get_device_manager().add_remote_device("127.0.0.1:12345")
         app_pid = launch_app()
         log(f"[+] 找到 {PKG_NAME} PID: {app_pid}")
-
-        device = frida.get_device_manager().add_remote_device("127.0.0.1:12345")
         frida_session = device.attach(app_pid)
         frida_script = frida_session.create_script(build_hook_source())
         frida_script.on("message", on_message)

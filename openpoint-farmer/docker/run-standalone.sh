@@ -10,7 +10,7 @@ if [[ -f "$SCRIPT_DIR/.env" ]]; then
     set +a
 fi
 
-IMAGE_REF="${FARMER_IMAGE:-imstevelin/ilovefood-openpoint-farmer:2026.09.3}"
+IMAGE_REF="${FARMER_IMAGE:-imstevelin/ilovefood-openpoint-farmer:2026.09.4}"
 CONTAINER_NAME="${FARMER_CONTAINER_NAME:-ilovefood-op-farmer}"
 DATA_VOLUME="${FARMER_DATA_VOLUME:-ilovefood-op-farmer-data}"
 SECRET_PATH="$SCRIPT_DIR/private/farmer_api_key.txt"
@@ -40,7 +40,7 @@ fi
     --name "$CONTAINER_NAME" \
     --privileged \
     --restart unless-stopped \
-    --cpus "${FARMER_CPUS:-2.0}" \
+    --cpus "${FARMER_CPUS:-4.0}" \
     --memory "${FARMER_MEMORY_LIMIT:-1280m}" \
     --pids-limit 2048 \
     --stop-timeout 30 \
@@ -51,10 +51,10 @@ fi
     -e "FARMER_TOKEN_TTL_SECONDS=${FARMER_TOKEN_TTL_SECONDS:-240}" \
     -e "FARMER_TOKEN_REFRESH_SECONDS=${FARMER_TOKEN_REFRESH_SECONDS:-180}" \
     -e "FARMER_MIN_HOST_AVAILABLE_MIB=${FARMER_MIN_HOST_AVAILABLE_MIB:-128}" \
-    -e "FARMER_ANDROID_BOOT_TIMEOUT_SECONDS=${FARMER_ANDROID_BOOT_TIMEOUT_SECONDS:-300}" \
-    -e "FARMER_FETCH_JOB_TIMEOUT_SECONDS=${FARMER_FETCH_JOB_TIMEOUT_SECONDS:-240}" \
+    -e "FARMER_ANDROID_BOOT_TIMEOUT_SECONDS=${FARMER_ANDROID_BOOT_TIMEOUT_SECONDS:-600}" \
+    -e "FARMER_FETCH_JOB_TIMEOUT_SECONDS=${FARMER_FETCH_JOB_TIMEOUT_SECONDS:-420}" \
     -e "FARMER_FETCH_TIMEOUT_SECONDS=${FARMER_FETCH_TIMEOUT_SECONDS:-60}" \
-    -e "FARMER_ADB_TIMEOUT_MULTIPLIER=${FARMER_ADB_TIMEOUT_MULTIPLIER:-3}" \
+    -e "FARMER_ADB_TIMEOUT_MULTIPLIER=${FARMER_ADB_TIMEOUT_MULTIPLIER:-4}" \
     --mount "type=bind,source=$SECRET_PATH,target=/farmer-rootfs/run/secrets/farmer_api_key,readonly" \
     -v "$DATA_VOLUME:/data" \
     --tmpfs /cache:size=64m,mode=0770 \
