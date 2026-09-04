@@ -5,6 +5,26 @@ from unittest import mock
 import reactive_farmer as farmer
 
 
+class RuntimeTuningTests(unittest.TestCase):
+    def test_env_float_clamps_and_rejects_invalid_values(self):
+        with mock.patch.dict(farmer.os.environ, {"TEST_FLOAT": "99"}):
+            self.assertEqual(
+                farmer.env_float("TEST_FLOAT", 1.0, minimum=1.0, maximum=5.0),
+                5.0,
+            )
+        with mock.patch.dict(farmer.os.environ, {"TEST_FLOAT": "invalid"}):
+            self.assertEqual(farmer.env_float("TEST_FLOAT", 2.0), 2.0)
+
+    def test_adb_subprocess_timeout_uses_configured_multiplier(self):
+        with (
+            mock.patch.object(farmer, "ADB_TIMEOUT_MULTIPLIER", 3.0),
+            mock.patch.object(farmer.subprocess, "run") as run,
+        ):
+            farmer.safe_subprocess_run(["adb", "devices"], timeout=4)
+
+        self.assertEqual(run.call_args.kwargs["timeout"], 12.0)
+
+
 class TokenPoolTests(unittest.TestCase):
     def setUp(self):
         self.original_pool = farmer.pool

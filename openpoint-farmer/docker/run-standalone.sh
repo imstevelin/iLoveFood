@@ -10,7 +10,7 @@ if [[ -f "$SCRIPT_DIR/.env" ]]; then
     set +a
 fi
 
-IMAGE_REF="${FARMER_IMAGE:-imstevelin/ilovefood-openpoint-farmer:2026.09.2}"
+IMAGE_REF="${FARMER_IMAGE:-imstevelin/ilovefood-openpoint-farmer:2026.09.3}"
 CONTAINER_NAME="${FARMER_CONTAINER_NAME:-ilovefood-op-farmer}"
 DATA_VOLUME="${FARMER_DATA_VOLUME:-ilovefood-op-farmer-data}"
 SECRET_PATH="$SCRIPT_DIR/private/farmer_api_key.txt"
@@ -52,7 +52,9 @@ fi
     -e "FARMER_TOKEN_REFRESH_SECONDS=${FARMER_TOKEN_REFRESH_SECONDS:-180}" \
     -e "FARMER_MIN_HOST_AVAILABLE_MIB=${FARMER_MIN_HOST_AVAILABLE_MIB:-128}" \
     -e "FARMER_ANDROID_BOOT_TIMEOUT_SECONDS=${FARMER_ANDROID_BOOT_TIMEOUT_SECONDS:-300}" \
-    -e "FARMER_FETCH_JOB_TIMEOUT_SECONDS=${FARMER_FETCH_JOB_TIMEOUT_SECONDS:-120}" \
+    -e "FARMER_FETCH_JOB_TIMEOUT_SECONDS=${FARMER_FETCH_JOB_TIMEOUT_SECONDS:-240}" \
+    -e "FARMER_FETCH_TIMEOUT_SECONDS=${FARMER_FETCH_TIMEOUT_SECONDS:-60}" \
+    -e "FARMER_ADB_TIMEOUT_MULTIPLIER=${FARMER_ADB_TIMEOUT_MULTIPLIER:-3}" \
     --mount "type=bind,source=$SECRET_PATH,target=/farmer-rootfs/run/secrets/farmer_api_key,readonly" \
     -v "$DATA_VOLUME:/data" \
     --tmpfs /cache:size=64m,mode=0770 \

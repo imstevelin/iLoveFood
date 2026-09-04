@@ -57,6 +57,14 @@ def env_int(name, default, *, minimum=1):
         return default
 
 
+def env_float(name, default, *, minimum=0.1, maximum=10.0):
+    try:
+        value = float(os.environ.get(name, default))
+    except (TypeError, ValueError):
+        return default
+    return min(maximum, max(minimum, value))
+
+
 TOKEN_TTL_SECONDS = env_int("FARMER_TOKEN_TTL_SECONDS", 240, minimum=60)
 TOKEN_REFRESH_SECONDS = min(
     env_int("FARMER_TOKEN_REFRESH_SECONDS", 180, minimum=30),
@@ -88,6 +96,9 @@ RESOURCE_CHECK_INTERVAL_SECONDS = env_int(
 RESOURCE_PRESSURE_SAMPLES = env_int("FARMER_RESOURCE_PRESSURE_SAMPLES", 4, minimum=2)
 MIN_HOST_AVAILABLE_MIB = env_int("FARMER_MIN_HOST_AVAILABLE_MIB", 640, minimum=128)
 MAX_QEMU_RSS_MIB = env_int("FARMER_MAX_QEMU_RSS_MIB", 4608, minimum=1024)
+ADB_TIMEOUT_MULTIPLIER = env_float(
+    "FARMER_ADB_TIMEOUT_MULTIPLIER", 1.0, minimum=1.0, maximum=5.0
+)
 
 # 320x640 emulator coordinates.
 HOME_TAB_X, HOME_TAB_Y = 160, 583
@@ -112,10 +123,11 @@ def log(message):
 
 
 def safe_subprocess_run(command, *, timeout=15, **kwargs):
+    effective_timeout = timeout * ADB_TIMEOUT_MULTIPLIER
     try:
-        return subprocess.run(command, timeout=timeout, **kwargs)
+        return subprocess.run(command, timeout=effective_timeout, **kwargs)
     except subprocess.TimeoutExpired:
-        log(f"[!] 指令逾時 ({timeout}s): {' '.join(command[:4])}")
+        log(f"[!] 指令逾時 ({effective_timeout:g}s): {' '.join(command[:4])}")
         raise
 
 
@@ -135,7 +147,7 @@ def reset_adb_transport():
         try:
             subprocess.run(
                 command,
-                timeout=timeout,
+                timeout=timeout * ADB_TIMEOUT_MULTIPLIER,
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.DEVNULL,
             )
@@ -352,7 +364,8 @@ def ensure_frida_server():
 
 
 def wait_for_app_pid(timeout=20):
-    deadline = time.monotonic() + timeout
+    effective_timeout = timeout * ADB_TIMEOUT_MULTIPLIER
+    deadline = time.monotonic() + effective_timeout
     while time.monotonic() < deadline:
         result = adb_shell(
             ["pidof", PKG_NAME],
@@ -365,7 +378,7 @@ def wait_for_app_pid(timeout=20):
         if pid:
             return int(pid.split()[0])
         time.sleep(0.5)
-    raise RuntimeError(f"{PKG_NAME} 在 {timeout}s 內未啟動")
+    raise RuntimeError(f"{PKG_NAME} 在 {effective_timeout:g}s 內未啟動")
 
 
 def launch_app():
