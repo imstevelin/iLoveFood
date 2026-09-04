@@ -1,11 +1,10 @@
-/* Global Styles — 友善超人 */
-/* Claude-Inspired Warm Flat Design System */
+/* 友善超人全域樣式與設計 tokens */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
-  /* ===== Claude-Inspired Warm Color System ===== */
+  /* Warm color system */
   --accent: #D97757;
   --accent-hover: #C4654A;
   --accent-secondary: #E8967D;

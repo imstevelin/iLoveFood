@@ -4,7 +4,7 @@ import { RouterModule, Routes } from '@angular/router';
 import { NewSearchComponent } from './search-food/new-search/new-search.component';
 
 const routes: Routes = [
-  { path: '**', component: NewSearchComponent },  // 所有其他路径都重定向到 /search
+  { path: '**', component: NewSearchComponent },
 ];
 
 @NgModule({

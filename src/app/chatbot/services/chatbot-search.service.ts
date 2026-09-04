@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, forkJoin, of, from, BehaviorSubject } from 'rxjs';
-import { map, switchMap, catchError, tap } from 'rxjs/operators';
+import { map, switchMap, catchError } from 'rxjs/operators';
 import { SevenElevenRequestService } from '../../search-food/new-search/services/seven-eleven-request.service';
 import { FamilyMartRequestService } from '../../search-food/new-search/services/family-mart-request.service';
 import { GeolocationService } from '../../services/geolocation.service';
@@ -294,29 +294,6 @@ export class ChatbotSearchService {
   // ============================================================
   // 格式化工具
   // ============================================================
-  private format711StoreResult(store: any, apiRes: any): any | null {
-    try {
-      const cats = apiRes?.element?.StoreStockItem?.CategoryStockItems || [];
-      const foodInfo = this.formatCategories(cats);
-      if (foodInfo.length === 0) return null;
-      return {
-        storeName: `7-11${store.name}門市`,
-        address: store.addr,
-        distance: 0,
-        label: '7-11',
-        foodInfo
-      };
-    } catch {
-      return null;
-    }
-  }
-
-  private formatFmStoreResult(store: any, apiRes: any): any | null {
-    if (apiRes?.code !== 1 || !apiRes.data) return null;
-    const target = apiRes.data.find((s: any) => s.name === store.Name) || apiRes.data[0];
-    return target ? this.formatFmNearbyResult(target) : null;
-  }
-
   private formatFmNearbyResult(store: any): any | null {
     const info = store.info || [];
     if (!Array.isArray(info) || info.length === 0) return null;

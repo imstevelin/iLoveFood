@@ -1,4 +1,4 @@
-/* 友善超人 — Claude-Inspired Warm Flat Design */
+/* 友善超人主搜尋頁樣式 */
 /* Clean, tactile, border-based separation with warm color palette */
 
 /* ===== Fixed Search Bar ===== */
@@ -340,19 +340,6 @@ svg.transition-transform {
   width: 20px;
   height: 20px;
   padding: 2.5px;
-}
-
-.spinner-md {
-  width: 28px;
-  height: 28px;
-  padding: 3px;
-}
-
-.spinner-lg {
-  width: 44px;
-  height: 44px;
-  padding: 4px;
-  margin-bottom: 8px;
 }
 
 @keyframes premiumSpin {
@@ -731,53 +718,6 @@ svg.transition-transform {
   }
 }
 
-.search-paused-indicator {
-  text-align: center;
-  padding: 20px;
-  animation: fadeInUp var(--duration-slow) var(--spring-gentle) both;
-}
-
-/* ===== Buttons — Flat dark style ===== */
-.resume-search-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 28px;
-  border-radius: 0px;
-  background: var(--text-primary);
-  color: var(--bg);
-  font-weight: 700;
-  font-size: 14px;
-  border: 1px solid var(--border-default);
-  cursor: pointer;
-  box-shadow: none;
-  transition: all 0.15s ease;
-
-  &:hover {
-    background: var(--accent);
-    color: white;
-    transform: none;
-    box-shadow: none;
-  }
-
-  &:active {
-    transform: scale(0.95);
-  }
-}
-
-/* ===== Result Header ===== */
-.result-header-glass {
-  background: var(--bg);
-  border-radius: 0px;
-  padding: 12px 24px;
-  margin: 12px auto 16px;
-  text-align: center;
-  font-weight: 700;
-  font-size: 14px;
-  color: var(--text-primary);
-  border: 1px solid var(--border-default);
-}
-
 /* ===== Login Prompt ===== */
 .login-prompt {
   text-align: center;
@@ -1111,21 +1051,11 @@ a[href*="google.com/maps"] {
     background: rgba(0, 179, 134, 0.1);
   }
 
-  /* --- Result Header --- */
-  .result-header-glass {
-    background: var(--bg);
-    border-color: var(--fg);
-  }
-
   /* --- Login Prompt --- */
   .login-prompt {
     color: var(--text-secondary);
   }
 
-  /* --- Chatbot Buttons Dark Mode --- */
-  .chatbot-inline-btn:hover {
-    background: var(--accent-light);
-  }
 }
 
 /* ============================================================
@@ -1237,41 +1167,6 @@ a[href*="google.com/maps"] {
   }
 }
 
-.multi-match-bar {
-  width: fit-content;
-  display: flex;
-  align-items: center;
-  gap: 3px;
-  margin: 8px 0 0 auto;
-  padding: 3px;
-  border: 1px solid var(--border-default);
-  border-radius: 12px;
-  background: var(--bg);
-  color: var(--text-secondary);
-  font-size: 11px;
-
-  > span {
-    padding: 0 7px;
-    font-weight: 650;
-  }
-
-  button {
-    padding: 5px 9px;
-    border: 0;
-    border-radius: 8px;
-    color: var(--text-secondary);
-    background: transparent;
-    font-size: 11px;
-    font-weight: 750;
-    cursor: pointer;
-
-    &.active {
-      color: white;
-      background: var(--accent);
-    }
-  }
-}
-
 .search-bar-spacer {
   height: 66px;
 
@@ -1370,53 +1265,6 @@ a[href*="google.com/maps"] {
   background: var(--bg);
   font-size: 10px;
   font-weight: 750;
-}
-
-::ng-deep .main-chip.mat-mdc-chip {
-  height: 28px !important;
-  min-height: 28px !important;
-  max-height: 28px !important;
-  border-radius: 999px !important;
-  font-family: var(--font-body) !important;
-  letter-spacing: 0 !important;
-  background: #fff3ec !important;
-  border-color: rgba(217, 119, 87, 0.22) !important;
-
-  &.chip-store {
-    background: #eef2ff !important;
-    border-color: rgba(82, 107, 232, 0.2) !important;
-  }
-
-  &.chip-category {
-    background: #ecfdf5 !important;
-    border-color: rgba(5, 150, 105, 0.18) !important;
-  }
-}
-
-.main-chip-kind {
-  margin-right: 3px;
-  color: var(--text-secondary) !important;
-  font-size: 10px;
-}
-
-.main-chip-input {
-  min-width: 104px;
-  font-size: 14px;
-  line-height: 46px;
-}
-
-.chatbot-inline-btn {
-  width: 34px;
-  height: 34px;
-  margin-left: 0;
-  padding: 0;
-  border-radius: 11px;
-  color: var(--text-secondary);
-
-  &:hover {
-    color: var(--accent);
-    background: var(--accent-light);
-  }
 }
 
 .empty-state-card {
@@ -1630,9 +1478,7 @@ a[href*="google.com/maps"] {
   -webkit-line-clamp: 2;
 }
 
-.resume-search-btn,
-.login-prompt-btn,
-.result-header-glass {
+.login-prompt-btn {
   border-radius: 13px;
 }
 
@@ -1642,13 +1488,6 @@ a[href*="google.com/maps"] {
 }
 
 :host-context([data-theme="dark"]) {
-  ::ng-deep .main-chip.mat-mdc-chip {
-    background: rgba(232, 150, 125, 0.12) !important;
-
-    &.chip-store { background: rgba(99, 102, 241, 0.15) !important; }
-    &.chip-category { background: rgba(16, 185, 129, 0.12) !important; }
-  }
-
   .option-media-product,
   .option-media-store img,
   .option-media-category img {
@@ -1727,10 +1566,6 @@ a[href*="google.com/maps"] {
     &.has-match-bar { height: 144px; }
   }
 
-  .multi-match-bar {
-    margin-top: 7px;
-  }
-
   .menu-panel.open {
     max-height: min(70vh, 560px);
     overflow-y: auto;
@@ -1787,29 +1622,6 @@ a[href*="google.com/maps"] {
 @media (max-width: 370px) {
   .header-brand-copy small { display: none; }
   .header-brand-copy strong { font-size: 14px; }
-  .main-chip-input { min-width: 82px; }
-}
-
-/* Chatbot Inline Button */
-.chatbot-inline-btn {
-  background: none;
-  border: none;
-  font-size: 18px;
-  cursor: pointer;
-  padding: 4px;
-  margin-left: 4px;
-  border-radius: 0px;
-  transition: background 0.2s ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  &:hover {
-    background: var(--accent-light);
-  }
-  &:active {
-    transform: scale(0.9);
-  }
 }
 
 /* ===== View Flipper — Page Transition Animation ===== */
@@ -2055,261 +1867,9 @@ input[type="search"]::-webkit-search-cancel-button {
   appearance: none;
 }
 
-/* ===== Main Search Chips — Flat Warm Pill System ===== */
-
-/* Outer wrapper: positions the gradient fade masks */
-.main-search-chips-wrapper {
-  position: relative;
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  align-items: center;
-  height: 100%;
-}
-
-/* Gradient fade masks */
-.main-search-chips-fade {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  width: 20px;
-  z-index: 2;
-  pointer-events: none;
-  opacity: 0;
-  transition: opacity 0.25s ease;
-
-  &.visible {
-    opacity: 1;
-  }
-}
-
-.main-search-chips-fade--left {
-  left: 0;
-  background: linear-gradient(to right, var(--bg) 0%, transparent 100%);
-}
-
-.main-search-chips-fade--right {
-  right: 0;
-  background: linear-gradient(to left, var(--bg) 0%, transparent 100%);
-}
-
-/* Scrollable inner area */
-.main-search-chips-area {
-  flex: 1;
-  min-width: 0;
-  overflow-x: auto;
-  overflow-y: hidden;
-  display: flex;
-  align-items: center;
-  height: 100%;
-  margin-left: -2px;
-  scroll-behavior: smooth;
-
-  /* Hide scrollbar across all browsers */
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-  &::-webkit-scrollbar {
-    display: none;
-  }
-}
-
-/* --- mat-chip-grid layout reset --- */
-.main-chip-grid {
-  display: flex !important;
-  align-items: center;
-  height: 100%;
-  width: 100%;
-}
-
-::ng-deep .main-chip-grid .mdc-evolution-chip-set__chips {
-  flex-wrap: nowrap !important;
-  align-items: center !important;
-  gap: 6px !important;
-  padding: 0 !important;
-  margin: 0 !important;
-  min-height: unset !important;
-}
-
-/* --- Individual Chip Pill — Brutalist --- */
-::ng-deep .main-chip.mat-mdc-chip {
-  height: 26px !important;
-  min-height: 26px !important;
-  max-height: 26px !important;
-  border-radius: 0px !important;
-  font-size: 12.5px !important;
-  font-weight: 600 !important;
-  font-family: var(--font-mono);
-  letter-spacing: 0.01em;
-  background: var(--accent-light) !important;
-  border: 1px solid var(--border-default) !important;
-  padding: 0 4px 0 8px !important;
-  margin: 0 !important;
-  flex-shrink: 0;
-  transition: background 0.2s ease, border-color 0.2s ease;
-  cursor: default;
-
-  /* Reset internal cell layout */
-  .mdc-evolution-chip__cell--primary,
-  .mat-mdc-chip-action-label {
-    overflow: hidden;
-    min-width: 0;
-    display: flex;
-    align-items: center;
-  }
-
-  .mdc-evolution-chip__cell--trailing {
-    flex-shrink: 0 !important;
-  }
-
-  .mdc-evolution-chip__action--primary {
-    padding: 0 !important;
-  }
-  .mdc-evolution-chip__action--trailing {
-    padding: 0 !important;
-    margin-left: 2px !important;
-  }
-
-  /* All text inside chips */
-  .mdc-evolution-chip__text-label,
-  .mat-mdc-chip-action-label,
-  span {
-    color: var(--text-primary) !important;
-    line-height: 1 !important;
-  }
-
-  &:hover {
-    background: rgba(217, 119, 87, 0.15) !important;
-  }
-
-  &:active {
-    transform: scale(0.96);
-    transition-duration: 0.08s;
-  }
-}
-
-/* Chip text label */
-.main-chip-text {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  display: block;
-  max-width: 140px;
-  color: var(--text-primary);
-  font-size: 12.5px;
-  line-height: 1;
-}
-
-/* Remove button inside chip */
-.main-chip-remove {
-  display: inline-flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  width: 16px !important;
-  height: 16px !important;
-  padding: 0 !important;
-  margin-left: 4px !important;
-  margin-right: -2px !important;
-  border: none !important;
-  background: transparent !important;
-  border-radius: 0px !important;
-  color: var(--text-secondary) !important;
-  cursor: pointer !important;
-  transition: color 0.15s ease, background 0.15s ease !important;
-  flex-shrink: 0 !important;
-
-  svg {
-    width: 12px;
-    height: 12px;
-  }
-
-  &:hover {
-    color: var(--accent) !important;
-    background: var(--accent-light) !important;
-  }
-}
-
-::ng-deep .main-chip button[matChipRemove] {
-  @extend .main-chip-remove;
-}
-
-/* --- Input field inside chip grid --- */
-.main-chip-input {
-  flex: 1 1 0;
-  min-width: 120px;
-  max-width: 100%;
-  height: 100%;
-  border: none;
-  outline: none;
-  background: transparent;
-  font-size: 14px;
-  color: var(--text-primary);
-  padding: 0;
-  line-height: 44px;
-
-  &::placeholder {
-    color: var(--text-secondary);
-    font-size: 14px;
-  }
-}
-
-/* ===== Dark Mode — Main Chips ===== */
-:host-context([data-theme="dark"]) {
-  .main-search-chips-fade--left {
-    background: linear-gradient(to right, var(--surface) 0%, transparent 100%);
-  }
-
-  .main-search-chips-fade--right {
-    background: linear-gradient(to left, var(--surface) 0%, transparent 100%);
-  }
-
-  ::ng-deep .main-chip.mat-mdc-chip {
-    background: var(--accent-light) !important;
-    border-color: rgba(232, 150, 125, 0.2) !important;
-
-    .mdc-evolution-chip__text-label,
-    .mat-mdc-chip-action-label,
-    span {
-      color: var(--accent) !important;
-    }
-
-    &:hover {
-      background: rgba(232, 150, 125, 0.18) !important;
-      border-color: rgba(232, 150, 125, 0.3) !important;
-    }
-  }
-
-  .main-chip-text {
-    color: var(--accent) !important;
-  }
-
-  .main-chip-remove,
-  ::ng-deep .main-chip button[matChipRemove] {
-    color: rgba(232, 150, 125, 0.4) !important;
-
-    &:hover {
-      color: var(--accent) !important;
-      background: var(--accent-light) !important;
-    }
-  }
-
-  .main-chip-input {
-    color: var(--text-primary);
-
-    &::placeholder {
-      color: var(--text-secondary);
-    }
-  }
-}
-
 /* ===== Compact mobile app bar + thumb-reachable action dock ===== */
 .mobile-dock-action {
   display: none;
-}
-
-.multi-match-context {
-  display: flex;
-  justify-content: flex-end;
-  padding: 8px 16px 0;
 }
 
 @media (max-width: 768px) {
@@ -2374,14 +1934,6 @@ input[type="search"]::-webkit-search-cancel-button {
 
   .search-bar-spacer {
     height: 58px;
-  }
-
-  .multi-match-context {
-    padding: 7px 12px 0;
-  }
-
-  .multi-match-bar {
-    margin: 0;
   }
 
   .view-face-list > .max-w-3xl {
@@ -2558,11 +2110,6 @@ input[type="search"]::-webkit-search-cancel-button {
     font-size: 10px;
     font-weight: 850;
   }
-}
-
-.main-search-chips-area.scrolled-left {
-  -webkit-mask-image: linear-gradient(to right, transparent 0, #000 20px, #000 100%);
-  mask-image: linear-gradient(to right, transparent 0, #000 20px, #000 100%);
 }
 
 .desktop-view-switch {
@@ -2790,12 +2337,6 @@ input[type="search"]::-webkit-search-cancel-button {
 .map-empty-actions {
   display: flex;
   gap: 9px;
-}
-
-.store-nav-label {
-  color: var(--text-secondary);
-  font-size: 10px;
-  font-weight: 750;
 }
 
 button:focus-visible,

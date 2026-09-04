@@ -10,11 +10,7 @@
            'bg-slate-50 border-slate-100 dark:bg-slate-800/50 dark:border-slate-700': type === 'info'
          }">
       
-      <!-- Custom Image -->
-      <img *ngIf="imgPath" [src]="imgPath" alt="提示圖示" class="max-w-[70px] max-h-[70px] object-contain">
-      
-      <!-- Default Semantic Icons (Only if no imgPath) -->
-      <ng-container *ngIf="!imgPath">
+      <ng-container>
         <!-- Success Icon -->
         <svg *ngIf="type === 'success'" xmlns="http://www.w3.org/2000/svg" width="48" height="48" fill="none" stroke="#10b981" stroke-width="2.5" viewBox="0 0 24 24">
           <polyline points="20 6 9 17 4 12"></polyline>
@@ -71,4 +67,3 @@
     </button>
   </div>
 </div>
-

@@ -6,6 +6,7 @@
 /out-tsc
 /bazel-out
 package.zip
+/docs
 
 # Node
 /node_modules
@@ -45,8 +46,13 @@ Thumbs.db
 
 # Python
 venv/
+/.venv/
 __pycache__/
 *.py[cod]
+/scripts/update_report.md
+
+# Local diagnostics
+*.cpuprofile
 
 # Environments with sensitive keys
 src/environments/environment.ts

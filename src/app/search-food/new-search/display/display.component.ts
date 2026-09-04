@@ -1,8 +1,8 @@
-import { Component, Input, OnChanges, SimpleChanges, OnInit, OnDestroy, ElementRef, ViewChild, Output, EventEmitter, ChangeDetectorRef } from '@angular/core';
+import { Component, Input, OnChanges, SimpleChanges, OnInit, OnDestroy, Output, EventEmitter, ChangeDetectorRef } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
 
-import { Item, CategoryStockItem, FoodDetail711  } from '../../model/seven-eleven.model';
-import { ProductModel, FoodDetailFamilyMart } from '../../model/family-mart.model'
+import { Item, CategoryStockItem } from '../../model/seven-eleven.model';
+import { ProductModel } from '../../model/family-mart.model'
 
 import { ImageDialogComponent } from '../image-dialog/image-dialog.component';
 
@@ -342,15 +342,6 @@ export class DisplayComponent implements OnChanges, OnInit, OnDestroy {
       };
     }
     return foodDetail;
-  }
-
-  // 保留公開方法供向後相容（但模板不再使用）
-  getFoodDetail711(item: Item): any {
-    return this.foodDetailCache[item.ItemName] || this._lookupFoodDetail711(item);
-  }
-
-  getFoodDetailFamilyMart(item: Item): any {
-    return this.foodDetailCache[item.ItemName] || this._lookupFoodDetailFamilyMart(item);
   }
 
   openImageDialog(imageUrl: string): void {

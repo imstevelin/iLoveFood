@@ -11,7 +11,6 @@ export class MessageDialogComponent implements OnInit {
 
   title: string;
   message: string;
-  imgPath: string;
   closeMessage: string;
   type: 'success' | 'error' | 'warning' | 'info';
 
@@ -22,7 +21,6 @@ export class MessageDialogComponent implements OnInit {
     // 設置傳遞的訊息
     this.title = data.title || "提示";
     this.message = data.message || '請稍後再試';
-    this.imgPath = data.imgPath || '';
     this.closeMessage = data.closeMessage || '關閉';
     this.type = data.type || 'info';
   }

@@ -1,4 +1,4 @@
-import { Component, OnInit, Inject, Renderer2 } from '@angular/core';
+import { Component, OnInit, Inject } from '@angular/core';
 import { DOCUMENT } from '@angular/common';
 import { environment } from '../environments/environment';
 
@@ -12,8 +12,7 @@ export class AppComponent implements OnInit {
   title = '友善超人';
 
   constructor(
-    @Inject(DOCUMENT) private document: Document,
-    private renderer: Renderer2
+    @Inject(DOCUMENT) private document: Document
   ) {}
 
   ngOnInit() {

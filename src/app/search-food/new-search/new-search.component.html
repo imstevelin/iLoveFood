@@ -1,4 +1,4 @@
-<!-- 友善超人 — Liquid Glass UI -->
+<!-- 友善超人主搜尋頁 -->
 
 <!-- ===== Fixed Search Bar ===== -->
 <div class="search-bar-fixed">
@@ -469,23 +469,10 @@
       </div>
 
       <div class="about-content" style="color: var(--text-secondary); font-size: 14px; line-height: 1.6;">
-        <h3 class="font-bold mb-2 mt-4" style="font-size: 15px; color: var(--text-primary);">關於</h3>
         <p class="mb-4">
-          <strong>友善超人</strong>是一個即時追蹤便利商店（全家、7-11）折扣鮮食商品的工具，由 imstevelin 開發。<br>其實最開始只是女朋友喜歡吃 7-11 的擔擔麵，這個麵原價實在吃不起，i珍食又很難找...... 就讓我想到「不如來做一個查詢小工具」吧。<br><br>
-          🌱 <strong>開源宣告</strong>：本專案為完全開源專案，歡迎前往 GitHub 查看原始碼或參與貢獻（請不要商用這個專案）：<br>
-          👉 <a href="https://github.com/imstevelin/iLoveFood" target="_blank" rel="noopener" class="text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300 font-medium">GitHub: imstevelin/iLoveFood</a>
+          <strong>友善超人</strong>協助查詢全家與 7-Eleven 的即期折扣商品。資料可能有延遲，庫存、價格與優惠仍以門市現場為準。
         </p>
-
-        <p class="mb-3">門市、商品與即時資訊來自全家便利商店與統一超商的公開服務；實際庫存、價格與優惠以門市現場為準。</p>
-
-        <h3 class="font-bold mb-2 mt-4" style="font-size: 15px; color: var(--text-primary);">功能亮點</h3>
-        <ul class="mb-4 pl-4" style="list-style-type: none;">
-
-          <li class="mb-1">🔍 支援定位、商品名稱、門市名稱、商品種類搜尋</li>
-          <li class="mb-1">🗺️ 可以使用 Google 導航連結，搜尋順路的門市並篩選商品</li>
-          <li class="mb-1">❤️ 收藏喜愛的門市，快速查看</li>
-          <li class="mb-1">✨ 友善小精靈 AI 助手（實驗室功能）</li>
-        </ul>
+        <a href="https://github.com/imstevelin/iLoveFood" target="_blank" rel="noopener" class="text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300 font-medium">查看原始碼與使用說明</a>
       </div>
     </div>
 
@@ -648,16 +635,16 @@
           <div class="store-category-grid grid grid-cols-4 gap-2 mt-2 relative" aria-label="商品分類">
             <button type="button" *ngFor="let category of store.info | slice:0:10; trackBy: trackByCategory" class="category-chip"
               [class.selected]="store.selectedCategory === category" (click)="toggleSubCategoryDetails(store, category)"
-              [class.pointer-events-none]="getFSubCategoryQty(store, category) === 0"
+              [class.pointer-events-none]="getFSubCategoryQty(category) === 0"
               [attr.aria-pressed]="store.selectedCategory === category"
               [class.is-loading]="store.selectedCategory === category && isCategoryLoading(store, category)"
               [class.loading-complete]="store.selectedCategory === category && isCategoryLoadingComplete(store, category)">
               <img [src]="getFUrl(category)" [alt]="getFCatName(category)"
                 class="w-8 h-8 sm:w-12 sm:h-12 mx-auto mb-1 object-cover"
-                [ngStyle]="{'opacity': getFSubCategoryQty(store, category) === 0 ? 0.3 : 1}" />
+                [ngStyle]="{'opacity': getFSubCategoryQty(category) === 0 ? 0.3 : 1}" />
               <span class="category-chip-copy">
                 <span class="category-chip-name">{{ getFCatName(category) }}</span>
-                <span class="category-qty-badge">{{ getFSubCategoryQty(store, category) }}</span>
+                <span class="category-qty-badge">{{ getFSubCategoryQty(category) }}</span>
               </span>
             </button>
           </div>
@@ -676,7 +663,7 @@
   <!-- ===== Product Search: Continuous search indicator ===== -->
   <ng-container *ngIf="searchMode === 'product' && !isMapView && (loadingService.state$ | async)?.visible !== true">
     <!-- Still searching (Bottom Indicator) -->
-    <div *ngIf="productSearchRunning && !productSearchPaused && totalStoresShowList.length > 0" class="search-progress-indicator">
+    <div *ngIf="productSearchRunning && totalStoresShowList.length > 0" class="search-progress-indicator">
       <span class="search-progress-value">{{ productSearchProgressPercent }}%</span>
       <div class="query-progress-track" role="progressbar" aria-label="門市搜尋範圍"
         [attr.aria-valuenow]="productSearchProgressPercent" aria-valuemin="0" aria-valuemax="100">
@@ -684,19 +671,8 @@
       </div>
     </div>
 
-    <!-- Paused — show resume button -->
-    <div *ngIf="productSearchPaused" class="search-paused-indicator animate-fade-in-up">
-      <button class="resume-search-btn" (click)="resumeProductSearch()">
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
-          <path
-            d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z" />
-        </svg>
-        繼續搜尋更多結果
-      </button>
-    </div>
-
     <!-- All exhausted -->
-    <div *ngIf="!productSearchRunning && !productSearchPaused && totalStoresShowList.length > 0" class="scroll-hint"
+    <div *ngIf="!productSearchRunning && totalStoresShowList.length > 0" class="scroll-hint"
       style="animation: none;">
       已搜尋完所有門市
     </div>

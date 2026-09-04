@@ -4,25 +4,18 @@ import os
 from xml.etree import ElementTree
 from bs4 import BeautifulSoup
 
-# Configuration
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-ASSETS_DIR = os.path.join(BASE_DIR, 'docs', 'assets')
-SRC_ASSETS_DIR = os.path.join(BASE_DIR, 'src', 'assets')
+ASSETS_DIR = os.path.join(BASE_DIR, 'src', 'assets')
 SEVEN_ELEVEN_JSON = os.path.join(ASSETS_DIR, "seven_eleven_products.json")
 FAMILY_MART_JSON = os.path.join(ASSETS_DIR, "family_mart_products.json")
-SEVEN_ELEVEN_SRC = os.path.join(SRC_ASSETS_DIR, "seven_eleven_products.json")
-FAMILY_MART_SRC = os.path.join(SRC_ASSETS_DIR, "family_mart_products.json")
 
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36"
 }
 
-def load_json(filepath, fallback_path=None):
+def load_json(filepath):
     if os.path.exists(filepath):
         with open(filepath, "r", encoding="utf-8") as f:
-            return json.load(f)
-    if fallback_path and os.path.exists(fallback_path):
-        with open(fallback_path, "r", encoding="utf-8") as f:
             return json.load(f)
     return []
 
@@ -144,33 +137,24 @@ def report_diff(old_data, new_data, store_name, name_key="name"):
     for cat, name in sorted(removed):
         report.append(f"  - [{cat}] {name}")
     
-    return "\n".join(report), added, removed
+    return "\n".join(report)
 
 def main():
     print("正在取得 7-Eleven 最新資料...")
-    old_711 = load_json(SEVEN_ELEVEN_JSON, SEVEN_ELEVEN_SRC)
+    old_711 = load_json(SEVEN_ELEVEN_JSON)
     new_711 = crawl_711()
     
     print("正在取得 全家 最新資料...")
-    old_fm = load_json(FAMILY_MART_JSON, FAMILY_MART_SRC)
+    old_fm = load_json(FAMILY_MART_JSON)
     new_fm = crawl_family_mart()
     
     print("正在取得 全家 鮮食新活動資料...")
     new_fm_fresh = crawl_family_mart_fresh()
-    # Combine the two FamilyMart lists
     new_fm.extend(new_fm_fresh)
 
-    # Identify and merge rather than replace
-    report711, added_items_711, removed711 = report_diff(old_711, new_711, "7-Eleven", name_key="name")
-    reportfm, added_items_fm, removedfm = report_diff(old_fm, new_fm, "全家", name_key="title")
+    report711 = report_diff(old_711, new_711, "7-Eleven", name_key="name")
+    reportfm = report_diff(old_fm, new_fm, "全家", name_key="title")
 
-    # Filter out items that are already in the old list to avoid duplicates
-    # Since report_diff already gave us 'added' (new products not in old list),
-    # we just append those to the old list.
-    
-    # Actually, we should be careful about which 'new' data to keep
-    # In this case, we'll keep all 'old' items and just append the 'added' items.
-    
     merged_711 = old_711.copy()
     existing_sets_711 = set((item['category'], item['name']) for item in old_711)
     for item in new_711:
@@ -193,14 +177,10 @@ def main():
         f.write(full_report)
 
     print("\n正在更新 JSON 檔案...")
-    # Update both docs/assets and src/assets
     save_json(SEVEN_ELEVEN_JSON, merged_711)
-    save_json(SEVEN_ELEVEN_SRC, merged_711)
-    
     save_json(FAMILY_MART_JSON, merged_fm)
-    save_json(FAMILY_MART_SRC, merged_fm)
-    
-    print(f"更新完成！已將新商品加入清單並保留舊商品（同步更新 docs/ 與 src/）。報告已儲存至 {report_file}")
+
+    print(f"更新完成！已將新商品加入 src/assets 並保留舊商品。報告已儲存至 {report_file}")
 
 if __name__ == "__main__":
     main()

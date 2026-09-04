@@ -28,7 +28,7 @@ import { MapViewComponent } from './map-view/map-view.component';
 
 import { environment } from 'src/environments/environment';
 
-import { switchMap, from, of, catchError, Observable, tap, forkJoin, Subject, debounceTime, distinctUntilChanged, map, timeout, mergeMap, toArray, Subscription, shareReplay, take } from 'rxjs';
+import { switchMap, from, of, catchError, Observable, tap, forkJoin, Subject, map, timeout, mergeMap, toArray, Subscription, shareReplay, take } from 'rxjs';
 
 import { MatAutocompleteSelectedEvent, MatAutocompleteTrigger } from '@angular/material/autocomplete';
 import { MatDialog } from '@angular/material/dialog';
@@ -47,7 +47,6 @@ import { pinyin } from 'pinyin-pro';
 })
 export class NewSearchComponent implements OnInit, OnDestroy {
   user: any = null;
-  showFavorites: boolean = false; // 收藏面板是否展開（向下相容）
   showMenu: boolean = false;     // 漢堡選單是否展開
   showLabSection: boolean = false; // 實驗室子選單
   isMapView: boolean = false; // 地圖檢視模式
@@ -146,14 +145,11 @@ export class NewSearchComponent implements OnInit, OnDestroy {
   private productSearchFmBatchIdx: number = 0;      // 全家目前批次索引
   private productSearchBatchSize: number = 10;      // 首批每家超商各查 10 間，優先快速回覆附近結果
   private readonly maxInitialNoResultCandidates = 20; // 附近一批仍為零結果時就回覆，不掃完整個全台索引
-  private productSearchDisplayed: number = 0;       // 已顯示的門市計數
   public isSearchingMore: boolean = false;          // 是否正在擴搜
   private searchExhausted711: boolean = false;       // 7-11 是否已搜完
   private searchExhaustedFm: boolean = false;        // 全家是否已搜完
   private fmQueriedPKeys: Set<string> = new Set();   // 已查詢過的全家門市 PKey（去重用）
   private sevenQueriedStoreNos: Set<string> = new Set(); // 已查詢過的7-11門市 StoreNo（去重用）
-  private productSearchTimer: any = null;            // 舊搜尋計時器參照（保留供安全清理）
-  productSearchPaused: boolean = false;              // 舊版繼續搜尋狀態（保留相容）
   productSearchRunning: boolean = false;             // 是否正在商品搜尋中
   productSearchScanned: number = 0;                  // 已實際檢查的候選門市數
   productSearchTotalCandidates: number = 0;          // 本次可檢查的候選門市總數
@@ -319,7 +315,6 @@ export class NewSearchComponent implements OnInit, OnDestroy {
     });
 
     // 移除自動搜尋，改為手動觸發（Enter 或按鈕）
-    // this.searchInput$ 不再自動訂閱
     this.init();
     
     // 效能優化：在 Angular Zone 外部註冊高頻事件，避免滑動時瘋狂觸發 Change Detection 導致 UI 卡死
@@ -457,7 +452,6 @@ export class NewSearchComponent implements OnInit, OnDestroy {
     });
 
     // // 使用 from 將 Promise 轉換為 Observable
-    // this.getCityName();
 
     if (!this.isSearchBlockedByDiscountHours) {
       this.loadingService.begin(
@@ -718,7 +712,7 @@ export class NewSearchComponent implements OnInit, OnDestroy {
     return (item.type || '') + ':' + (item.name || index.toString());
   }
 
-  trackByMsg(index: number, msg: string): string {
+  trackByMsg(_index: number, msg: string): string {
     return msg;
   }
 
@@ -727,11 +721,6 @@ export class NewSearchComponent implements OnInit, OnDestroy {
     if (!item) return '';
     if (typeof item === 'string') return item;
     return item.name || '';
-  }
-
-  // 切換收藏面板（向下相容）
-  toggleFavoritesPanel(): void {
-    this.showFavorites = !this.showFavorites;
   }
 
   // 切換漢堡選單
@@ -1548,7 +1537,7 @@ export class NewSearchComponent implements OnInit, OnDestroy {
     }
   }
 
-  onOptionSelect(event: MatAutocompleteSelectedEvent | null, lat?: number, lng?: number): void {
+  onOptionSelect(event: MatAutocompleteSelectedEvent | null): void {
     if (!this.canStartDiscountSearch()) return;
     const selectedValue = event?.option?.value;
 
@@ -2108,13 +2097,6 @@ export class NewSearchComponent implements OnInit, OnDestroy {
   // ==========================================
   // 商品或種類搜尋模式（漸進式批次搜尋）
   // ==========================================
-  onProductOrCategorySelect(selectedValue: any): void {
-    // 雖然改為了 Unified Search，這段仍然可以作為備用初始化入口
-    this.initPacedSearch();
-    // 設定中心位置並等待商店資料
-    this.waitForStoresDataAndSearch();
-  }
-
   // 統一初始化進階批次搜尋狀態
   private initPacedSearch(): void {
     this.searchMode = 'product'; // 將其視為商品(進階過濾)搜尋模式
@@ -2130,7 +2112,6 @@ export class NewSearchComponent implements OnInit, OnDestroy {
     this.allFmStoresSortedByDist = [];
     this.productSearch711BatchIdx = 0;
     this.productSearchFmBatchIdx = 0;
-    this.productSearchDisplayed = 0;
     this.productSearchScanned = 0;
     this.productSearchTotalCandidates = 0;
     this.isSearchingMore = false;
@@ -2139,16 +2120,10 @@ export class NewSearchComponent implements OnInit, OnDestroy {
     this.fmQueriedPKeys = new Set();
     this.sevenQueriedStoreNos = new Set();
     this.hasMoreStores = true;
-    this.productSearchPaused = false;
     this.productSearchRunning = true;
     this.targetDisplayCount = this.minInitialStores;
     this.productSearchGeneration++;  // 遞增世代，作廢舊搜尋的 setTimeout
 
-    // 清除舊的計時器
-    if (this.productSearchTimer) {
-      clearTimeout(this.productSearchTimer);
-      this.productSearchTimer = null;
-    }
     // 每一個外部請求本身都有 timeout 與來源健康檢查。不能用整體搜尋時間
     // 判斷網路失敗，因為「正常逐批掃完但沒有商品」本來就可能花較久。
   }
@@ -2205,7 +2180,6 @@ export class NewSearchComponent implements OnInit, OnDestroy {
     this.productSearchStores = [];
     this.totalStoresShowList = [];
     this.productSearchRunning = false;
-    this.productSearchPaused = false;
     this.isSearchingMore = false;
     this.isLoadingMore = false;
     this.hasMoreStores = false;
@@ -2465,10 +2439,6 @@ export class NewSearchComponent implements OnInit, OnDestroy {
         this.isSearchingMore = false;
         this.isLoadingMore = false;
         this.productSearchRunning = false;
-        if (this.productSearchTimer) {
-          clearTimeout(this.productSearchTimer);
-          this.productSearchTimer = null;
-        }
         this.loadingService.fail('查詢服務暫時沒有回應，請稍後再試一次。');
         return;
       }
@@ -2664,7 +2634,7 @@ export class NewSearchComponent implements OnInit, OnDestroy {
 
     // 初始搜尋不渲染部分門市。若數量不足，先完成下一批，最後再一次顯示穩定排序。
     if (isInitial && this.productSearchStores.length < this.targetDisplayCount &&
-        !allExhausted && !this.productSearchPaused) {
+        !allExhausted) {
       this.loadingService.update('正在擴大搜尋範圍', 86, '尚未找到足夠結果');
       setTimeout(() => {
         if (this.productSearchGeneration === currentGen) {
@@ -2676,7 +2646,6 @@ export class NewSearchComponent implements OnInit, OnDestroy {
 
     // 不論是 isInitial 還是 scroll load，統一從緩衝池中切割至目標數量
     this.totalStoresShowList = this.productSearchStores.slice(0, this.targetDisplayCount);
-    this.productSearchDisplayed = this.totalStoresShowList.length;
 
     this.storeDataService.setStores(this.productSearchStores);
     if (isInitial) {
@@ -2692,9 +2661,9 @@ export class NewSearchComponent implements OnInit, OnDestroy {
       return;
     }
 
-    // 遞迴防呆：如果目前顯示的門市數量未達目標（例如只找到 2 間），且資料庫還沒搜完、未強制暫停，自動發送下一批
+    // 若顯示數量未達目標且仍有候選門市，自動發送下一批。
     // 地圖模式下，找到足夠門市後停止自動擴展，讓使用者手動「搜尋這個區域」
-    if (this.totalStoresShowList.length < this.targetDisplayCount && !allExhausted && !this.productSearchPaused) {
+    if (this.totalStoresShowList.length < this.targetDisplayCount && !allExhausted) {
       if (this.isMapView && this.productSearchStores.length >= this.minInitialStores) {
         // 地圖模式已找到足夠門市，停止搜尋
         this.isLoadingMore = false;
@@ -2710,26 +2679,7 @@ export class NewSearchComponent implements OnInit, OnDestroy {
       this.productSearchRunning = false;
       this.loadingService.hide();
 
-      if (this.productSearchTimer) {
-        clearTimeout(this.productSearchTimer);
-        this.productSearchTimer = null;
-      }
-
-      if (allExhausted) {
-        this.productSearchPaused = false;
-      }
     }
-  }
-
-  // 使用者手動繼續搜尋（2分鐘暫停後）
-  resumeProductSearch(): void {
-    this.productSearchPaused = false;
-    this.productSearchRunning = true;
-    if (this.productSearchTimer) {
-      clearTimeout(this.productSearchTimer);
-      this.productSearchTimer = null;
-    }
-    this.fetchProductSearchBatch(true);
   }
 
   // 【幾何覆蓋算法 - 7-11 專用】
@@ -2764,7 +2714,6 @@ export class NewSearchComponent implements OnInit, OnDestroy {
   // 顯示更多商品搜尋結果（無限滾動用）
   private showMoreProductResults(): void {
     this.totalStoresShowList = this.productSearchStores.slice(0, this.targetDisplayCount);
-    this.productSearchDisplayed = this.totalStoresShowList.length;
     this.isLoadingMore = false;
   }
 
@@ -2783,7 +2732,6 @@ export class NewSearchComponent implements OnInit, OnDestroy {
     } else {
       // 緩衝池不足：先把池裡剩下的全推上畫面
       this.totalStoresShowList = this.productSearchStores.slice(0, this.productSearchStores.length);
-      this.productSearchDisplayed = this.totalStoresShowList.length;
 
       // 如果還有門市可以搜尋，就繼續查下一批
       if (!this.searchExhausted711 || !this.searchExhaustedFm) {
@@ -3054,13 +3002,8 @@ export class NewSearchComponent implements OnInit, OnDestroy {
     if (this.productSearchRunning || this.isSearchingMore || this.isLoadingMore) {
       this.productSearchGeneration++; // 作廢進行中的 fetchProductSearchBatch 回呼
       this.productSearchRunning = false;
-      this.productSearchPaused = false;
       this.isSearchingMore = false;
       this.isLoadingMore = false;
-    }
-    if (this.productSearchTimer) {
-      clearTimeout(this.productSearchTimer);
-      this.productSearchTimer = null;
     }
   }
 
@@ -3207,26 +3150,6 @@ export class NewSearchComponent implements OnInit, OnDestroy {
 
     if (storeLatitude && storeLongitude) {
       this.totalStoresShowList.sort((a, b) => a.distance - b.distance);
-      // if(this.totalStoresShowList[0].distance > 1 || this.totalStoresShowList[0].remainingQty === 0){
-      //   const dialogRef = this.dialog.open(MessageDialogComponent, {
-      //     data: {
-      //       message: '該門市無庫存，請重新搜尋。',
-      //       imgPath: 'assets/NoResult.jpg',
-      //     }
-      //   });
-      //   dialogRef.afterClosed().subscribe(result => {
-      //     this.totalStoresShowList = [];
-      //     this.searchTerm = '';
-      //   });
-      //   this.totalStoresShowList = [];
-      //   return;
-      // }
-      // this.totalStoresShowList = [
-      //   {
-      //     ...this.totalStoresShowList[0],
-      //     showDistance: false
-      //   }
-      // ];
     }
     else{
       // 根據距離排序
@@ -3699,7 +3622,7 @@ export class NewSearchComponent implements OnInit, OnDestroy {
   }
 
   // 確保至少載入 minInitialStores 間門市
-  private checkAndAutoLoadMore(attempts: number = 0): void {
+  private checkAndAutoLoadMore(): void {
     this.ensureMinimumStores();
   }
 
@@ -3732,7 +3655,7 @@ export class NewSearchComponent implements OnInit, OnDestroy {
     return cat.name;
   }
 
-  getFSubCategoryQty(store: StoreModel, cat: any): number {
+  getFSubCategoryQty(cat: any): number {
     return cat.qty;
   }
 
@@ -3841,7 +3764,7 @@ export class NewSearchComponent implements OnInit, OnDestroy {
         }
       } as unknown as MatAutocompleteSelectedEvent;
 
-      this.onOptionSelect(fakeEvent, lat, lng);
+      this.onOptionSelect(fakeEvent);
       this.searchTerm = '';
     }
     else {
@@ -3868,7 +3791,7 @@ export class NewSearchComponent implements OnInit, OnDestroy {
           }
         } as unknown as MatAutocompleteSelectedEvent;
 
-        this.onOptionSelect(fakeEvent, lat, lng);
+        this.onOptionSelect(fakeEvent);
         this.searchTerm = '';
       } else {
         // 如果找不到，嘗試取得位置後再搜尋
@@ -3903,7 +3826,7 @@ export class NewSearchComponent implements OnInit, OnDestroy {
                 }
               } as unknown as MatAutocompleteSelectedEvent;
 
-              this.onOptionSelect(fakeEvent, lat, lng);
+              this.onOptionSelect(fakeEvent);
               this.searchTerm = '';
             } else {
               console.error('找不到 7-11 商店:', store.store711Name);

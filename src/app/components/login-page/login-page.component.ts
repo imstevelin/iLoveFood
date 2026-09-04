@@ -2,8 +2,6 @@ import { Component } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { AuthService } from '../../services/auth.service';
 import { MatDialogRef } from '@angular/material/dialog';
-import { MatDialog } from '@angular/material/dialog';
-import { MessageDialogComponent } from '../message-dialog/message-dialog.component';
 
 @Component({
   standalone: false,
@@ -20,8 +18,7 @@ export class LoginPageComponent {
   constructor(
     private fb: FormBuilder,
     private authService: AuthService,
-    private dialogRef: MatDialogRef<LoginPageComponent>,
-    public dialog: MatDialog,
+    private dialogRef: MatDialogRef<LoginPageComponent>
   ) {
     // 只需要手機號碼，使用台灣手機號碼正則表達式驗證
     this.authForm = this.fb.group({

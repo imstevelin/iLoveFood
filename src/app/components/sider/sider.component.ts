@@ -5,11 +5,8 @@ import { AuthService } from 'src/app/services/auth.service';
 import { LoginPageComponent } from 'src/app/components/login-page/login-page.component';
 import { environment } from 'src/environments/environment';
 import { SevenElevenRequestService } from '../../search-food/new-search/services/seven-eleven-request.service';
-import { FamilyMartRequestService } from '../../search-food/new-search/services/family-mart-request.service';
-import { GeolocationService } from 'src/app/services/geolocation.service';
 import { StoreDataService } from 'src/app/services/stores-data.service';
-import { switchMap, from, of, catchError, forkJoin } from 'rxjs';
-import { getDistance } from 'geolib';
+import { of, catchError, forkJoin } from 'rxjs';
 import { HapticService } from 'src/app/services/haptic.service';
 
 @Component({
@@ -38,9 +35,6 @@ export class SiderComponent {
   foodSearchResults: any[] = [];
   isSearching = false;
   hasSearched = false; // 追蹤是否已執行過搜尋
-  latitude!: number;
-  longitude!: number;
-  
   // 商店資料狀態
   hasStoreData = false;
 
@@ -48,8 +42,6 @@ export class SiderComponent {
     private authService: AuthService,
     public dialog: MatDialog,
     private sevenElevenService: SevenElevenRequestService,
-    private familyMartService: FamilyMartRequestService,
-    private geolocationService: GeolocationService,
     private storeDataService: StoreDataService,
     private haptic: HapticService
   ) { 
@@ -91,11 +83,10 @@ export class SiderComponent {
         data: {
           title: "登出成功",
           message: `已順利登出`,
-          imgPath: "assets/S__222224406.jpg",
           type: 'success'
         }
       });
-      dialogRef.afterClosed().subscribe((result) => {
+      dialogRef.afterClosed().subscribe(() => {
         this.favoriteStores = []; // 清空這裡的東西
       });
     } else {
@@ -165,14 +156,14 @@ export class SiderComponent {
     }
 
     // 搜尋全家商品（直接搜尋）
-    stores.forEach((store: any, storeIndex: number) => {
+    stores.forEach((store: any) => {
         if (store.label === '全家' && store.info) {
           // 搜尋全家商品
-          store.info.forEach((category: any, catIndex: number) => {
+          store.info.forEach((category: any) => {
             if (category.categories) {
-              category.categories.forEach((subCategory: any, subCatIndex: number) => {
+              category.categories.forEach((subCategory: any) => {
                 if (subCategory.products) {
-                  subCategory.products.forEach((product: any, productIndex: number) => {
+                  subCategory.products.forEach((product: any) => {
                     if (product.name) {
                       const matchScore = this.calculateMatchScore(product.name, searchTerm);
                       if (searchTerm.length === 0 || matchScore > 0) {
@@ -268,124 +259,6 @@ export class SiderComponent {
 
     this.foodSearchResults = results;
     this.isSearching = false;
-  }
-
-  // 執行食物搜尋
-  performFoodSearch(searchTerm: string) {
-    return from(this.sevenElevenService.ensureGatewayReady())
-      .pipe(
-        switchMap((token: any) => {
-          if (token && token.element) {
-            return this.searchFoodInBothStores(searchTerm);
-          } else {
-            return of([]);
-          }
-        }),
-        catchError((error) => {
-          console.error('搜尋食物時發生錯誤:', error);
-          this.isSearching = false;
-          return of([]);
-        })
-      );
-  }
-
-  // 在兩家商店中搜尋食物
-  searchFoodInBothStores(searchTerm: string) {
-    const locationData711 = {
-      CurrentLocation: {
-        Latitude: this.latitude,
-        Longitude: this.longitude
-      },
-      SearchLocation: {
-        Latitude: this.latitude,
-        Longitude: this.longitude
-      }
-    };
-
-    const locationFamilyMart = {
-      Latitude: this.latitude,
-      Longitude: this.longitude
-    };
-
-    return forkJoin({
-      sevenEleven: this.sevenElevenService.getNearByStoreList(locationData711),
-      familyMart: this.familyMartService.getNearByStoreList(locationFamilyMart),
-      sevenElevenFoods: this.sevenElevenService.getFoodDetails(),
-      familyMartFoods: this.familyMartService.getFoodDetails()
-    }).pipe(
-      switchMap(({ sevenEleven, familyMart, sevenElevenFoods, familyMartFoods }) => {
-        const results: any[] = [];
-
-        // 搜尋 7-11 食物
-        if (sevenEleven && sevenEleven.element && sevenEleven.element.StoreStockItemList) {
-          sevenEleven.element.StoreStockItemList.forEach((store: any) => {
-            if (store.CategoryStockItems) {
-              store.CategoryStockItems.forEach((category: any) => {
-                if (category.StockItems) {
-                  category.StockItems.forEach((item: any) => {
-                    if (item.ProductName) {
-                      const matchScore = this.calculateMatchScore(item.ProductName, searchTerm);
-                      if (matchScore > 0) {
-                        results.push({
-                          foodName: item.ProductName,
-                          storeName: `7-11${store.StoreName}門市`,
-                          storeType: '7-11',
-                          store: store,
-                          distance: store.Distance,
-                          remainingQty: item.RemainingQty,
-                          matchScore: matchScore
-                        });
-                      }
-                    }
-                  });
-                }
-              });
-            }
-          });
-        }
-
-        // 搜尋全家食物
-        if (familyMart && familyMart.code === 1 && familyMart.data) {
-          familyMart.data.forEach((store: any) => {
-            if (store.info) {
-              store.info.forEach((category: any) => {
-                if (category.products) {
-                  category.products.forEach((product: any) => {
-                    if (product.name) {
-                      const matchScore = this.calculateMatchScore(product.name, searchTerm);
-                      if (matchScore > 0) {
-                        results.push({
-                          foodName: product.name,
-                          storeName: store.name,
-                          storeType: '全家',
-                          store: store,
-                          distance: store.distance,
-                          remainingQty: product.qty,
-                          matchScore: matchScore
-                        });
-                      }
-                    }
-                  });
-                }
-              });
-            }
-          });
-        }
-
-        // 按精確度排序，然後按距離排序
-        results.sort((a, b) => {
-          if (b.matchScore !== a.matchScore) {
-            return b.matchScore - a.matchScore; // 精確度高的在前
-          }
-          return a.distance - b.distance; // 精確度相同時按距離排序
-        });
-        
-        this.foodSearchResults = results;
-        this.isSearching = false;
-        
-        return of(results);
-      })
-    );
   }
 
   // 點擊食物搜尋結果

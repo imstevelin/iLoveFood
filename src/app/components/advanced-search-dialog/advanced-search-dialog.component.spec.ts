@@ -1,6 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
-import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 
 import { AdvancedSearchDialogComponent } from './advanced-search-dialog.component';
 
@@ -12,7 +11,7 @@ describe('AdvancedSearchDialogComponent', () => {
   beforeEach(async () => {
     dialogRef = jasmine.createSpyObj('MatDialogRef', ['close']);
     await TestBed.configureTestingModule({
-      imports: [AdvancedSearchDialogComponent, NoopAnimationsModule],
+      imports: [AdvancedSearchDialogComponent],
       providers: [
         { provide: MatDialogRef, useValue: dialogRef },
         { provide: MAT_DIALOG_DATA, useValue: { allOptions: [], initialKeywords: [], matchMode: 'any' } }

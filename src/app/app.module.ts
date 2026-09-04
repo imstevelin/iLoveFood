@@ -20,7 +20,6 @@ import { MatCardModule } from '@angular/material/card';
 import { MatMenuModule } from '@angular/material/menu';
 
 import { SearchFoodModule } from './search-food/search-food.module';
-import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { MessageDialogComponent } from './components/message-dialog/message-dialog.component';
 import { LoginPageComponent } from './components/login-page/login-page.component'
 
@@ -35,7 +34,6 @@ import { GestureDirective } from './directives/gesture.directive';
     BrowserModule,
     AppRoutingModule,
     SearchFoodModule,
-    BrowserAnimationsModule,
     MatFormFieldModule,
     MatSelectModule,
     MatOptionModule,
