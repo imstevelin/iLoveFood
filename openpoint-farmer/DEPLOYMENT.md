@@ -164,10 +164,10 @@ cd openpoint-farmer/docker
 shasum -a 256 dist/op-farmer-multiarch.oci.tar
 ```
 
-目前已驗證的封存檔索引同時包含 `linux/amd64` 與 `linux/arm64`。正式映像發布於 [Docker Hub](https://hub.docker.com/r/imstevelin/ilovefood-openpoint-farmer)，Docker 會依目標主機自動拉取正確架構；`2026.09` 是可重現的固定版本，`latest` 指向目前穩定版：
+目前已驗證的封存檔索引同時包含 `linux/amd64` 與 `linux/arm64`。正式映像發布於 [Docker Hub](https://hub.docker.com/r/imstevelin/ilovefood-openpoint-farmer)，Docker 會依目標主機自動拉取正確架構；`2026.09.1` 是可重現的固定版本，`latest` 指向目前穩定版：
 
 ```bash
-FARMER_IMAGE=imstevelin/ilovefood-openpoint-farmer:2026.09 \
+FARMER_IMAGE=imstevelin/ilovefood-openpoint-farmer:2026.09.1 \
   ./build-multiarch.sh --push
 ```
 
@@ -176,7 +176,7 @@ FARMER_IMAGE=imstevelin/ilovefood-openpoint-farmer:2026.09 \
 ```bash
 skopeo copy --override-arch amd64 \
   oci-archive:op-farmer-multiarch.oci.tar \
-  docker-daemon:imstevelin/ilovefood-openpoint-farmer:2026.09
+  docker-daemon:imstevelin/ilovefood-openpoint-farmer:2026.09.1
 ```
 
 映像內依擁有者授權包含受驗證的 APK 與假名化啟動狀態，所以公開映像能在全新 volume 中直接建立農場。運行時的 Android 狀態在 `ilovefood-op-farmer-data` volume；搬遷後不復原 volume 也可由內建 bootstrap 自動建立全新環境。Farmer API key 不在映像中，每台主機仍應自行產生。

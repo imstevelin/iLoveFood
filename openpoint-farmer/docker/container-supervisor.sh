@@ -11,7 +11,7 @@ if [ -r /run/docker-env.b64 ]; then
         env_name="${env_line%%=*}"
         encoded="${env_line#*=}"
         case "$env_name" in
-            FARMER_API_KEY|FARMER_BIND_HOST|FARMER_TOKEN_TTL_SECONDS|FARMER_TOKEN_REFRESH_SECONDS|FARMER_FETCH_TIMEOUT_SECONDS|FARMER_FETCH_JOB_TIMEOUT_SECONDS|FARMER_API_WAIT_TIMEOUT_SECONDS|FARMER_MAX_CONSECUTIVE_FAILURES|FARMER_MIN_HOST_AVAILABLE_MIB|FARMER_RESOURCE_PRESSURE_SAMPLES)
+            FARMER_API_KEY|FARMER_BIND_HOST|FARMER_TOKEN_TTL_SECONDS|FARMER_TOKEN_REFRESH_SECONDS|FARMER_FETCH_TIMEOUT_SECONDS|FARMER_FETCH_JOB_TIMEOUT_SECONDS|FARMER_API_WAIT_TIMEOUT_SECONDS|FARMER_MAX_CONSECUTIVE_FAILURES|FARMER_MIN_HOST_AVAILABLE_MIB|FARMER_RESOURCE_PRESSURE_SAMPLES|FARMER_ANDROID_BOOT_TIMEOUT_SECONDS)
                 env_value="$(printf '%s' "$encoded" | base64 -d)"
                 export "$env_name=$env_value"
                 ;;
@@ -46,19 +46,30 @@ fi
 
 log "[*] 等待容器內 Android ADB..."
 "$ADB_BIN" start-server >/dev/null 2>&1 || true
-boot_deadline=$(( $(date +%s) + 120 ))
+android_services_ready() {
+    [ "$(timeout 5 "$ADB_BIN" -s "$EMULATOR_SERIAL" shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')" = "1" ] \
+        || return 1
+    timeout 8 "$ADB_BIN" -s "$EMULATOR_SERIAL" shell cmd package list packages android 2>/dev/null \
+        | tr -d '\r' | grep -qx 'package:android' \
+        || return 1
+    timeout 8 "$ADB_BIN" -s "$EMULATOR_SERIAL" shell settings get global device_provisioned >/dev/null 2>&1 \
+        || return 1
+}
+
+boot_timeout="${FARMER_ANDROID_BOOT_TIMEOUT_SECONDS:-300}"
+boot_deadline=$(( $(date +%s) + boot_timeout ))
 while [ "$(date +%s)" -lt "$boot_deadline" ]; do
     if [ -n "$ADB_CONNECT_ADDRESS" ]; then
         "$ADB_BIN" connect "$ADB_CONNECT_ADDRESS" >/dev/null 2>&1 || true
     fi
-    if [ "$(timeout 5 "$ADB_BIN" -s "$EMULATOR_SERIAL" shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')" = "1" ]; then
+    if android_services_ready; then
         break
     fi
     sleep 2
 done
 
-if [ "$(timeout 5 "$ADB_BIN" -s "$EMULATOR_SERIAL" shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')" != "1" ]; then
-    log "[!] Android 在 120 秒內未能提供 ADB"
+if ! android_services_ready; then
+    log "[!] Android 在 ${boot_timeout} 秒內未能提供完整的 ADB/Package Manager/Settings 服務"
     exit 75
 fi
 
@@ -88,7 +99,20 @@ installed_apk_sha="$(timeout 5 "$ADB_BIN" -s "$EMULATOR_SERIAL" shell cat /data/
 if ! timeout 8 "$ADB_BIN" -s "$EMULATOR_SERIAL" shell pm path ecowork.seven >/dev/null 2>&1 \
    || [ "$desired_apk_sha" != "$installed_apk_sha" ]; then
     log "[*] 安裝已驗證的 OPENPOINT APK..."
-    timeout 120 "$ADB_BIN" -s "$EMULATOR_SERIAL" install -r -d -g /opt/farmer/assets/openpoint.apk >/dev/null
+    install_ok=0
+    install_deadline=$(( $(date +%s) + 180 ))
+    while [ "$(date +%s)" -lt "$install_deadline" ]; do
+        if timeout 120 "$ADB_BIN" -s "$EMULATOR_SERIAL" install -r -d -g /opt/farmer/assets/openpoint.apk >/dev/null 2>&1; then
+            install_ok=1
+            break
+        fi
+        log "[*] Package Manager 暫時未接受 APK，5 秒後重試"
+        sleep 5
+    done
+    if [ "$install_ok" -ne 1 ]; then
+        log "[!] OPENPOINT APK 在 180 秒內無法安裝"
+        exit 75
+    fi
     timeout 5 "$ADB_BIN" -s "$EMULATOR_SERIAL" shell \
         "printf '%s' '$desired_apk_sha' > /data/local/tmp/openpoint-apk.sha256"
 fi
