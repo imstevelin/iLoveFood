@@ -133,6 +133,8 @@
 }
 
 ::ng-deep .advanced-autocomplete-panel {
+  width: min(410px, calc(100vw - 64px)) !important;
+  max-width: calc(100vw - 64px) !important;
   margin-top: 6px !important;
   padding: 5px !important;
   border: 1px solid var(--border-default) !important;
@@ -171,6 +173,7 @@
 }
 
 .advanced-option-copy {
+  flex: 1 1 auto;
   min-width: 0;
   display: flex;
   flex-direction: column;

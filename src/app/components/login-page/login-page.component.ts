@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { AfterViewInit, Component, OnDestroy } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { AuthService } from '../../services/auth.service';
 import { MatDialogRef } from '@angular/material/dialog';
@@ -9,11 +9,13 @@ import { MatDialogRef } from '@angular/material/dialog';
   templateUrl: './login-page.component.html',
   styleUrls: ['./login-page.component.scss'],
 })
-export class LoginPageComponent {
+export class LoginPageComponent implements AfterViewInit, OnDestroy {
   authForm: FormGroup;
   errorMessage = '';
   verificationSent = false;
   isSubmitting = false;
+  captchaLoading = true;
+  captchaReady = false;
 
   constructor(
     private fb: FormBuilder,
@@ -26,6 +28,14 @@ export class LoginPageComponent {
       code: ['', [Validators.required, Validators.pattern('^\\d{6}$')]]
     });
     this.f['code'].disable();
+  }
+
+  ngAfterViewInit(): void {
+    void this.prepareCaptcha();
+  }
+
+  ngOnDestroy(): void {
+    this.authService.resetVerification();
   }
 
   async submitForm() {
@@ -42,6 +52,7 @@ export class LoginPageComponent {
     this.errorMessage = '';
     try {
       if (!this.verificationSent) {
+        await this.authService.prepareRecaptcha('phone-recaptcha');
         await this.authService.sendVerificationCode(this.f['phone'].value, 'phone-recaptcha');
         this.verificationSent = true;
         this.f['phone'].disable();
@@ -53,6 +64,10 @@ export class LoginPageComponent {
     } catch (error: any) {
       console.error('Phone auth error:', error?.code || error);
       this.errorMessage = this.getAuthErrorMessage(error?.code);
+      if (!this.verificationSent) {
+        this.authService.resetVerification();
+        void this.prepareCaptcha();
+      }
     } finally {
       this.isSubmitting = false;
     }
@@ -65,6 +80,7 @@ export class LoginPageComponent {
     this.f['code'].disable();
     this.f['phone'].enable();
     this.errorMessage = '';
+    void this.prepareCaptcha();
   }
 
   close(data: boolean) {
@@ -82,7 +98,24 @@ export class LoginPageComponent {
       case 'auth/code-expired': return '驗證碼已過期，請重新發送。';
       case 'auth/too-many-requests': return '嘗試次數過多，請稍後再試。';
       case 'auth/quota-exceeded': return '簡訊驗證服務目前已達上限，請稍後再試。';
+      case 'auth/captcha-check-failed': return '機器人驗證未完成或已過期，請重新驗證。';
+      case 'auth/missing-app-credential':
+      case 'auth/invalid-app-credential': return '無法完成網站安全驗證，請重新整理後再試。';
       default: return '驗證失敗，請確認網路狀態後再試一次。';
+    }
+  }
+
+  private async prepareCaptcha(): Promise<void> {
+    this.captchaLoading = true;
+    this.captchaReady = false;
+    try {
+      await this.authService.prepareRecaptcha('phone-recaptcha');
+      this.captchaReady = true;
+    } catch (error) {
+      console.error('Unable to render phone reCAPTCHA:', error);
+      this.errorMessage = '安全驗證載入失敗，請確認網路後重新開啟登入視窗。';
+    } finally {
+      this.captchaLoading = false;
     }
   }
 }

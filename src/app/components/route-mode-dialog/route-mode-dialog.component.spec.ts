@@ -40,4 +40,10 @@ describe('RouteModeDialogComponent', () => {
 
     document.documentElement.setAttribute('data-theme', 'light');
   });
+
+  it('describes motorcycle search without the retired beta label', () => {
+    const text = fixture.nativeElement.textContent;
+    expect(text).toContain('搜尋區域包含所有平面道路');
+    expect(text).not.toContain('機車（Beta）');
+  });
 });

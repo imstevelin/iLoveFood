@@ -56,6 +56,8 @@ export class AdvancedSearchDialogComponent {
   filteredOptions$: Observable<AdvancedSearchOption[]>;
   validationError = '';
   isComposing = false;
+  readonly autocompletePanelWidth = 'min(410px, calc(100vw - 64px))';
+  private readonly indexedOptions: Array<{ option: AdvancedSearchOption; searchText: string }>;
 
   @ViewChild('keywordInput') keywordInput!: ElementRef<HTMLInputElement>;
 
@@ -65,6 +67,12 @@ export class AdvancedSearchDialogComponent {
   ) {
     this.selectedKeywords = (data.initialKeywords || []).map(keyword => ({ ...keyword }));
     this.matchMode = data.matchMode || 'any';
+    this.indexedOptions = (data.allOptions || []).map(option => ({
+      option,
+      searchText: typeof option['searchText'] === 'string'
+        ? option['searchText']
+        : this.normalize(`${option.name} ${option.rawName || ''} ${option.addr || ''}`)
+    }));
     this.filteredOptions$ = this.keywordCtrl.valueChanges.pipe(
       startWith(''),
       map(value => this.filterOptions(typeof value === 'string' ? value : ''))
@@ -166,12 +174,11 @@ export class AdvancedSearchDialogComponent {
 
     const results: AdvancedSearchOption[] = [];
     const seen = new Set<string>();
-    for (const option of this.data.allOptions || []) {
-      const matchesName = this.normalize(option.name).includes(normalizedValue);
-      const matchesRawName = this.normalize(option.rawName || '').includes(normalizedValue);
-      const matchesAddress = this.normalize(option.addr || '').includes(normalizedValue);
+    for (const indexedOption of this.indexedOptions) {
+      const option = indexedOption.option;
+      const matches = indexedOption.searchText.includes(normalizedValue);
       const key = this.optionKey(option);
-      if ((matchesName || matchesRawName || matchesAddress) && !seen.has(key)) {
+      if (matches && !seen.has(key)) {
         seen.add(key);
         results.push(option);
         if (results.length >= 20) break;

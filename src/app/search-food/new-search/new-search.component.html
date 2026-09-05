@@ -518,6 +518,8 @@
   <!-- ===== Store Cards ===== -->
   <ng-container *ngIf="!locationDenied && !showAboutCard && (loadingService.state$ | async)?.visible !== true">
     <ng-container *ngFor="let store of totalStoresShowList; let i = index; trackBy: trackByStore">
+      <span *ngIf="i === totalStoresShowList.length - 1" #loadMoreTrigger
+        class="load-more-trigger" aria-hidden="true"></span>
       <!-- Only render card if store has content -->
       <div class="store-glass-card card-animate-in"
         data-testid="store-result"
@@ -660,29 +662,19 @@
     </ng-container>
   </ng-container>
 
-  <!-- ===== Product Search: Continuous search indicator ===== -->
-  <ng-container *ngIf="searchMode === 'product' && !isMapView && (loadingService.state$ | async)?.visible !== true">
-    <!-- Still searching (Bottom Indicator) -->
-    <div *ngIf="productSearchRunning && totalStoresShowList.length > 0" class="search-progress-indicator">
-      <span class="search-progress-value">{{ productSearchProgressPercent }}%</span>
-      <div class="query-progress-track" role="progressbar" aria-label="門市搜尋範圍"
-        [attr.aria-valuenow]="productSearchProgressPercent" aria-valuemin="0" aria-valuemax="100">
-        <span [style.transform]="'scaleX(' + (productSearchProgressPercent / 100) + ')'" ></span>
-      </div>
-    </div>
+  <!-- ===== Incremental loading feedback ===== -->
+  <div *ngIf="totalStoresShowList.length > 0 && !isMapView && (isLoadingMore || isSearchingMore)"
+    class="incremental-loader" role="status" aria-live="polite">
+    <span class="incremental-loader-track" aria-hidden="true"><span></span></span>
+    <span>正在載入下一批 10 間門市…</span>
+  </div>
 
+  <!-- ===== Product Search completion state ===== -->
+  <ng-container *ngIf="searchMode === 'product' && !isMapView && (loadingService.state$ | async)?.visible !== true">
     <!-- All exhausted -->
-    <div *ngIf="!productSearchRunning && totalStoresShowList.length > 0" class="scroll-hint"
+    <div *ngIf="!productSearchRunning && !isLoadingMore && !isSearchingMore && !hasMoreStores && totalStoresShowList.length > 0" class="scroll-hint"
       style="animation: none;">
       已搜尋完所有門市
-    </div>
-  </ng-container>
-
-  <!-- ===== Location/Store mode: Infinite Scroll (Bottom Indicator) ===== -->
-  <ng-container *ngIf="searchMode !== 'product' && totalStoresShowList.length > 0 && !showAboutCard && !locationDenied">
-    <div *ngIf="isLoadingMore" class="flex flex-col items-center py-6 gap-3">
-      <div class="premium-spinner spinner-sm"></div>
-      <span class="text-xs text-gray-400 dark:text-zinc-400 font-medium">正在尋找更多門市...</span>
     </div>
   </ng-container>
 
@@ -742,7 +734,7 @@
 
 <!-- View Toggle Wrapper with aesthetic backdrop blur -->
 <div *ngIf="!isSearchBlockedByDiscountHours && (loadingService.state$ | async)?.visible !== true"
-  class="view-toggle-container" [class.scrolled-down]="isScrolledDown"
+  class="view-toggle-container"
   [class.map-sheet-up]="isMapView && mapSheetOpen">
   
   <!-- The "misty" background / Glow effect -->

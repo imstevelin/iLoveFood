@@ -702,20 +702,48 @@ svg.transition-transform {
   animation: breathe 2.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
-/* ===== Search Progress Indicator ===== */
-.search-progress-indicator {
+/* The marker sits immediately before the last rendered card. */
+.load-more-trigger {
+  display: block;
+  width: 100%;
+  height: 1px;
+  pointer-events: none;
+}
+
+/* ===== Compact incremental loading feedback ===== */
+.incremental-loader {
   display: flex;
   flex-direction: column;
-  align-items: flex-end;
-  gap: 7px;
-  padding: 12px 2px;
-  margin: 4px 0 12px;
+  align-items: center;
+  gap: 9px;
+  padding: 14px 4px 18px;
+  margin: 2px 0 10px;
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 650;
   animation: queryPanelIn 320ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
 
-  .query-progress-track {
-    width: 100%;
-    height: 4px;
+.incremental-loader-track {
+  width: min(220px, 62vw);
+  height: 4px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--text-secondary) 12%, transparent);
+
+  > span {
+    display: block;
+    width: 45%;
+    height: 100%;
+    border-radius: inherit;
+    background: linear-gradient(90deg, var(--accent), var(--accent-secondary));
+    animation: incrementalLoader 950ms cubic-bezier(0.65, 0, 0.35, 1) infinite;
   }
+}
+
+@keyframes incrementalLoader {
+  from { transform: translateX(-120%); }
+  to { transform: translateX(340%); }
 }
 
 /* ===== Login Prompt ===== */
@@ -2516,7 +2544,7 @@ input:focus-visible {
   }
 }
 
-/* Mobile single-search field and collapsed home shortcut. */
+/* Mobile single-search field. */
 @media (max-width: 768px) {
   .search-input-glass {
     min-height: 44px;
@@ -2534,49 +2562,7 @@ input:focus-visible {
     margin-top: 0;
   }
 
-  /* Scrolling collapses the dock into one unambiguous home shortcut. */
-  .view-toggle-container.scrolled-down {
-    left: 12px !important;
-    right: 12px !important;
-    width: auto !important;
-    justify-content: flex-end !important;
-  }
-
-  .view-toggle-container.scrolled-down .view-toggle-pill {
-    width: 56px !important;
-    height: 56px !important;
-    display: grid !important;
-    grid-template-columns: 1fr !important;
-    padding: 4px !important;
-    overflow: hidden !important;
-    border-radius: 18px !important;
-  }
-
-  .view-toggle-container.scrolled-down .list-dock-action,
-  .view-toggle-container.scrolled-down .map-dock-action,
-  .view-toggle-container.scrolled-down .route-dock-action {
-    display: none !important;
-  }
-
-  .view-toggle-container.scrolled-down .home-dock-action {
-    width: 48px !important;
-    height: 48px !important;
-    max-width: 48px !important;
-    display: flex !important;
-    padding: 0 !important;
-    opacity: 1 !important;
-  }
-
-  .view-toggle-container.scrolled-down .home-dock-action span {
-    display: none !important;
-  }
-
-  .view-toggle-container.scrolled-down .home-dock-action svg {
-    width: 24px;
-    height: 24px;
-  }
-
-  /* Cancel the obsolete two-button collapse rules while the map sheet is open. */
+  /* Keep all four actions available while the map sheet is open. */
   .view-toggle-container.map-sheet-up .view-toggle-segment,
   .view-toggle-container.map-sheet-up .mobile-dock-action,
   .view-toggle-container.map-sheet-up .view-toggle-segment:last-of-type {

@@ -15,12 +15,14 @@
 
   <section class="advanced-section">
     <div class="advanced-section-label"><span>1</span> 加入搜尋條件</div>
-    <div class="advanced-search-control" [class.has-error]="validationError">
+    <div class="advanced-search-control" [class.has-error]="validationError"
+      matAutocompleteOrigin #advancedOrigin="matAutocompleteOrigin">
       <svg class="advanced-search-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
         stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
         <circle cx="11" cy="11" r="6"/><path d="m16 16 4 4"/>
       </svg>
       <input #keywordInput [formControl]="keywordCtrl" [matAutocomplete]="auto"
+        [matAutocompleteConnectedTo]="advancedOrigin"
         [matAutocompleteDisabled]="false" [matChipInputFor]="chipGrid"
         (keydown)="onKeywordKeydown($event)"
         (compositionstart)="isComposing = true" (compositionend)="isComposing = false"
@@ -30,6 +32,7 @@
     <p *ngIf="validationError" class="advanced-field-error">{{ validationError }}</p>
 
     <mat-autocomplete #auto="matAutocomplete" [displayWith]="displayOption.bind(this)"
+      [panelWidth]="autocompletePanelWidth"
       (optionSelected)="selectOption($event)" class="advanced-autocomplete-panel">
       <mat-option *ngFor="let option of filteredOptions$ | async" [value]="option" class="advanced-autocomplete-option">
         <div class="advanced-option-row">

@@ -59,6 +59,43 @@ describe('NewSearchComponent', () => {
     expect(component.showMenu).toBeTrue();
   });
 
+  it('updates autocomplete suggestions on the current input event without debounce lag', () => {
+    const searchSpy = spyOn(component, 'handleSearch');
+    const input = document.createElement('input');
+    input.value = '飯';
+
+    component.onInput({ target: input } as any);
+
+    expect(searchSpy).toHaveBeenCalledOnceWith('飯');
+  });
+
+  it('uses ten stores for the initial page and every subsequent page', () => {
+    expect(component.storesPerPage).toBe(10);
+    expect((component as any).minInitialStores).toBe(10);
+
+    component.searchMode = 'location';
+    component.hasMoreStores = true;
+    component.allNearbyStores = Array.from({ length: 20 }, (_, index) => ({ storeName: `store-${index}` }));
+    component.totalStoresShowList = component.allNearbyStores.slice(0, 10);
+    (component as any).targetDisplayCount = 10;
+
+    component.loadMoreStores();
+
+    expect(component.totalStoresShowList.length).toBe(20);
+  });
+
+  it('keeps the global overlay blurred in dark mode', () => {
+    const backdrop = document.createElement('div');
+    backdrop.className = 'cdk-overlay-backdrop-showing';
+    document.body.appendChild(backdrop);
+    document.documentElement.setAttribute('data-theme', 'dark');
+
+    expect(getComputedStyle(backdrop).backdropFilter).toContain('blur(9px)');
+
+    backdrop.remove();
+    document.documentElement.setAttribute('data-theme', 'light');
+  });
+
   it('normalizes common Traditional Chinese product variants', () => {
     const normalize = (component as any).normalizeSearchText.bind(component);
     expect(normalize('配．意大利麪')).toBe(normalize('義大利麵'));

@@ -1,98 +1,78 @@
-<!-- 手機驗證登入對話框 -->
 <div class="login-wrapper"
-     appMotion [initial]="{ scale: 0.9, opacity: 0 }" 
-     [animate]="{ scale: 1, opacity: 1 }" 
-     [transition]="{ type: 'spring', stiffness: 300, damping: 25 }">
-  <!-- Header -->
-  <div class="flex justify-between items-center mb-6">
-    <div class="flex items-center gap-3">
-      <div class="login-icon-badge">
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="var(--accent)" viewBox="0 0 24 24">
-          <path
-            d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
-        </svg>
-      </div>
-      <h2 class="text-xl font-bold m-0 flex items-center pt-0.5" style="color: var(--text-primary)">
-        快速登入
-      </h2>
-    </div>
-    <button type="button" (click)="close(false)" aria-label="關閉登入視窗"
-      class="close-btn p-2 text-gray-400 dark:text-slate-400 hover:text-gray-600 dark:hover:text-slate-200 focus:outline-none">
-      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"
-        viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"></path>
+  appMotion [initial]="{ scale: 0.96, opacity: 0 }"
+  [animate]="{ scale: 1, opacity: 1 }"
+  [transition]="{ type: 'spring', stiffness: 300, damping: 26 }">
+  <header class="login-heading">
+    <span class="login-icon-badge" aria-hidden="true">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+        stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M7 10V8a5 5 0 0 1 10 0v2"/><rect x="5" y="10" width="14" height="11" rx="3"/><path d="M12 14v3"/>
       </svg>
+    </span>
+    <span class="login-heading-copy"><small>收藏與同步</small><h2>快速登入</h2></span>
+    <button type="button" (click)="close(false)" aria-label="關閉登入視窗" class="close-btn">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+        stroke-width="1.8" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>
     </button>
-  </div>
+  </header>
 
-  <p class="text-sm mb-6 leading-relaxed" style="color: var(--text-secondary)">
-    {{ verificationSent ? '輸入簡訊中的驗證碼，即可查看與管理收藏門市。' : '輸入手機號碼，我們會傳送一次性驗證碼。' }}
+  <p class="login-intro">
+    {{ verificationSent ? '輸入簡訊中的 6 碼驗證碼，完成後即可管理收藏門市。' : '用手機號碼安全登入，不需另外設定密碼。' }}
   </p>
 
-  <!-- Form -->
-  <form [formGroup]="authForm" (ngSubmit)="submitForm()" class="space-y-5">
-    <div *ngIf="!verificationSent">
-      <label for="phone" class="block text-sm font-semibold mb-2" style="color: var(--text-primary)">手機號碼</label>
-      <div class="relative">
-        <div class="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none text-gray-400 dark:text-slate-500">
-          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 24 24">
-            <path
-              d="M6.62 10.79a15.053 15.053 0 0 0 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z" />
-          </svg>
-        </div>
-        <input type="tel" id="phone" formControlName="phone" placeholder="0912345678" maxlength="10" inputmode="numeric"
-          autocomplete="tel" class="input-field w-full pl-11 pr-4 py-3 text-base" />
+  <form [formGroup]="authForm" (ngSubmit)="submitForm()" class="login-form">
+    <div *ngIf="!verificationSent" class="login-field-group">
+      <label for="phone">手機號碼</label>
+      <div class="input-shell">
+        <span class="input-leading-icon" aria-hidden="true">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="2" width="10" height="20" rx="2.5"/><path d="M10 18h4"/></svg>
+        </span>
+        <input type="tel" id="phone" formControlName="phone" placeholder="0912 345 678" maxlength="10"
+          inputmode="numeric" autocomplete="tel" class="input-field" />
       </div>
-
-      <!-- 錯誤提示增加動畫 -->
-      <div class="error-wrapper mt-2" *ngIf="f['phone'].touched && f['phone'].invalid">
-        <small class="text-red-500 font-medium flex items-center gap-1" *ngIf="f['phone'].errors?.['required']">
-          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 24 24">
-            <path
-              d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z" />
-          </svg>
-          手機號碼為必填
-        </small>
-        <small class="text-red-500 font-medium flex items-center gap-1" *ngIf="f['phone'].errors?.['pattern']">
-          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 24 24">
-            <path
-              d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z" />
-          </svg>
-          請輸入有效的 10 碼台灣手機號碼 (09開頭)
-        </small>
-      </div>
+      <small class="field-error" *ngIf="f['phone'].touched && f['phone'].errors?.['required']">請輸入手機號碼</small>
+      <small class="field-error" *ngIf="f['phone'].touched && f['phone'].errors?.['pattern']">請輸入 09 開頭的 10 碼手機號碼</small>
     </div>
 
-    <div *ngIf="verificationSent">
-      <div class="flex items-center justify-between mb-2">
-        <label for="code" class="block text-sm font-semibold" style="color: var(--text-primary)">簡訊驗證碼</label>
-        <button type="button" class="text-sm underline" (click)="editPhone()">更換手機號碼</button>
+    <div *ngIf="verificationSent" class="login-field-group">
+      <div class="field-label-row">
+        <label for="code">簡訊驗證碼</label>
+        <button type="button" class="edit-phone-btn" (click)="editPhone()">更換手機號碼</button>
       </div>
-      <input type="text" id="code" formControlName="code" placeholder="6 碼驗證碼" maxlength="6"
-        inputmode="numeric" autocomplete="one-time-code" class="input-field w-full px-4 py-3 text-base" />
-      <small class="text-red-500 font-medium" *ngIf="f['code'].touched && f['code'].invalid">請輸入 6 碼數字驗證碼</small>
+      <div class="input-shell code-input-shell">
+        <span class="input-leading-icon" aria-hidden="true">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 5h14v14H5zM8 9h.01M12 9h.01M16 9h.01M8 13h.01M12 13h.01M16 13h.01"/></svg>
+        </span>
+        <input type="text" id="code" formControlName="code" placeholder="6 碼驗證碼" maxlength="6"
+          inputmode="numeric" autocomplete="one-time-code" class="input-field code-input" />
+      </div>
+      <small class="field-error" *ngIf="f['code'].touched && f['code'].invalid">請輸入 6 碼數字驗證碼</small>
     </div>
 
-    <div id="phone-recaptcha"></div>
+    <section class="captcha-section" [class.captcha-complete]="verificationSent" aria-label="安全驗證">
+      <div class="captcha-heading">
+        <span>安全驗證</span>
+        <small *ngIf="captchaLoading">載入中…</small>
+        <small *ngIf="captchaReady && !verificationSent">請先完成下方驗證</small>
+        <small *ngIf="verificationSent">已完成</small>
+      </div>
+      <div class="captcha-viewport" [attr.aria-busy]="captchaLoading"><div id="phone-recaptcha"></div></div>
+      <p>簡訊登入由 Firebase 提供，驗證用於防止簡訊濫用。</p>
+    </section>
 
-    <!-- Error Message -->
-    <div *ngIf="errorMessage" class="error-wrapper mb-4 p-3 rounded-xl"
-      style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.2);">
-      <p class="text-red-600 text-sm font-medium m-0 flex items-center gap-2">
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
-          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z" />
-        </svg>
-        {{ errorMessage }}
-      </p>
+    <div *ngIf="errorMessage" class="error-wrapper" role="alert">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+        stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 17h.01"/></svg>
+      <span>{{ errorMessage }}</span>
     </div>
 
-    <button type="submit" [disabled]="isSubmitting"
-      class="login-btn w-full py-3.5 px-4 font-semibold rounded-xl mt-4 flex justify-center items-center gap-2">
-      {{ isSubmitting ? '處理中…' : (verificationSent ? '驗證並登入' : '傳送驗證碼') }}
-      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" stroke="currentColor"
-        stroke-width="2.5" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M5 12h14M12 5l7 7-7 7" />
-      </svg>
+    <button type="submit" [disabled]="isSubmitting || (!verificationSent && !captchaReady)" class="login-btn">
+      <span>{{ isSubmitting ? '處理中…' : (verificationSent ? '驗證並登入' : '傳送驗證碼') }}</span>
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+        stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M14 7l5 5-5 5"/></svg>
     </button>
+    <small class="sms-note" *ngIf="!verificationSent">可能產生一般簡訊費用</small>
   </form>
 </div>

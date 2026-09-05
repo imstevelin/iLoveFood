@@ -46,4 +46,8 @@ describe('AdvancedSearchDialogComponent', () => {
       ])
     }));
   });
+
+  it('uses a viewport-safe wide autocomplete panel', () => {
+    expect(component.autocompletePanelWidth).toBe('min(410px, calc(100vw - 64px))');
+  });
 });

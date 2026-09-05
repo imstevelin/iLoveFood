@@ -25,4 +25,10 @@ describe('ImageDialogComponent', () => {
   it('should create', () => {
     expect(component).toBeTruthy();
   });
+
+  it('renders the image close action as a circular button', () => {
+    const closeButton = fixture.nativeElement.querySelector('.modern-close-btn') as HTMLButtonElement;
+    expect(closeButton.getAttribute('aria-label')).toBe('關閉圖片');
+    expect(getComputedStyle(closeButton).borderRadius).toBe('999px');
+  });
 });

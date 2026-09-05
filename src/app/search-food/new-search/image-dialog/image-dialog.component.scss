@@ -24,16 +24,16 @@
   display: block;
 }
 
-/* Flat Warm Close Button — Brutalist */
+/* Floating circular close button shared with the site's rounded control language. */
 .modern-close-btn {
   position: absolute;
   top: 1.5rem;
   right: 1.5rem;
   width: 44px;
   height: 44px;
-  border-radius: 0px;
-  border: 1px solid var(--border-default);
-  background: var(--surface);
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--border-default) 82%, transparent);
+  background: color-mix(in srgb, var(--surface) 92%, transparent);
   color: var(--text-primary);
   cursor: pointer;
   display: flex;
@@ -42,7 +42,9 @@
   transition: all 0.15s ease;
   z-index: 100;
   padding: 0;
-  box-shadow: none;
+  box-shadow: 0 8px 24px rgba(20, 24, 32, 0.14);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
 
   svg {
     stroke: var(--text-primary);
@@ -52,8 +54,8 @@
   &:hover {
     background: var(--accent-light);
     border-color: var(--accent);
-    transform: none;
-    box-shadow: none;
+    transform: rotate(3deg);
+    box-shadow: 0 10px 28px rgba(20, 24, 32, 0.18);
   }
 
   &:active {
@@ -85,7 +87,7 @@
     background: var(--surface);
     color: var(--text-primary);
     border-color: var(--border-default);
-    box-shadow: none;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.28);
 
     svg {
       stroke: var(--text-primary);
@@ -93,7 +95,7 @@
     &:hover {
       background: var(--accent-light);
       border-color: var(--accent);
-      box-shadow: none;
+      box-shadow: 0 10px 28px rgba(0, 0, 0, 0.32);
     }
   }
 }

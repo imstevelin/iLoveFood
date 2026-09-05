@@ -28,6 +28,7 @@ export class AuthService {
   private readonly auth = firebaseAuth;
 
   constructor() {
+    this.auth.languageCode = 'zh-TW';
     onAuthStateChanged(this.auth, firebaseUser => {
       if (!firebaseUser?.phoneNumber) {
         this.userSubject.next(null);
@@ -47,18 +48,31 @@ export class AuthService {
     return this.userSubject.asObservable();
   }
 
+  async prepareRecaptcha(recaptchaContainerId: string): Promise<void> {
+    if (this.recaptchaVerifier) return;
+    this.recaptchaVerifier = new RecaptchaVerifier(this.auth, recaptchaContainerId, {
+      size: 'normal'
+    });
+
+    try {
+      await this.recaptchaVerifier.render();
+    } catch (error) {
+      this.clearRecaptcha();
+      throw error;
+    }
+  }
+
   async sendVerificationCode(phone: string, recaptchaContainerId: string): Promise<void> {
     const e164Phone = this.toTaiwanE164(phone);
-    this.clearRecaptcha();
-    this.recaptchaVerifier = new RecaptchaVerifier(this.auth, recaptchaContainerId, {
-      size: 'invisible'
-    });
+    await this.prepareRecaptcha(recaptchaContainerId);
+    const verifier = this.recaptchaVerifier;
+    if (!verifier) throw new Error('安全驗證尚未就緒');
 
     try {
       this.confirmationResult = await signInWithPhoneNumber(
         this.auth,
         e164Phone,
-        this.recaptchaVerifier
+        verifier
       );
       this.pendingPhoneNumber = phone;
     } catch (error) {
