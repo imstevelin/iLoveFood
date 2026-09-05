@@ -404,7 +404,7 @@ body > div:has(iframe[src*="/recaptcha/"][src*="bframe"]) {
   z-index: 2147483647 !important;
 }
 
-app-new-search .page-expand-card {
+app-new-search .store-glass-card.page-expand-card {
   animation: store-page-expand 420ms ease-out both;
   transform-origin: top center;
 }
@@ -413,7 +413,7 @@ app-new-search .page-expand-card {
   to { opacity: 1; transform: translateY(0) scaleY(1); }
 }
 @supports (interpolate-size: allow-keywords) {
-  app-new-search .page-expand-card {
+  app-new-search .store-glass-card.page-expand-card {
     interpolate-size: allow-keywords;
     animation-name: store-page-height-expand;
     overflow: clip;
@@ -424,7 +424,7 @@ app-new-search .page-expand-card {
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  app-new-search .page-expand-card { animation: none; }
+  app-new-search .store-glass-card.page-expand-card { animation: none; }
 }
 
 .cdk-overlay-backdrop-showing {
