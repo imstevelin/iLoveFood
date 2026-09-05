@@ -5,7 +5,9 @@ import { MatAutocompleteModule, MatAutocompleteSelectedEvent } from '@angular/ma
 import { MatChipsModule } from '@angular/material/chips';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { Observable } from 'rxjs';
-import { map, startWith } from 'rxjs/operators';
+import { debounceTime, distinctUntilChanged, map, startWith } from 'rxjs/operators';
+import { normalizeSearchText, phoneticSearchText } from '../../utils/search-text';
+import { COMPOSITION_BUFFER_MODE } from '@angular/forms';
 
 export type AdvancedSearchMatchMode = 'any' | 'all';
 
@@ -39,6 +41,7 @@ export interface AdvancedSearchDialogResult {
 @Component({
   selector: 'app-advanced-search-dialog',
   standalone: true,
+  providers: [{ provide: COMPOSITION_BUFFER_MODE, useValue: false }],
   imports: [
     CommonModule,
     ReactiveFormsModule,
@@ -72,9 +75,12 @@ export class AdvancedSearchDialogComponent {
       searchText: typeof option['searchText'] === 'string'
         ? option['searchText']
         : this.normalize(`${option.name} ${option.rawName || ''} ${option.addr || ''}`)
+          + '|' + this.normalize(String(option['phoneticText'] || phoneticSearchText(option.rawName || option.name)))
     }));
     this.filteredOptions$ = this.keywordCtrl.valueChanges.pipe(
       startWith(''),
+      debounceTime(100),
+      distinctUntilChanged(),
       map(value => this.filterOptions(typeof value === 'string' ? value : ''))
     );
   }
@@ -171,14 +177,17 @@ export class AdvancedSearchDialogComponent {
   private filterOptions(value: string): AdvancedSearchOption[] {
     const normalizedValue = this.normalize(value);
     if (!normalizedValue) return [];
+    const phoneticValue = phoneticSearchText(value);
 
     const results: AdvancedSearchOption[] = [];
     const seen = new Set<string>();
     for (const indexedOption of this.indexedOptions) {
       const option = indexedOption.option;
-      const matches = indexedOption.searchText.includes(normalizedValue);
+      const matches = indexedOption.searchText.includes(normalizedValue) ||
+        (!!phoneticValue && indexedOption.searchText.includes(phoneticValue));
+      if (!matches) continue;
       const key = this.optionKey(option);
-      if (matches && !seen.has(key)) {
+      if (!seen.has(key)) {
         seen.add(key);
         results.push(option);
         if (results.length >= 20) break;
@@ -188,9 +197,6 @@ export class AdvancedSearchDialogComponent {
   }
 
   private normalize(value: string): string {
-    return (value || '')
-      .normalize('NFKC')
-      .toLowerCase()
-      .replace(/[^a-z0-9\u3400-\u9fff]/g, '');
+    return normalizeSearchText(value);
   }
 }

@@ -1,4 +1,4 @@
-import { AfterViewInit, Component, OnDestroy } from '@angular/core';
+import { AfterViewInit, ChangeDetectorRef, Component, OnDestroy } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { AuthService } from '../../services/auth.service';
 import { MatDialogRef } from '@angular/material/dialog';
@@ -16,11 +16,13 @@ export class LoginPageComponent implements AfterViewInit, OnDestroy {
   isSubmitting = false;
   captchaLoading = true;
   captchaReady = false;
+  private destroyed = false;
 
   constructor(
     private fb: FormBuilder,
     private authService: AuthService,
-    private dialogRef: MatDialogRef<LoginPageComponent>
+    private dialogRef: MatDialogRef<LoginPageComponent>,
+    private cdr: ChangeDetectorRef
   ) {
     // 只需要手機號碼，使用台灣手機號碼正則表達式驗證
     this.authForm = this.fb.group({
@@ -35,6 +37,7 @@ export class LoginPageComponent implements AfterViewInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.destroyed = true;
     this.authService.resetVerification();
   }
 
@@ -70,6 +73,7 @@ export class LoginPageComponent implements AfterViewInit, OnDestroy {
       }
     } finally {
       this.isSubmitting = false;
+      if (!this.destroyed) this.cdr.detectChanges();
     }
   }
 
@@ -116,6 +120,7 @@ export class LoginPageComponent implements AfterViewInit, OnDestroy {
       this.errorMessage = '安全驗證載入失敗，請確認網路後重新開啟登入視窗。';
     } finally {
       this.captchaLoading = false;
+      if (!this.destroyed) this.cdr.detectChanges();
     }
   }
 }

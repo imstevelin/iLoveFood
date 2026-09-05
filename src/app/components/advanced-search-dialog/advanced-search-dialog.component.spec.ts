@@ -29,6 +29,16 @@ describe('AdvancedSearchDialogComponent', () => {
     expect(dialogRef.close).not.toHaveBeenCalled();
   });
 
+  it('matches common variants and homophones using the shared search rules', () => {
+    const dialog = new AdvancedSearchDialogComponent(dialogRef, { allOptions: [
+      { name: '義大利麵', type: 'product' },
+      { name: '新亞', type: 'store', phoneticText: 'xin ya' }
+    ] });
+    expect((dialog as any).filterOptions('意大利麪')[0].name).toBe('義大利麵');
+    expect((dialog as any).filterOptions('心亞')[0].name).toBe('新亞');
+    expect((dialog as any).filterOptions('xinya')[0].name).toBe('新亞');
+  });
+
   it('returns multiple conditions and the selected match mode', () => {
     component.keywordCtrl.setValue('便當');
     component.addCurrentKeyword();

@@ -518,10 +518,9 @@
   <!-- ===== Store Cards ===== -->
   <ng-container *ngIf="!locationDenied && !showAboutCard && (loadingService.state$ | async)?.visible !== true">
     <ng-container *ngFor="let store of totalStoresShowList; let i = index; trackBy: trackByStore">
-      <span *ngIf="i === totalStoresShowList.length - 1" #loadMoreTrigger
-        class="load-more-trigger" aria-hidden="true"></span>
       <!-- Only render card if store has content -->
       <div class="store-glass-card card-animate-in"
+        [class.page-expand-card]="i >= 10"
         data-testid="store-result"
         [id]="'store-' + (store.StoreName || store.storeName)"
         [ngClass]="{'card-seven': store.label === '7-11', 'card-family': store.label === '全家'}">
@@ -663,11 +662,14 @@
   </ng-container>
 
   <!-- ===== Incremental loading feedback ===== -->
-  <div *ngIf="totalStoresShowList.length > 0 && !isMapView && (isLoadingMore || isSearchingMore)"
+  <div *ngIf="totalStoresShowList.length > 0 && !isMapView && (pagePending || isLoadingMore || isSearchingMore)"
     class="incremental-loader" role="status" aria-live="polite">
     <span class="incremental-loader-track" aria-hidden="true"><span></span></span>
     <span>正在載入下一批 10 間門市…</span>
   </div>
+
+  <span *ngIf="totalStoresShowList.length > 0 && !isMapView && !locationDenied && !showAboutCard"
+    #loadMoreTrigger class="load-more-trigger" aria-hidden="true"></span>
 
   <!-- ===== Product Search completion state ===== -->
   <ng-container *ngIf="searchMode === 'product' && !isMapView && (loadingService.state$ | async)?.visible !== true">

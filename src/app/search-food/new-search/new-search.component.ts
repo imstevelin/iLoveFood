@@ -38,6 +38,7 @@ import { getDistance } from 'geolib';
 import { collection, deleteDoc, doc, onSnapshot, setDoc } from 'firebase/firestore';
 import { firestoreDb } from 'src/app/services/firebase-client';
 import { pinyin } from 'pinyin-pro';
+import { normalizeSearchText } from 'src/app/utils/search-text';
 
 @Component({
   standalone: false,
@@ -163,6 +164,10 @@ export class NewSearchComponent implements OnInit, OnDestroy {
   private pinyinCache = new Map<string, string>();
   private loadMoreObserver: IntersectionObserver | null = null;
   private loadMoreSentinel: HTMLElement | null = null;
+  private suggestionTimer: ReturnType<typeof setTimeout> | null = null;
+  private pageTimer: ReturnType<typeof setTimeout> | null = null;
+  pagePending = false;
+  private bottomEntered = false;
   private favoritesSubscription: Subscription | null = null; // 收藏清單的訂閱
   private routeSearchSubscription: Subscription | null = null;
   private readonly maxRouteSamplePoints = 40;
@@ -289,6 +294,7 @@ export class NewSearchComponent implements OnInit, OnDestroy {
   @ViewChild(MapViewComponent) mapViewComponent!: MapViewComponent;
   @ViewChild('loadMoreTrigger')
   set loadMoreTrigger(trigger: ElementRef<HTMLElement> | undefined) {
+    if (!trigger) this.bottomEntered = false;
     this.loadMoreSentinel = trigger?.nativeElement || null;
     this.observeLastStore();
   }
@@ -329,6 +335,8 @@ export class NewSearchComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    if (this.suggestionTimer) clearTimeout(this.suggestionTimer);
+    if (this.pageTimer) clearTimeout(this.pageTimer);
     document.documentElement.classList.remove('map-active-lock');
     document.body.classList.remove('map-active-lock');
     if (this.favoritesSubscription) {
@@ -845,6 +853,7 @@ export class NewSearchComponent implements OnInit, OnDestroy {
       addr: item.addr,
       label: '7-11',
       storeNo: String(item.serial || ''),
+      phoneticText: `${item.name_pinyin || ''} ${item.addr_pinyin || ''}`,
       longitude: Number(item.lng),
       latitude: Number(item.lat)
     }));
@@ -855,6 +864,7 @@ export class NewSearchComponent implements OnInit, OnDestroy {
       addr: item.addr,
       label: '全家',
       pkeynew: String(item.pkeynew || ''),
+      phoneticText: `${item.Name_pinyin || ''} ${item.addr_pinyin || ''}`,
       longitude: Number(item.px_wgs84),
       latitude: Number(item.py_wgs84)
     }));
@@ -1230,16 +1240,23 @@ export class NewSearchComponent implements OnInit, OnDestroy {
 
   onInput(event: Event): void {
     const input = (event.target as HTMLInputElement).value;
+    if (this.suggestionTimer) clearTimeout(this.suggestionTimer);
     if (this.selectedKeywords.length > 0) {
       this.selectedKeywords = [];
       this.advancedSearchActive = false;
       this.keywordMatchMode = 'any';
     }
     this.searchTerm = input;
-    // 候選清單必須跟著每次 input 事件更新，包含 IME 正在組字的階段。
-    // 搜尋本身使用有上限的索引掃描，不再使用會留下舊結果的延遲計時器。
+    // 合併連續輸入，包含 IME 組字；取消舊工作，只呈現最新文字的結果。
     if (input.length >= 1) {
-      this.handleSearch(input);
+      this.ngZone.runOutsideAngular(() => {
+        this.suggestionTimer = setTimeout(() => {
+          this.suggestionTimer = null;
+          if (this.searchTerm !== input) return;
+          this.handleSearch(input);
+          this.ngZone.run(() => this.cdr.markForCheck());
+        }, 100);
+      });
     } else {
       this.unifiedDropDownList = [];
       // 僅在完全沒有已選條件時回到定位搜尋，避免刪除輸入文字時清掉既有 chips。
@@ -1254,6 +1271,7 @@ export class NewSearchComponent implements OnInit, OnDestroy {
     if (event.isComposing || this.isComposing) return;
 
     if (event.key === 'Enter') {
+      if (this.suggestionTimer) clearTimeout(this.suggestionTimer);
       event.preventDefault();
       this.unifiedDropDownList = [];
       this.autocompleteTrigger?.closePanel();
@@ -1325,14 +1343,7 @@ export class NewSearchComponent implements OnInit, OnDestroy {
   }
 
   private normalizeSearchText(value: string): string {
-    return (value || '')
-      .normalize('NFKC')
-      .toLowerCase()
-      .replace(/^(?:(?:[一二三四五六七八九十\d]\s*配|配(?=[-_.．\s])|(?:北|中|南|東|全)區)[-_.．\s]*)+/, '')
-      .replace(/臺/g, '台')
-      .replace(/意大利/g, '義大利')
-      .replace(/麪/g, '麵')
-      .replace(/[^a-z0-9\u3400-\u9fff]/g, '');
+    return normalizeSearchText(value);
   }
 
   private productNameMatches(productName: string, keyword: string): boolean {
@@ -1582,6 +1593,7 @@ export class NewSearchComponent implements OnInit, OnDestroy {
   }
 
   onOptionSelect(event: MatAutocompleteSelectedEvent | null): void {
+    if (this.suggestionTimer) clearTimeout(this.suggestionTimer);
     if (!this.canStartDiscountSearch()) return;
     const selectedValue = event?.option?.value;
 
@@ -2657,7 +2669,7 @@ export class NewSearchComponent implements OnInit, OnDestroy {
 
     // 判斷是否已經搜完所有門市
     const allExhausted = this.searchExhausted711 && this.searchExhaustedFm;
-    this.hasMoreStores = !allExhausted;
+    this.hasMoreStores = this.productSearchStores.length > this.targetDisplayCount || !allExhausted;
 
     // 初次搜尋已完成一批附近門市且仍是零結果時，立即向使用者回覆。
     // 不再為了證明「全台都沒有」而讓進度條長時間停在畫面上。
@@ -2673,12 +2685,13 @@ export class NewSearchComponent implements OnInit, OnDestroy {
     }
 
     // 初始搜尋不渲染部分門市。若數量不足，先完成下一批，最後再一次顯示穩定排序。
-    if (isInitial && this.productSearchStores.length < this.targetDisplayCount &&
+    if (this.productSearchStores.length < this.targetDisplayCount &&
         !allExhausted) {
-      this.loadingService.update('正在擴大搜尋範圍', 86, '尚未找到足夠結果');
+      this.isLoadingMore = !isInitial;
+      if (isInitial) this.loadingService.update('正在擴大搜尋範圍', 86, '尚未找到足夠結果');
       setTimeout(() => {
         if (this.productSearchGeneration === currentGen) {
-          this.fetchProductSearchBatch(true);
+          this.fetchProductSearchBatch(isInitial);
         }
       }, 0);
       return;
@@ -2770,14 +2783,14 @@ export class NewSearchComponent implements OnInit, OnDestroy {
       this.showMoreProductResults();
       return;
     } else {
-      // 緩衝池不足：先把池裡剩下的全推上畫面
-      this.totalStoresShowList = this.productSearchStores.slice(0, this.productSearchStores.length);
+      // 等這一頁收集完成再一起展開。
 
       // 如果還有門市可以搜尋，就繼續查下一批
       if (!this.searchExhausted711 || !this.searchExhaustedFm) {
         this.fetchProductSearchBatch(false);
       } else {
         this.hasMoreStores = false;
+        this.totalStoresShowList = this.productSearchStores.slice(0, this.targetDisplayCount);
         this.isLoadingMore = false;
       }
     }
@@ -2790,6 +2803,7 @@ export class NewSearchComponent implements OnInit, OnDestroy {
 
   // 執行搜尋（統一入口）
   performSearch(): void {
+    if (this.suggestionTimer) clearTimeout(this.suggestionTimer);
     if (!this.canStartDiscountSearch()) return;
     // 一般搜尋框採單一條件；進階搜尋送出時輸入框會保持空白。
     const val = String(this.keywordCtrl.value || '').trim();
@@ -3445,14 +3459,16 @@ export class NewSearchComponent implements OnInit, OnDestroy {
     if (this.allNearbyStores.length >= this.targetDisplayCount) {
       // 緩衝池內數量充足：直接切割，絕對禁止觸發新 API
       this.totalStoresShowList = this.allNearbyStores.slice(0, this.targetDisplayCount);
+      this.hasMoreStores = this.allNearbyStores.length > this.targetDisplayCount ||
+        !(this.searchExhausted711 && this.searchExhaustedFm);
       this.isLoadingMore = false;
       return;
     } else {
-      // 緩衝池不足：先把池中剩下所有的全推至畫面
-      this.totalStoresShowList = this.allNearbyStores.slice(0, this.allNearbyStores.length);
+      // 等這一頁收集完成再一起展開。
 
       // 若為路線搜尋模式，不應從 JSON 載入全台灣門市
       if (this.searchMode === 'route') {
+        this.totalStoresShowList = this.allNearbyStores.slice(0, this.targetDisplayCount);
         this.hasMoreStores = false;
         this.isLoadingMore = false;
         return;
@@ -3607,15 +3623,19 @@ export class NewSearchComponent implements OnInit, OnDestroy {
       this.allNearbyStores = this.sortStoresByDistance(Array.from(mergedStores.values()));
 
       // 嘗試達到目標顯示數量
-      this.totalStoresShowList = this.allNearbyStores.slice(0, this.targetDisplayCount);
+      if (this.allNearbyStores.length >= this.targetDisplayCount ||
+          (this.searchExhausted711 && this.searchExhaustedFm)) {
+        this.totalStoresShowList = this.allNearbyStores.slice(0, this.targetDisplayCount);
+      }
       this.storeDataService.setStores(this.allNearbyStores);
 
-      this.hasMoreStores = !(this.searchExhausted711 && this.searchExhaustedFm);
+      this.hasMoreStores = this.allNearbyStores.length > this.targetDisplayCount ||
+        !(this.searchExhausted711 && this.searchExhaustedFm);
 
       // 自動擴展：僅當「總累計結果」不足 minInitialStores 間時才繼續搜尋
       // 使用 allNearbyStores.length（總結果）而非 totalStoresShowList.length（當次顯示切片）
       // 地圖模式下不自動擴展搜尋，由使用者手動「搜尋此區域」
-      if (!this.isMapView && this.allNearbyStores.length < this.minInitialStores && this.hasMoreStores) {
+      if (!this.isMapView && this.allNearbyStores.length < this.targetDisplayCount && this.hasMoreStores) {
         this.isLoadingMore = true;
         this.loadMoreStoresFromJSON();
       } else {
@@ -3631,35 +3651,44 @@ export class NewSearchComponent implements OnInit, OnDestroy {
     if (!this.loadMoreSentinel || typeof IntersectionObserver === 'undefined') return;
 
     this.loadMoreObserver = new IntersectionObserver(entries => {
-      if (!entries.some(entry => entry.isIntersecting)) return;
+      const atBottom = entries.some(entry => entry.isIntersecting);
+      if (!atBottom) { this.bottomEntered = false; return; }
+      if (this.bottomEntered) return;
       this.ngZone.run(() => this.requestNextStorePage());
     }, {
       root: null,
-      rootMargin: '0px 0px 28% 0px',
+      rootMargin: '0px',
       threshold: 0.01
     });
     this.loadMoreObserver.observe(this.loadMoreSentinel);
   }
 
   private requestNextStorePage(): void {
-    if (!this.hasMoreStores || this.isLoadingMore || this.isSearchingMore || this.isMapView) return;
-    if (this.searchMode === 'product') {
-      this.loadMoreProductResults();
-    } else if (this.searchMode === 'store' || this.searchMode === 'location' || this.searchMode === 'route') {
-      this.loadMoreStores();
-    }
+    if (this.bottomEntered || this.pagePending || !this.totalStoresShowList.length ||
+        !this.hasMoreStores || this.isLoadingMore || this.isSearchingMore || this.isMapView) return;
+    this.bottomEntered = true;
+    this.pagePending = true;
+    const previousList = this.totalStoresShowList;
+    this.pageTimer = setTimeout(() => {
+      this.pagePending = false;
+      this.pageTimer = null;
+      if (previousList !== this.totalStoresShowList || this.isMapView) return;
+      if (this.searchMode === 'product') this.loadMoreProductResults();
+      else this.loadMoreStores();
+    }, 250);
   }
 
   // IntersectionObserver 是主要觸發器；passive scroll 只做舊版瀏覽器的容錯。
   onWindowScroll = (): void => {
+    if (typeof IntersectionObserver !== 'undefined') return;
     if (this.scrollTicking) return;
     this.scrollTicking = true;
     requestAnimationFrame(() => {
       this.scrollTicking = false;
       const sentinelTop = this.loadMoreSentinel?.getBoundingClientRect().top;
-      if (sentinelTop !== undefined && sentinelTop <= window.innerHeight * 1.28) {
+      if (sentinelTop !== undefined && sentinelTop <= window.innerHeight && sentinelTop >= 0) {
         this.ngZone.run(() => this.requestNextStorePage());
-      }
+      } else this.bottomEntered = false;
     });
   }
 

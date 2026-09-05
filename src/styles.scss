@@ -398,6 +398,35 @@ input:focus-visible {
 }
 
 /* Backdrop — Warm tint with a consistent Gaussian blur in both themes. */
+/* Google appends its challenge outside the Angular dialog overlay. Lift the
+   challenge wrapper (including its click shield), not only the iframe. */
+body > div:has(iframe[src*="/recaptcha/"][src*="bframe"]) {
+  z-index: 2147483647 !important;
+}
+
+app-new-search .page-expand-card {
+  animation: store-page-expand 420ms ease-out both;
+  transform-origin: top center;
+}
+@keyframes store-page-expand {
+  from { opacity: 0; transform: translateY(-18px) scaleY(0.96); }
+  to { opacity: 1; transform: translateY(0) scaleY(1); }
+}
+@supports (interpolate-size: allow-keywords) {
+  app-new-search .page-expand-card {
+    interpolate-size: allow-keywords;
+    animation-name: store-page-height-expand;
+    overflow: clip;
+  }
+  @keyframes store-page-height-expand {
+    from { height: 0; opacity: 0; }
+    to { height: auto; opacity: 1; }
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  app-new-search .page-expand-card { animation: none; }
+}
+
 .cdk-overlay-backdrop-showing {
   background: rgba(29, 28, 26, 0.45) !important;
   backdrop-filter: blur(9px) saturate(0.9) !important;

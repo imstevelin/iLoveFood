@@ -1,5 +1,5 @@
 import { NO_ERRORS_SCHEMA } from '@angular/core';
-import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
 import { HttpClientTestingModule } from '@angular/common/http/testing';
 import { MatDialogModule } from '@angular/material/dialog';
 import { SearchFoodModule } from '../search-food.module';
@@ -59,15 +59,41 @@ describe('NewSearchComponent', () => {
     expect(component.showMenu).toBeTrue();
   });
 
-  it('updates autocomplete suggestions on the current input event without debounce lag', () => {
+  it('coalesces rapid input and only searches the latest text', fakeAsync(() => {
     const searchSpy = spyOn(component, 'handleSearch');
     const input = document.createElement('input');
     input.value = '飯';
 
     component.onInput({ target: input } as any);
+    tick(60);
+    input.value = '飯糰';
+    component.onInput({ target: input } as any);
+    tick(99);
+    expect(searchSpy).not.toHaveBeenCalled();
+    tick(1);
+    expect(searchSpy).toHaveBeenCalledOnceWith('飯糰');
+  }));
 
-    expect(searchSpy).toHaveBeenCalledOnceWith('飯');
-  });
+  it('loads one ten-store page per bottom entry, with visible feedback first', fakeAsync(() => {
+    component.searchMode = 'location';
+    component.hasMoreStores = true;
+    component.allNearbyStores = Array.from({ length: 40 }, (_, i) => ({ storeName: String(i) }));
+    component.totalStoresShowList = component.allNearbyStores.slice(0, 10);
+    (component as any).targetDisplayCount = 10;
+    (component as any).requestNextStorePage();
+    (component as any).requestNextStorePage();
+    expect(component.pagePending).toBeTrue();
+    expect(component.totalStoresShowList.length).toBe(10);
+    tick(250);
+    expect(component.totalStoresShowList.length).toBe(20);
+    (component as any).requestNextStorePage();
+    tick(300);
+    expect(component.totalStoresShowList.length).toBe(20);
+    (component as any).bottomEntered = false;
+    (component as any).requestNextStorePage();
+    tick(250);
+    expect(component.totalStoresShowList.length).toBe(30);
+  }));
 
   it('uses ten stores for the initial page and every subsequent page', () => {
     expect(component.storesPerPage).toBe(10);
