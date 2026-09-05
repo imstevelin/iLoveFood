@@ -24,6 +24,7 @@ export class AuthService {
   private confirmationResult: ConfirmationResult | null = null;
   private pendingPhoneNumber = '';
   private recaptchaVerifier: RecaptchaVerifier | null = null;
+  private recaptchaSolved = false;
 
   private readonly auth = firebaseAuth;
 
@@ -48,10 +49,22 @@ export class AuthService {
     return this.userSubject.asObservable();
   }
 
-  async prepareRecaptcha(recaptchaContainerId: string): Promise<void> {
+  async prepareRecaptcha(
+    recaptchaContainerId: string,
+    onStateChange?: (solved: boolean) => void
+  ): Promise<void> {
     if (this.recaptchaVerifier) return;
+    this.recaptchaSolved = false;
     this.recaptchaVerifier = new RecaptchaVerifier(this.auth, recaptchaContainerId, {
-      size: 'normal'
+      size: 'normal',
+      callback: () => {
+        this.recaptchaSolved = true;
+        onStateChange?.(true);
+      },
+      'expired-callback': () => {
+        this.recaptchaSolved = false;
+        onStateChange?.(false);
+      }
     });
 
     try {
@@ -67,6 +80,11 @@ export class AuthService {
     await this.prepareRecaptcha(recaptchaContainerId);
     const verifier = this.recaptchaVerifier;
     if (!verifier) throw new Error('安全驗證尚未就緒');
+    if (!this.recaptchaSolved) {
+      const error = new Error('請先完成機器人驗證') as Error & { code?: string };
+      error.code = 'auth/captcha-check-failed';
+      throw error;
+    }
 
     try {
       this.confirmationResult = await signInWithPhoneNumber(
@@ -75,6 +93,7 @@ export class AuthService {
         verifier
       );
       this.pendingPhoneNumber = phone;
+      this.recaptchaSolved = false;
     } catch (error) {
       this.clearRecaptcha();
       throw error;
@@ -130,5 +149,6 @@ export class AuthService {
   private clearRecaptcha(): void {
     this.recaptchaVerifier?.clear();
     this.recaptchaVerifier = null;
+    this.recaptchaSolved = false;
   }
 }

@@ -55,7 +55,8 @@
       <div class="captcha-heading">
         <span>安全驗證</span>
         <small *ngIf="captchaLoading">載入中…</small>
-        <small *ngIf="captchaReady && !verificationSent">請先完成下方驗證</small>
+        <small *ngIf="!captchaLoading && !captchaReady && !verificationSent">請完成下方驗證</small>
+        <small *ngIf="captchaReady && !verificationSent">驗證完成，可以傳送</small>
         <small *ngIf="verificationSent">已完成</small>
       </div>
       <div class="captcha-viewport" [attr.aria-busy]="captchaLoading"><div id="phone-recaptcha"></div></div>

@@ -1,7 +1,9 @@
 import { generateMidVFromEnv } from './openpoint-midv.mjs';
 
 const OPENPOINT_BASE = 'https://lovefood.openpoint.com.tw/LoveFood/api/';
+const FAMILY_MART_PRODUCT_URL = 'https://stamp.family.com.tw/api/maps/MapProductInfo';
 const MAX_BODY_BYTES = 10_000;
+const MAX_BATCH_POINTS_PER_CHAIN = 12;
 const MAX_MAP_HTML_BYTES = 256_000;
 const MAP_HOSTS = new Set(['maps.app.goo.gl', 'goo.gl', 'google.com', 'www.google.com', 'maps.google.com']);
 const OPENPOINT_USER_AGENT = 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 Version/17.0 Mobile/15E148 Safari/604.1';
@@ -54,6 +56,20 @@ export default {
         const body = await readJsonBody(request);
         validateLocationBody(body);
         response = await openPointRequest(env, 'Search/FrontendStoreItemStock/GetNearbyStoreList', body);
+      } else if (request.method === 'POST' && url.pathname === '/api/search/nearby-batch') {
+        const body = await readJsonBody(request);
+        const batch = validateBatchSearchBody(body);
+        if (batch.sevenEleven.length > 0) await getAccessToken(env);
+        const [sevenResults, fmResults] = await Promise.all([
+          Promise.all(batch.sevenEleven.map(location =>
+            openPointRequest(env, 'Search/FrontendStoreItemStock/GetNearbyStoreList', location)
+              .catch(() => null)
+          )),
+          Promise.all(batch.familyMart.map(point =>
+            familyMartRequest(point).catch(() => null)
+          ))
+        ]);
+        response = { sevenResults, fmResults };
       } else {
         const match = url.pathname.match(/^\/api\/7eleven\/stores\/([A-Za-z0-9_-]{1,20})\/inventory$/);
         if (request.method !== 'POST' || !match) return withCors(json({ error: 'Not found' }, 404), callerOrigin);
@@ -177,6 +193,29 @@ async function openPointRequest(env, endpoint, body = {}, query = {}, canRetry =
   throw httpError(502, 'OPENPOINT request failed');
 }
 
+async function familyMartRequest(point) {
+  const response = await fetch(FAMILY_MART_PRODUCT_URL, {
+    method: 'POST',
+    signal: AbortSignal.timeout(8_000),
+    headers: {
+      'Content-Type': 'application/json',
+      Accept: 'application/json, text/plain, */*'
+    },
+    body: JSON.stringify({
+      ProjectCode: '202106302',
+      OldPKeys: [],
+      PostInfo: '',
+      Latitude: Number(point.Latitude),
+      Longitude: Number(point.Longitude)
+    })
+  });
+  const payload = await response.json().catch(() => null);
+  if (!response.ok || !payload || payload.code !== 1 || !Array.isArray(payload.data)) {
+    throw httpError(502, 'FamilyMart request failed');
+  }
+  return payload;
+}
+
 async function getAccessToken(env) {
   const cached = await caches.default.match(createAccessTokenCacheKey());
   if (cached) {
@@ -229,6 +268,20 @@ async function readJsonBody(request) {
 function validateLocationBody(body) {
   validatePoint(body?.CurrentLocation);
   validatePoint(body?.SearchLocation);
+}
+
+export function validateBatchSearchBody(body) {
+  const sevenEleven = Array.isArray(body?.sevenEleven) ? body.sevenEleven : [];
+  const familyMart = Array.isArray(body?.familyMart) ? body.familyMart : [];
+  if (sevenEleven.length > MAX_BATCH_POINTS_PER_CHAIN || familyMart.length > MAX_BATCH_POINTS_PER_CHAIN) {
+    throw httpError(400, 'Too many batch locations');
+  }
+  if (sevenEleven.length === 0 && familyMart.length === 0) {
+    throw httpError(400, 'Batch locations are required');
+  }
+  sevenEleven.forEach(validateLocationBody);
+  familyMart.forEach(validatePoint);
+  return { sevenEleven, familyMart };
 }
 
 function validatePoint(point) {

@@ -145,10 +145,15 @@ export class NewSearchComponent implements OnInit, OnDestroy {
   // 商品搜尋漸進式載入
   private all711StoresSortedByDist: any[] = [];     // 全部 7-11 門市按距離排序
   private allFmStoresSortedByDist: any[] = [];      // 全部全家門市按距離排序
-  private productSearch711BatchIdx: number = 0;     // 7-11 目前批次索引
-  private productSearchFmBatchIdx: number = 0;      // 全家目前批次索引
-  private productSearchBatchSize: number = 10;      // 首批每家超商各查 10 間，優先快速回覆附近結果
-  private readonly maxInitialNoResultCandidates = 20; // 附近一批仍為零結果時就回覆，不掃完整個全台索引
+  private productSearch711QueryPoints: any[] = [];
+  private productSearchFmQueryPoints: any[] = [];
+  private productSearch711BatchIdx: number = 0;     // 7-11 目前區域批次索引
+  private productSearchFmBatchIdx: number = 0;      // 全家目前區域批次索引
+  private productSearchBatchSize: number = 12;      // 每輪每家最多查 12 個去重後的覆蓋區域
+  private readonly initialProductSearchRadiusMeters = 10_000;
+  private readonly expandedProductSearchRadiusMeters = 30_000;
+  productSearchRadiusMeters = this.initialProductSearchRadiusMeters;
+  canExpandProductSearchRadius = false;
   private searchingMore = false;
   get isSearchingMore(): boolean { return this.searchingMore; }
   set isSearchingMore(value: boolean) {
@@ -234,6 +239,12 @@ export class NewSearchComponent implements OnInit, OnDestroy {
     return '商品搜尋';
   }
 
+  get resultTotalCount(): number {
+    return this.searchMode === 'product'
+      ? this.productSearchStores.length
+      : this.totalStoresShowList.length;
+  }
+
   get resultScopeText(): string {
     if (this.searchMode === 'route') {
       return this.routeProductKeywords.length > 0 ? this.routeProductKeywords.join('、') : '沿途所有折扣品';
@@ -251,6 +262,12 @@ export class NewSearchComponent implements OnInit, OnDestroy {
   }
 
   get emptyResultDescription(): string {
+    if (this.searchMode === 'product' && this.canExpandProductSearchRadius) {
+      return '已完整檢查方圓 10 公里內的門市；可以繼續擴大到 30 公里。';
+    }
+    if (this.searchMode === 'product' && this.productSearchRadiusMeters === this.expandedProductSearchRadiusMeters) {
+      return '已完整檢查方圓 30 公里內的門市，可以縮短商品關鍵字後再試一次。';
+    }
     return this.isStoreLikeSearch
       ? '已完成目前門市條件的查詢。可以縮短門市名稱、改用地址搜尋，或查看附近全部門市。'
       : '已檢查附近門市，目前沒有符合的商品。可以縮短關鍵字，或在進階搜尋中改用「符合任一條件」。';
@@ -604,12 +621,23 @@ export class NewSearchComponent implements OnInit, OnDestroy {
     return /^\d+$/.test(rawStoreNo) ? rawStoreNo.padStart(6, '0') : rawStoreNo;
   }
 
-  private get711StoreCoords(storeNo: unknown): { lat: number; lng: number } | undefined {
-    return this.storeNoToCoords.get(this.normalize711StoreNo(storeNo));
+  private get711StoreCoords(storeNo: unknown, storeName?: unknown): { lat: number; lng: number } | undefined {
+    const byNumber = this.storeNoToCoords.get(this.normalize711StoreNo(storeNo));
+    if (byNumber) return byNumber;
+
+    const normalizedName = normalizeSearchText(String(storeName ?? '').replace(/^7-11\s*/, ''));
+    if (!normalizedName) return undefined;
+    const comparableName = normalizedName.replace(/門市$/, '');
+    const localStore = this.all711Stores.find(store =>
+      normalizeSearchText(store.name).replace(/門市$/, '') === comparableName
+    );
+    const lat = Number(localStore?.lat);
+    const lng = Number(localStore?.lng);
+    return Number.isFinite(lat) && Number.isFinite(lng) ? { lat, lng } : undefined;
   }
 
-  private calc711DistFromUser(storeNo: unknown): number {
-    const coords = this.get711StoreCoords(storeNo);
+  private calc711DistFromUser(storeNo: unknown, storeName?: unknown): number {
+    const coords = this.get711StoreCoords(storeNo, storeName);
     if (coords && this.searchCenterLat && this.searchCenterLng) {
       return Math.round(getDistance(
         { latitude: this.searchCenterLat, longitude: this.searchCenterLng },
@@ -619,8 +647,8 @@ export class NewSearchComponent implements OnInit, OnDestroy {
     return 999999; // 找不到座標時排最後
   }
 
-  private get711QueryLocation(storeNo: unknown): { Latitude: number; Longitude: number } {
-    const coords = this.get711StoreCoords(storeNo);
+  private get711QueryLocation(storeNo: unknown, storeName?: unknown): { Latitude: number; Longitude: number } {
+    const coords = this.get711StoreCoords(storeNo, storeName);
     return {
       Latitude: coords?.lat || this.searchCenterLat || this.latitude || 25.0375197,
       Longitude: coords?.lng || this.searchCenterLng || this.longitude || 121.5636704
@@ -629,7 +657,7 @@ export class NewSearchComponent implements OnInit, OnDestroy {
 
   private normalizeNearbyDistance(store: any, centerLat: number, centerLng: number): any {
     if (store.label === '7-11') {
-      const coords = this.get711StoreCoords(store.StoreNo);
+      const coords = this.get711StoreCoords(store.StoreNo, store.StoreName || store.storeName);
       const distance = coords
         ? Math.round(getDistance(
             { latitude: centerLat, longitude: centerLng },
@@ -662,6 +690,28 @@ export class NewSearchComponent implements OnInit, OnDestroy {
         : Number.MAX_SAFE_INTEGER;
       return distanceA - distanceB;
     });
+  }
+
+  private getStoreIdentity(store: any): string {
+    return store.label === '7-11'
+      ? `711:${this.normalize711StoreNo(store.StoreNo) || store.storeName || store.StoreName}`
+      : `fm:${store.oldPKey || store.storeName || store.name}`;
+  }
+
+  private mergeNearbyStoresWithoutRemovingVisible(newStores: any[]): void {
+    const mergedStores = new Map<string, any>();
+    [...this.allNearbyStores, ...newStores].forEach(store => {
+      mergedStores.set(this.getStoreIdentity(store), store);
+    });
+    const sortedMergedStores = this.sortStoresByDistance(Array.from(mergedStores.values()));
+    const visibleKeys = new Set(this.totalStoresShowList.map(store => this.getStoreIdentity(store)));
+    const stableVisibleStores = this.totalStoresShowList
+      .map(store => mergedStores.get(this.getStoreIdentity(store)))
+      .filter(Boolean);
+    this.allNearbyStores = [
+      ...stableVisibleStores,
+      ...sortedMergedStores.filter(store => !visibleKeys.has(this.getStoreIdentity(store)))
+    ];
   }
 
   getFoodSubCategoryImage(nodeID: number): string | null {
@@ -2022,7 +2072,7 @@ export class NewSearchComponent implements OnInit, OnDestroy {
 
           // 計算該店距離這條「路線」的最佳最短距離 (選用路徑上最近的點代表)
           // 但簡化起見，算距離起點的距離排序
-          const dist = this.calc711DistFromUser(storeNo);
+          const dist = this.calc711DistFromUser(storeNo, store.StoreName);
 
           allStores.push({
             ...store,
@@ -2152,9 +2202,9 @@ export class NewSearchComponent implements OnInit, OnDestroy {
       this.routeNoResults = (allStores.length === 0 && this.routeProductKeywords.length > 0);
 
       this.allNearbyStores = allStores;
-      this.targetDisplayCount = this.minInitialStores;
-      this.totalStoresShowList = this.allNearbyStores.slice(0, this.targetDisplayCount); 
-      this.hasMoreStores = this.allNearbyStores.length > this.targetDisplayCount;
+      this.targetDisplayCount = allStores.length;
+      this.totalStoresShowList = [...this.allNearbyStores];
+      this.hasMoreStores = false;
       this.storeDataService.setStores(this.allNearbyStores);
       this.storeDataService.setIsUserLocationSearch(false);
       
@@ -2177,6 +2227,8 @@ export class NewSearchComponent implements OnInit, OnDestroy {
     // 重置漸進式搜尋狀態
     this.all711StoresSortedByDist = [];
     this.allFmStoresSortedByDist = [];
+    this.productSearch711QueryPoints = [];
+    this.productSearchFmQueryPoints = [];
     this.productSearch711BatchIdx = 0;
     this.productSearchFmBatchIdx = 0;
     this.productSearchScanned = 0;
@@ -2188,6 +2240,8 @@ export class NewSearchComponent implements OnInit, OnDestroy {
     this.sevenQueriedStoreNos = new Set();
     this.hasMoreStores = true;
     this.productSearchRunning = true;
+    this.productSearchRadiusMeters = this.initialProductSearchRadiusMeters;
+    this.canExpandProductSearchRadius = false;
     this.targetDisplayCount = this.minInitialStores;
     this.productSearchGeneration++;  // 遞增世代，作廢舊搜尋的 setTimeout
 
@@ -2343,8 +2397,26 @@ export class NewSearchComponent implements OnInit, OnDestroy {
       console.log(`[擴展搜尋] 全家門市按距離排序完成: ${this.allFmStoresSortedByDist.length} 間`);
     }
 
+    this.prepareProductSearchQueryPoints();
+  }
+
+  private getScopedProductCandidates<T extends { distance?: number }>(stores: T[]): T[] {
+    return stores.filter(store => Number(store.distance) <= this.productSearchRadiusMeters);
+  }
+
+  private prepareProductSearchQueryPoints(): void {
+    const scopedSevenStores = this.getScopedProductCandidates(this.all711StoresSortedByDist);
+    const scopedFamilyStores = this.getScopedProductCandidates(this.allFmStoresSortedByDist);
+    this.productSearch711QueryPoints = this.getCoveringPoints(
+      scopedSevenStores.map(store => ({ latitude: store.lat, longitude: store.lng })),
+      800
+    );
+    this.productSearchFmQueryPoints = this.getCoveringPoints(
+      scopedFamilyStores.map(store => ({ latitude: store.latitude, longitude: store.longitude })),
+      800
+    );
     this.productSearchTotalCandidates =
-      this.all711StoresSortedByDist.length + this.allFmStoresSortedByDist.length;
+      this.productSearch711QueryPoints.length + this.productSearchFmQueryPoints.length;
   }
 
   private matches711CategoryKeyword(detail: any[], keyword: string): boolean {
@@ -2393,7 +2465,7 @@ export class NewSearchComponent implements OnInit, OnDestroy {
     });
   }
 
-  // 批次搜尋：同時查 7-11 和全家；首批有任何結果就先呈現
+  // 批次搜尋：同時查 7-11 和全家，完整掃描目前半徑後再呈現穩定結果。
   private fetchProductSearchBatch(isInitial: boolean): void {
     const currentGen = this.productSearchGeneration;
     // 上一次搜尋仍在進行——等它完成後自己會繼續，不重試以避免重複鏈
@@ -2412,89 +2484,44 @@ export class NewSearchComponent implements OnInit, OnDestroy {
 
     const batchSize = this.productSearchBatchSize;
 
-    // 準備 7-11 批次
+    // 直接分批查詢已去重的 800 公尺覆蓋區域，避免同一街區重複呼叫 API。
     const sevenBatchStart = this.productSearch711BatchIdx * batchSize;
-    const sevenBatch = this.all711StoresSortedByDist.slice(sevenBatchStart, sevenBatchStart + batchSize);
+    const sevenQueryPoints = this.productSearch711QueryPoints.slice(sevenBatchStart, sevenBatchStart + batchSize);
     this.productSearch711BatchIdx++;
-    this.searchExhausted711 = sevenBatchStart + sevenBatch.length >= this.all711StoresSortedByDist.length;
+    this.searchExhausted711 = sevenBatchStart + sevenQueryPoints.length >= this.productSearch711QueryPoints.length;
 
-    // 準備全家批次：取得一組尚未查過的全家門市，用它們的座標呼叫 API
     const fmBatchStart = this.productSearchFmBatchIdx * batchSize;
-    const fmBatch = this.allFmStoresSortedByDist.slice(fmBatchStart, fmBatchStart + batchSize);
+    const fmQueryPoints = this.productSearchFmQueryPoints.slice(fmBatchStart, fmBatchStart + batchSize);
     this.productSearchFmBatchIdx++;
-    this.searchExhaustedFm = fmBatchStart + fmBatch.length >= this.allFmStoresSortedByDist.length;
+    this.searchExhaustedFm = fmBatchStart + fmQueryPoints.length >= this.productSearchFmQueryPoints.length;
     this.productSearchScanned = Math.min(
       this.productSearchTotalCandidates,
-      Math.min(this.productSearch711BatchIdx * batchSize, this.all711StoresSortedByDist.length) +
-      Math.min(this.productSearchFmBatchIdx * batchSize, this.allFmStoresSortedByDist.length)
+      Math.min(this.productSearch711BatchIdx * batchSize, this.productSearch711QueryPoints.length) +
+      Math.min(this.productSearchFmBatchIdx * batchSize, this.productSearchFmQueryPoints.length)
     );
-    const nearbyScanGoal = Math.max(1, Math.min(
-      this.maxInitialNoResultCandidates,
-      this.productSearchTotalCandidates
-    ));
+    const nearbyScanGoal = Math.max(1, this.productSearchTotalCandidates);
     const nearbyScanRatio = Math.min(1, this.productSearchScanned / nearbyScanGoal);
     this.loadingService.update(
       isInitial ? '正在比對商品庫存' : '正在擴展搜尋範圍',
       isInitial ? 50 + Math.round(nearbyScanRatio * 20) : 72,
-      `正在檢查附近 ${Math.min(this.productSearchScanned, nearbyScanGoal)} / ${nearbyScanGoal} 間候選門市`
+      `正在檢查 ${this.productSearchRadiusMeters / 1000} 公里內 ${Math.min(this.productSearchScanned, nearbyScanGoal)} / ${nearbyScanGoal} 個區域`
     );
 
-    // 第一批次：永遠包含使用者的 GPS 座標作為首要查詢點，確保最近的門市優先被搜尋
-    const sevenQueryPoints: any[] = [];
-    if (this.productSearch711BatchIdx === 1 && this.searchCenterLat && this.searchCenterLng) {
-      sevenQueryPoints.push({ latitude: this.searchCenterLat, longitude: this.searchCenterLng });
-    }
-    // 使用 800 公尺半徑，幾何覆蓋算法保證這批次的每一間 7-11 都落在查詢範圍內，達成 100% 無盲區
-    const batchPoints = this.getCoveringPoints(
-      sevenBatch.map((s: any) => ({ latitude: s.lat, longitude: s.lng })), 
-      800
-    );
-    sevenQueryPoints.push(...batchPoints);
+    const batchBody = {
+      sevenEleven: sevenQueryPoints.map((point: any) => ({
+        CurrentLocation: { Latitude: point.latitude, Longitude: point.longitude },
+        SearchLocation: { Latitude: point.latitude, Longitude: point.longitude }
+      })),
+      familyMart: fmQueryPoints.map((point: any) => ({
+        Latitude: point.latitude,
+        Longitude: point.longitude
+      }))
+    };
 
-    const sevenRegionalRequests = sevenQueryPoints.length > 0
-      ? sevenQueryPoints.map((point: any) => {
-          const locData: LocationData = {
-            CurrentLocation: { Latitude: point.latitude, Longitude: point.longitude },
-            SearchLocation: { Latitude: point.latitude, Longitude: point.longitude }
-          };
-          return this.sevenElevenService.getNearByStoreList(locData).pipe(
-            timeout(4500),
-            catchError(() => of(null))
-          );
-        })
-      : [of(null)];
-
-    // === 全家: 使用空間覆蓋半徑查詢 ===
-    // 全家 API (MapProductInfo) 嚴格限制搜尋半徑，傳送距離過遠的 OldPKeys 會被 API 直接丟棄
-    // 因此必須使用 getCoveringPoints 產生多個中心點進行多次區域搜尋
-    const fmQueryPoints: any[] = [];
-    if (this.productSearchFmBatchIdx === 1 && this.searchCenterLat && this.searchCenterLng) {
-      fmQueryPoints.push({ latitude: this.searchCenterLat, longitude: this.searchCenterLng });
-    }
-    const fmBatchPoints = this.getCoveringPoints(
-      fmBatch.map((s: any) => ({ latitude: s.latitude, longitude: s.longitude })),
-      800 // 800公尺半徑
-    );
-    fmQueryPoints.push(...fmBatchPoints);
-
-    const fmRegionalRequests = fmQueryPoints.length > 0
-      ? fmQueryPoints.map((point: any) =>
-          this.familyMartService.getNearByStoreList({
-            Latitude: point.latitude,
-            Longitude: point.longitude
-          }).pipe(
-            timeout(4500),
-            catchError(() => of({ code: 0, data: [] }))
-          )
-        )
-      : [of({ code: 0, data: [] })];
-
-    // 同時查詢 7-11 區域 + 全家區域
-
-    forkJoin({
-      sevenResults: forkJoin(sevenRegionalRequests),
-      fmResults: forkJoin(fmRegionalRequests)
-    }).subscribe(({ sevenResults, fmResults }) => {
+    this.http.post<any>('/api/search/nearby-batch', batchBody).pipe(
+      timeout(12_000),
+      catchError(() => of({ sevenResults: [null], fmResults: [null] }))
+    ).subscribe(({ sevenResults, fmResults }) => {
       this.loadingService.update('正在確認商品明細', 70, '區域門市查詢完成，核對商品名稱中');
       const sevenHealthy = (sevenResults || []).some(
         (response: any) => Array.isArray(response?.element?.StoreStockItemList)
@@ -2523,6 +2550,8 @@ export class NewSearchComponent implements OnInit, OnDestroy {
           res.element.StoreStockItemList.forEach((store: any) => {
             if (!store.RemainingQty || store.RemainingQty <= 0) return;
             const storeNo = store.StoreNo || '';
+            const storeDistance = this.calc711DistFromUser(storeNo, store.StoreName);
+            if (storeDistance > this.productSearchRadiusMeters) return;
             if (this.sevenQueriedStoreNos.has(storeNo)) return;
             this.sevenQueriedStoreNos.add(storeNo);
 
@@ -2531,7 +2560,7 @@ export class NewSearchComponent implements OnInit, OnDestroy {
                 ...store,
                 storeName: `7-11${store.StoreName}門市`,
                 label: '7-11',
-                distance: this.calc711DistFromUser(store.StoreNo),
+                distance: storeDistance,
                 remainingQty: store.RemainingQty,
                 showDistance: true,
                 CategoryStockItems: store.CategoryStockItems || []
@@ -2554,7 +2583,7 @@ export class NewSearchComponent implements OnInit, OnDestroy {
                   ...store,
                   storeName: `7-11${store.StoreName}門市`,
                   label: '7-11',
-                  distance: this.calc711DistFromUser(store.StoreNo),
+                  distance: storeDistance,
                   remainingQty: store.RemainingQty,
                   showDistance: true,
                   CategoryStockItems: detail
@@ -2572,7 +2601,7 @@ export class NewSearchComponent implements OnInit, OnDestroy {
           isPhase2Running = true;
           // 將所有候選門市按距離排序後全部驗證，不任意丟棄
           candidateStores.sort((a, b) => {
-            return this.calc711DistFromUser(a.StoreNo) - this.calc711DistFromUser(b.StoreNo);
+            return this.calc711DistFromUser(a.StoreNo, a.StoreName) - this.calc711DistFromUser(b.StoreNo, b.StoreName);
           });
           console.log(`[商品搜尋] 7-11 候選 ${candidateStores.length} 間，全部將加入驗證隊列 (併發上限 5)`);
 
@@ -2580,7 +2609,7 @@ export class NewSearchComponent implements OnInit, OnDestroy {
             mergeMap(store =>
               this.sevenElevenService.getItemsByStoreNo(
                 store.StoreNo,
-                this.get711QueryLocation(store.StoreNo)
+                this.get711QueryLocation(store.StoreNo, store.StoreName)
               ).pipe(
                 timeout(4500),
                 map((res: any) => {
@@ -2594,7 +2623,7 @@ export class NewSearchComponent implements OnInit, OnDestroy {
                       ...store,
                       storeName: `7-11${store.StoreName}門市`,
                       label: '7-11',
-                      distance: this.calc711DistFromUser(store.StoreNo),
+                      distance: this.calc711DistFromUser(store.StoreNo, store.StoreName),
                       remainingQty: store.RemainingQty,
                       showDistance: true,
                       CategoryStockItems: detail
@@ -2604,7 +2633,7 @@ export class NewSearchComponent implements OnInit, OnDestroy {
                 }),
                 catchError(() => of(null))
               )
-            , 10), // 首批最多 10 間，一次完成明細核對，避免多輪等待
+            , 10), // 最多同時核對 10 間明細，避免大量同步請求拖慢介面。
             toArray()
           ).subscribe((verifiedResults: any[]) => {
             const verifiedMatches = verifiedResults.filter(match => match !== null);
@@ -2625,6 +2654,11 @@ export class NewSearchComponent implements OnInit, OnDestroy {
           fmRes.data.forEach((store: any) => {
             // 去重：同一間店只加一次
             const pkey = store.oldPKey || store.name;
+            const storeDistance = getDistance(
+              { latitude: this.searchCenterLat, longitude: this.searchCenterLng },
+              { latitude: store.latitude, longitude: store.longitude }
+            );
+            if (storeDistance > this.productSearchRadiusMeters) return;
             if (this.fmQueriedPKeys.has(pkey)) return;
             this.fmQueriedPKeys.add(pkey);
 
@@ -2640,16 +2674,11 @@ export class NewSearchComponent implements OnInit, OnDestroy {
             }
 
             if (hasMatch) {
-              // 用 geolib 從使用者位置計算真實距離
-              const dist = getDistance(
-                { latitude: this.searchCenterLat, longitude: this.searchCenterLng },
-                { latitude: store.latitude, longitude: store.longitude }
-              );
               newMatches.push({
                 ...store,
                 storeName: store.name,
                 label: '全家',
-                distance: dist,
+                distance: storeDistance,
                 showDistance: true
               });
             }
@@ -2686,29 +2715,25 @@ export class NewSearchComponent implements OnInit, OnDestroy {
     const allExhausted = this.searchExhausted711 && this.searchExhaustedFm;
     this.hasMoreStores = this.productSearchStores.length > this.targetDisplayCount || !allExhausted;
 
-    // 初次搜尋已完成一批附近門市且仍是零結果時，立即向使用者回覆。
-    // 不再為了證明「全台都沒有」而讓進度條長時間停在畫面上。
-    const reachedNearbyNoResultLimit = isInitial &&
-      this.productSearchStores.length === 0 &&
-      this.productSearchScanned >= Math.min(
-        this.maxInitialNoResultCandidates,
-        this.productSearchTotalCandidates
+    // 初次搜尋必須完整檢查目前半徑，不能因為先找到 10 間就誤報總結果數。
+    if (isInitial && !allExhausted) {
+      this.loadingService.update(
+        `正在搜尋 ${this.productSearchRadiusMeters / 1000} 公里內門市`,
+        72,
+        '完整比對範圍內的即時庫存'
       );
-    if (reachedNearbyNoResultLimit) {
-      this.completeProductSearchWithoutMatches();
-      return;
-    }
-
-    // 初始搜尋不渲染部分門市。若數量不足，先完成下一批，最後再一次顯示穩定排序。
-    if (this.productSearchStores.length < this.targetDisplayCount &&
-        !allExhausted) {
-      this.isLoadingMore = !isInitial;
-      if (isInitial) this.loadingService.update('正在擴大搜尋範圍', 86, '尚未找到足夠結果');
       setTimeout(() => {
         if (this.productSearchGeneration === currentGen) {
           this.fetchProductSearchBatch(isInitial);
         }
       }, 0);
+      return;
+    }
+
+    if (isInitial && allExhausted && this.productSearchStores.length === 0) {
+      this.canExpandProductSearchRadius =
+        this.productSearchRadiusMeters < this.expandedProductSearchRadiusMeters;
+      this.completeProductSearchWithoutMatches();
       return;
     }
 
@@ -2725,6 +2750,7 @@ export class NewSearchComponent implements OnInit, OnDestroy {
     if (isInitial && this.productSearchStores.length > 0) {
       this.isLoadingMore = false;
       this.productSearchRunning = false;
+      this.hasMoreStores = this.productSearchStores.length > this.targetDisplayCount;
       this.loadingService.hide();
       return;
     }
@@ -2783,6 +2809,25 @@ export class NewSearchComponent implements OnInit, OnDestroy {
   private showMoreProductResults(): void {
     this.totalStoresShowList = this.productSearchStores.slice(0, this.targetDisplayCount);
     this.isLoadingMore = false;
+  }
+
+  expandProductSearchRadius(): void {
+    if (!this.canExpandProductSearchRadius || this.productSearchRunning) return;
+    this.productSearchRadiusMeters = this.expandedProductSearchRadiusMeters;
+    this.canExpandProductSearchRadius = false;
+    this.productSearch711BatchIdx = 0;
+    this.productSearchFmBatchIdx = 0;
+    this.productSearchScanned = 0;
+    this.searchExhausted711 = false;
+    this.searchExhaustedFm = false;
+    this.isSearchingMore = false;
+    this.isLoadingMore = false;
+    this.productSearchRunning = true;
+    this.targetDisplayCount = this.minInitialStores;
+    this.productSearchGeneration++;
+    this.prepareProductSearchQueryPoints();
+    this.loadingService.begin('正在擴大到 30 公里', 12, '繼續比對更遠門市的即時庫存');
+    this.fetchProductSearchBatch(true);
   }
 
   // 商品搜尋的無限滾動觸發
@@ -3196,7 +3241,7 @@ export class NewSearchComponent implements OnInit, OnDestroy {
         ...store,
         storeName: `7-11${store.StoreName}門市`,
         label: '7-11',
-        distance: this.calc711DistFromUser(store.StoreNo),
+        distance: this.calc711DistFromUser(store.StoreNo, store.StoreName),
         remainingQty: store.RemainingQty,
         showDistance: true,
         CategoryStockItems: store.CategoryStockItems
@@ -3390,7 +3435,7 @@ export class NewSearchComponent implements OnInit, OnDestroy {
             StoreNo: storeNo,
             storeName: `7-11${store.StoreName}門市`,
             label: '7-11',
-            distance: this.calc711DistFromUser(storeNo),
+            distance: this.calc711DistFromUser(storeNo, store.StoreName),
             remainingQty: store.RemainingQty,
             showDistance: true,
             CategoryStockItems: store.CategoryStockItems
@@ -3588,7 +3633,7 @@ export class NewSearchComponent implements OnInit, OnDestroy {
           if (this.sevenQueriedStoreNos.has(storeNo)) return;
           this.sevenQueriedStoreNos.add(storeNo);
 
-          const dist = this.calc711DistFromUser(storeNo);
+          const dist = this.calc711DistFromUser(storeNo, store.StoreName);
           newStores.push({
             ...store,
             StoreNo: storeNo,
@@ -3628,14 +3673,7 @@ export class NewSearchComponent implements OnInit, OnDestroy {
       // 否則後批回來的近距離全家會被放在前批較遠的 7-11 後面。
       this.sortStoresByDistance(newStores);
       newStores.forEach(s => this.precomputeCategoryQty(s));
-      const mergedStores = new Map<string, any>();
-      [...this.allNearbyStores, ...newStores].forEach(store => {
-        const key = store.label === '7-11'
-          ? `711:${this.normalize711StoreNo(store.StoreNo) || store.storeName}`
-          : `fm:${store.oldPKey || store.storeName}`;
-        mergedStores.set(key, store);
-      });
-      this.allNearbyStores = this.sortStoresByDistance(Array.from(mergedStores.values()));
+      this.mergeNearbyStoresWithoutRemovingVisible(newStores);
 
       // 嘗試達到目標顯示數量
       if (this.allNearbyStores.length >= this.targetDisplayCount ||
@@ -3683,7 +3721,8 @@ export class NewSearchComponent implements OnInit, OnDestroy {
     // Pagination requires the user to have actually scrolled the page.
     if (window.scrollY <= 0 || this.dialog.openDialogs.length > 0) return;
     if (this.bottomEntered || this.pagePending || !this.totalStoresShowList.length ||
-        !this.hasMoreStores || this.isLoadingMore || this.isSearchingMore || this.isMapView) return;
+        !this.hasMoreStores || this.isLoadingMore || this.isSearchingMore || this.isMapView ||
+        this.searchMode === 'route') return;
     this.bottomEntered = true;
     this.pagePending = true;
     this.cdr.markForCheck();

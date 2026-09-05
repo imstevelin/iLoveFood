@@ -405,6 +405,8 @@
         <p>{{ emptyResultDescription }}</p>
         <div class="empty-state-actions">
           <button type="button" class="primary-empty-action" (click)="focusSearchInput()">修改搜尋</button>
+          <button *ngIf="canExpandProductSearchRadius" type="button" class="secondary-empty-action"
+            (click)="expandProductSearchRadius()">擴大搜尋到 30 公里</button>
           <button type="button" class="secondary-empty-action" (click)="clearSearchAndLocate()">查看附近全部</button>
         </div>
       </section>
@@ -434,7 +436,7 @@
       <span class="result-summary-label">{{ resultModeLabel }}</span>
       <strong>{{ resultScopeText }}</strong>
     </div>
-    <span>{{ totalStoresShowList.length }} 間有結果</span>
+    <span>{{ resultTotalCount }} 間有結果</span>
   </div>
 
   <div *ngIf="locationFallbackUsed && totalStoresShowList.length > 0 && (loadingService.state$ | async)?.visible !== true"
@@ -534,7 +536,7 @@
             <div class="store-card-info">
               <h2 class="store-card-name">7-11{{ store.StoreName }}門市</h2>
               <div class="store-card-meta">
-                <span *ngIf="store.distance" class="distance-badge">
+                <span *ngIf="store.showDistance !== false && store.distance && store.distance < 999999" class="distance-badge">
                   <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" viewBox="0 0 24 24">
                     <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" />
                   </svg>
@@ -601,7 +603,7 @@
             <div class="store-card-info">
               <h2 class="store-card-name">{{ store.name }}</h2>
               <div class="store-card-meta">
-                <span *ngIf="store.distance" class="distance-badge badge-family-dist">
+                <span *ngIf="store.showDistance !== false && store.distance && store.distance < 999999" class="distance-badge badge-family-dist">
                   <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" viewBox="0 0 24 24">
                     <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" />
                   </svg>
@@ -662,7 +664,7 @@
   </ng-container>
 
   <!-- ===== Incremental loading feedback ===== -->
-  <div *ngIf="totalStoresShowList.length > 0 && !isMapView && (pagePending || isLoadingMore || isSearchingMore)"
+  <div *ngIf="searchMode !== 'route' && totalStoresShowList.length > 0 && !isMapView && (pagePending || isLoadingMore || isSearchingMore)"
     class="incremental-loader" role="status" aria-live="polite">
     <span class="incremental-loader-track" aria-hidden="true"><span></span></span>
     <span>正在載入下一批 10 間門市…</span>
@@ -676,7 +678,7 @@
     <!-- All exhausted -->
     <div *ngIf="!productSearchRunning && !isLoadingMore && !isSearchingMore && !hasMoreStores && totalStoresShowList.length > 0" class="scroll-hint"
       style="animation: none;">
-      已搜尋完所有門市
+      已搜尋完 {{ productSearchRadiusMeters / 1000 }} 公里內門市
     </div>
   </ng-container>
 

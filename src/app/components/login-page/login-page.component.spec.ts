@@ -34,4 +34,17 @@ describe('LoginPageComponent', () => {
   it('should create', () => {
     expect(component).toBeTruthy();
   });
+
+  it('only enables SMS sending after reCAPTCHA reports a solved token', async () => {
+    const authService = TestBed.inject(AuthService) as jasmine.SpyObj<AuthService>;
+    const stateChange = authService.prepareRecaptcha.calls.mostRecent().args[1];
+
+    expect(component.captchaReady).toBeFalse();
+    stateChange?.(true);
+    fixture.detectChanges();
+
+    expect(component.captchaReady).toBeTrue();
+    const submitButton = fixture.nativeElement.querySelector('.login-btn') as HTMLButtonElement;
+    expect(submitButton.disabled).toBeFalse();
+  });
 });

@@ -55,7 +55,6 @@ export class LoginPageComponent implements AfterViewInit, OnDestroy {
     this.errorMessage = '';
     try {
       if (!this.verificationSent) {
-        await this.authService.prepareRecaptcha('phone-recaptcha');
         await this.authService.sendVerificationCode(this.f['phone'].value, 'phone-recaptcha');
         this.verificationSent = true;
         this.f['phone'].disable();
@@ -105,6 +104,9 @@ export class LoginPageComponent implements AfterViewInit, OnDestroy {
       case 'auth/captcha-check-failed': return '機器人驗證未完成或已過期，請重新驗證。';
       case 'auth/missing-app-credential':
       case 'auth/invalid-app-credential': return '無法完成網站安全驗證，請重新整理後再試。';
+      case 'auth/unauthorized-domain': return '目前網址尚未獲准使用登入服務，請聯絡網站管理者。';
+      case 'auth/network-request-failed': return '安全驗證連線中斷，請確認網路後重新驗證。';
+      case 'auth/invalid-phone-number': return '手機號碼格式不正確，請輸入 09 開頭的 10 碼號碼。';
       default: return '驗證失敗，請確認網路狀態後再試一次。';
     }
   }
@@ -113,8 +115,12 @@ export class LoginPageComponent implements AfterViewInit, OnDestroy {
     this.captchaLoading = true;
     this.captchaReady = false;
     try {
-      await this.authService.prepareRecaptcha('phone-recaptcha');
-      this.captchaReady = true;
+      await this.authService.prepareRecaptcha('phone-recaptcha', solved => {
+        if (this.destroyed) return;
+        this.captchaReady = solved;
+        this.errorMessage = solved ? '' : '機器人驗證已過期，請重新完成驗證。';
+        this.cdr.detectChanges();
+      });
     } catch (error) {
       console.error('Unable to render phone reCAPTCHA:', error);
       this.errorMessage = '安全驗證載入失敗，請確認網路後重新開啟登入視窗。';

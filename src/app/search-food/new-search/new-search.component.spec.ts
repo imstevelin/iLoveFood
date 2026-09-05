@@ -111,6 +111,20 @@ describe('NewSearchComponent', () => {
     expect(component.totalStoresShowList.length).toBe(20);
   });
 
+  it('shows every route result without applying ten-store pagination', () => {
+    const routeStores = Array.from({ length: 23 }, (_, index) => ({
+      label: '全家',
+      storeName: `route-${index}`,
+      distance: index * 100
+    }));
+
+    (component as any).finalizeRouteStores(routeStores);
+
+    expect(component.totalStoresShowList.length).toBe(23);
+    expect(component.hasMoreStores).toBeFalse();
+    expect((component as any).targetDisplayCount).toBe(23);
+  });
+
   it('keeps the global overlay blurred in dark mode', () => {
     const backdrop = document.createElement('div');
     backdrop.className = 'cdk-overlay-backdrop-showing';
@@ -342,23 +356,59 @@ describe('NewSearchComponent', () => {
     expect(hideSpy).toHaveBeenCalled();
   });
 
-  it('stops after the nearby no-result scan instead of searching the full national index', () => {
+  it('offers a 30 km retry only after the full 10 km search has no matches', () => {
     const hideSpy = spyOn(component.loadingService, 'hide');
     component.selectedKeywords = [{ name: '限量商品', type: 'text' }];
     component.productSearchStores = [];
     component.totalStoresShowList = [];
     component.productSearchRunning = true;
-    component.productSearchScanned = 20;
-    component.productSearchTotalCandidates = 4000;
+    component.productSearchScanned = 200;
+    component.productSearchTotalCandidates = 200;
     (component as any).productSearchGeneration = 7;
-    (component as any).searchExhausted711 = false;
-    (component as any).searchExhaustedFm = false;
+    (component as any).searchExhausted711 = true;
+    (component as any).searchExhaustedFm = true;
 
     (component as any).finishProductSearchBatch(7, true, []);
 
     expect(component.productSearchRunning).toBeFalse();
     expect(component.hasMoreStores).toBeFalse();
+    expect(component.canExpandProductSearchRadius).toBeTrue();
     expect(component.totalStoresShowList).toEqual([]);
     expect(hideSpy).toHaveBeenCalled();
+  });
+
+  it('limits product candidates to the active 10 km radius', () => {
+    const stores = [
+      { distance: 9999 },
+      { distance: 10000 },
+      { distance: 10001 },
+      { distance: 30000 }
+    ];
+
+    expect((component as any).getScopedProductCandidates(stores)).toEqual(stores.slice(0, 2));
+  });
+
+  it('resolves a 7-11 distance by store name when its API store number is unavailable', () => {
+    component.searchCenterLat = 25.033;
+    component.searchCenterLng = 121.5654;
+    (component as any).applySevenElevenStores([
+      { serial: '012345', name: '測試門市', lat: 25.0334, lng: 121.5654 }
+    ]);
+
+    const distance = (component as any).calc711DistFromUser('unknown', '測試門市');
+
+    expect(distance).toBeGreaterThan(0);
+    expect(distance).toBeLessThan(100);
+  });
+
+  it('keeps an already displayed store when a later batch contains a closer result', () => {
+    const visibleStore = { label: '7-11', StoreNo: '000001', storeName: '既有門市', distance: 999999 };
+    const laterStore = { label: '全家', oldPKey: 'new-1', storeName: '新增門市', distance: 200 };
+    component.totalStoresShowList = [visibleStore];
+    component.allNearbyStores = [visibleStore];
+
+    (component as any).mergeNearbyStoresWithoutRemovingVisible([laterStore]);
+
+    expect(component.allNearbyStores.map(store => store.storeName)).toEqual(['既有門市', '新增門市']);
   });
 });
