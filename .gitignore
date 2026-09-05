@@ -33,6 +33,10 @@ yarn-error.log
 # Miscellaneous
 /.angular/cache
 .wrangler/
+.dev.vars*
+!.dev.vars.example
+.env*
+!.env.example
 .sass-cache/
 /connect.lock
 /coverage
@@ -57,8 +61,3 @@ __pycache__/
 # Environments with sensitive keys
 src/environments/environment.ts
 src/environments/environment.prod.ts
-
-# Private farmer deployment assets and generated container archives
-/openpoint-farmer/docker/private/
-/openpoint-farmer/docker/dist/
-/openpoint-farmer/docker/.env

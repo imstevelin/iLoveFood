@@ -7,14 +7,18 @@
     "prebuild": "node scripts/prepare-environments.mjs",
     "build": "ng build",
     "typecheck": "tsc -p tsconfig.app.json --noEmit --noUnusedLocals --noUnusedParameters",
-    "check": "npm run typecheck && npm run build",
+    "check": "npm run test:worker && npm run test:openpoint && npm run typecheck && npm run build",
     "deploy": "npm run build && wrangler deploy",
     "deploy:check": "npm run build && wrangler deploy --dry-run",
     "deploy:status": "wrangler deployments list --name ilovefood",
     "deploy:logs": "wrangler tail ilovefood",
     "migrate:favorites": "node scripts/migrate-favorites-to-uid.mjs",
     "watch": "ng build --watch --configuration development",
-    "test": "ng test"
+    "test": "ng test",
+    "test:worker": "node --test worker/*.test.mjs",
+    "test:openpoint": "node --test scripts/openpoint-identity.test.mjs",
+    "openpoint:login-url": "node --env-file=.env.openpoint scripts/openpoint-identity.mjs login-url",
+    "openpoint:exchange": "node --env-file=.env.openpoint scripts/openpoint-identity.mjs exchange"
   },
   "private": true,
   "engines": {

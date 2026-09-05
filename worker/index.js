@@ -1,9 +1,12 @@
+import { generateMidVFromEnv } from './openpoint-midv.mjs';
+
 const OPENPOINT_BASE = 'https://lovefood.openpoint.com.tw/LoveFood/api/';
 const MAX_BODY_BYTES = 10_000;
 const MAX_MAP_HTML_BYTES = 256_000;
 const MAP_HOSTS = new Set(['maps.app.goo.gl', 'goo.gl', 'google.com', 'www.google.com', 'maps.google.com']);
 const OPENPOINT_USER_AGENT = 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 Version/17.0 Mobile/15E148 Safari/604.1';
-const ACCESS_TOKEN_CACHE_URL = 'https://ilovefood.imstevelin.com/__internal/openpoint-access-token';
+// v2 prevents a pre-migration Farmer token from masking the first direct mid_v exchange.
+const ACCESS_TOKEN_CACHE_URL = 'https://ilovefood.imstevelin.com/__internal/openpoint-access-token-v2';
 
 export default {
   async fetch(request, env) {
@@ -181,21 +184,9 @@ async function getAccessToken(env) {
     if (token) return token;
   }
 
-  if (!env.TOKEN_FARM_URL || !env.TOKEN_FARM_API_KEY) throw httpError(503, 'Token service is not configured');
-  const farmResponse = await fetch(new URL('/get_token', env.TOKEN_FARM_URL), {
-    method: 'POST',
-    signal: AbortSignal.timeout(12_000),
-    headers: {
-      Authorization: `Bearer ${env.TOKEN_FARM_API_KEY}`,
-      Accept: 'application/json',
-      'User-Agent': 'ilovefood/1.0'
-    }
-  });
-  const farmPayload = await farmResponse.json().catch(() => null);
-  if (!farmResponse.ok || !farmPayload?.mid_v) throw httpError(503, 'Token service unavailable');
-
+  const midV = await generateMidVFromEnv(env);
   const accessUrl = new URL('Auth/FrontendAuth/AccessToken', OPENPOINT_BASE);
-  accessUrl.searchParams.set('mid_v', farmPayload.mid_v);
+  accessUrl.searchParams.set('mid_v', midV);
   const accessResponse = await fetch(accessUrl, {
     method: 'POST',
     signal: AbortSignal.timeout(8_000),

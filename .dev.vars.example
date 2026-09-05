@@ -1,0 +1,6 @@
+# Copy this file to .dev.vars for local Wrangler development.
+# Keep the real values out of version control.
+OPENPOINT_GID="GID..."
+OPENPOINT_MID="..."
+OPENPOINT_VCODE="..."
+OPENPOINT_IMAP_MASTER_KEY="..."

@@ -18,13 +18,12 @@
 .
 ├── src/                    Angular 前端與靜態資料
 ├── worker/                 Cloudflare Worker API
-├── openpoint-farmer/       OPENPOINT Token Farmer（位於專案根目錄）
 ├── scripts/                資料更新與維護工具
 ├── firestore.rules         Firestore 安全規則
 └── wrangler.jsonc          網站與 Worker 的正式部署設定
 ```
 
-建置輸出、相依套件、更新報告與 Farmer 私密資產都不納入版本控制。
+建置輸出、相依套件、更新報告與本機私密設定都不納入版本控制。
 
 ## 本機開發
 
@@ -37,7 +36,7 @@ cp src/environments/environment.prod.example.ts src/environments/environment.pro
 npm start
 ```
 
-開啟 <http://localhost:4200>。環境檔中的 Firebase Web 設定可提供給瀏覽器；AI provider、OPENPOINT Token 與 Farmer API key 不可提交。
+開啟 <http://localhost:4200>。環境檔中的 Firebase Web 設定可提供給瀏覽器；AI provider 與 OPENPOINT 個人識別資料不可提交。
 
 常用檢查：
 
@@ -49,15 +48,20 @@ npm run deploy:check
 
 ## Cloudflare 部署
 
-`wrangler.jsonc` 會將 Angular 靜態資源與 `/api/*` Worker 一起部署。首次部署前設定 Farmer 共用金鑰：
+`wrangler.jsonc` 會將 Angular 靜態資源與 `/api/*` Worker 一起部署。Worker 會直接依照 7-ELEVEN App 的 AES-256-GCM 格式產生 `mid_v`，不再依賴 Android、Frida 或 Token Farmer。首次部署前將個人識別資料設為 Worker Secret：
 
 ```bash
-npx wrangler secret put TOKEN_FARM_API_KEY
+npx wrangler secret put OPENPOINT_GID
+npx wrangler secret put OPENPOINT_MID
+npx wrangler secret put OPENPOINT_VCODE
+npx wrangler secret put OPENPOINT_IMAP_MASTER_KEY
 npm run deploy:check
 npm run deploy
 ```
 
-`ALLOWED_ORIGINS` 與 `TOKEN_FARM_URL` 位於 `wrangler.jsonc`。正式前端不會取得 `mid_v` 或 OPENPOINT access token。
+本機執行 Wrangler 時可複製 `.dev.vars.example` 為 `.dev.vars` 後填入相同資料；該檔案已排除於版本控制。正式前端不會取得 `mid_v`、個人識別資料或 OPENPOINT access token。
+
+本專案只使用由維護者設定的一組識別資料，不提供網站使用者輸入 OPEN POINT 帳號或密碼的功能。
 
 其他維運指令：
 
@@ -66,22 +70,25 @@ npm run deploy:status
 npm run deploy:logs
 ```
 
-## OPENPOINT Farmer
+## 一次性取得 OPEN POINT 個人識別資料
 
-Farmer 已集中在根目錄的 [`openpoint-farmer`](./openpoint-farmer/)；新部署推薦使用 Docker 映像：
+依 7-ELEVEN App 5.73.0 驗證的流程為：
 
-```bash
-cd openpoint-farmer/docker
-./setup-linux-host.sh
-cp .env.example .env
-install -d -m 700 private
-openssl rand -hex 32 > private/farmer_api_key.txt
-sudo docker compose pull
-sudo docker compose up -d
-python3 verify-deployment.py --requests 500 --concurrency 32
+```text
+官方登入頁 → seveneleven:// callback → code → access_token → MID → GID/VCode
 ```
 
-Linux 主機必須支援 BinderFS。完整的 Docker、Proxmox LXC、離線映像與維運說明請見 [`openpoint-farmer/DEPLOYMENT.md`](./openpoint-farmer/DEPLOYMENT.md)。舊 AVD/systemd 部署方法與回滾指令仍保留在同一份文件的「既有主機快速升級」與「全新主機部署」章節，但不建議用於新環境。
+登入換證使用 AES-256-CBC；產生 `mid_v` 使用不同的 iMAP 金鑰與 AES-256-GCM。callback 只能解出短效 code，三項識別資料仍須由 OPEN POINT 官方端點換取。它們目前長期穩定，但官方未保證永久有效。
+
+先建立只存在本機且已被 Git 排除的設定檔：
+
+```bash
+cp openpoint-auth.env.example .env.openpoint
+npm run openpoint:login-url
+npm run openpoint:exchange -- 'seveneleven://711?return_code=00&v=...'
+```
+
+工具不接收 OPEN POINT 帳密，也不保存 code、token 或識別資料。請只在自己的帳號上操作，完整公式、安全注意事項與 callback 擷取方式見 [`OPENPOINT_AUTH.md`](./OPENPOINT_AUTH.md)。
 
 ## 資料與 Firebase 維護
 

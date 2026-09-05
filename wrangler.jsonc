@@ -3,7 +3,6 @@
   "name": "ilovefood",
   "main": "./worker/index.js",
   "compatibility_date": "2026-08-08",
-  "compatibility_flags": ["nodejs_compat"],
   "workers_dev": false,
   "routes": [
     {
@@ -23,8 +22,15 @@
     "run_worker_first": ["/api/*", "/health"]
   },
   "vars": {
-    "ALLOWED_ORIGINS": "https://ilovefood.imstevelin.com",
-    "TOKEN_FARM_URL": "https://ilovefood-token-farm.imstevelin.com"
+    "ALLOWED_ORIGINS": "https://ilovefood.imstevelin.com"
+  },
+  "secrets": {
+    "required": [
+      "OPENPOINT_GID",
+      "OPENPOINT_MID",
+      "OPENPOINT_VCODE",
+      "OPENPOINT_IMAP_MASTER_KEY"
+    ]
   },
   "ratelimits": [
     {
