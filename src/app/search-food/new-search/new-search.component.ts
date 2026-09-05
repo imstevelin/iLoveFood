@@ -128,7 +128,12 @@ export class NewSearchComponent implements OnInit, OnDestroy {
   allNearbyStores: any[] = []; // 所有附近門市（已存入記憶體的緩衝池，不一定全顯）
   storesPerPage: number = 10;  // 首批與每次追加都固定顯示 10 間
   private targetDisplayCount: number = 0; // 目標顯示的總數量，避免 API 空載時多塞門市
-  isLoadingMore: boolean = false; // 是否正在加載更多
+  private loadingMore = false;
+  get isLoadingMore(): boolean { return this.loadingMore; }
+  set isLoadingMore(value: boolean) {
+    this.loadingMore = value;
+    this.cdr.markForCheck();
+  }
   hasMoreStores: boolean = false; // 是否還有更多門市
 
   // 搜尋中心點：距離計算的基準點
@@ -144,7 +149,12 @@ export class NewSearchComponent implements OnInit, OnDestroy {
   private productSearchFmBatchIdx: number = 0;      // 全家目前批次索引
   private productSearchBatchSize: number = 10;      // 首批每家超商各查 10 間，優先快速回覆附近結果
   private readonly maxInitialNoResultCandidates = 20; // 附近一批仍為零結果時就回覆，不掃完整個全台索引
-  public isSearchingMore: boolean = false;          // 是否正在擴搜
+  private searchingMore = false;
+  get isSearchingMore(): boolean { return this.searchingMore; }
+  set isSearchingMore(value: boolean) {
+    this.searchingMore = value;
+    this.cdr.markForCheck();
+  }
   private searchExhausted711: boolean = false;       // 7-11 是否已搜完
   private searchExhaustedFm: boolean = false;        // 全家是否已搜完
   private fmQueriedPKeys: Set<string> = new Set();   // 已查詢過的全家門市 PKey（去重用）
@@ -275,7 +285,12 @@ export class NewSearchComponent implements OnInit, OnDestroy {
 
   nearby711Stores: StoreStockItem[] = []; // 儲存用現在位置找到的711
   nearbyFamilyMartStores: StoreModel[] = []; // 儲存用現在位置找到的全家
-  totalStoresShowList: any[] = []; //為了方便顯示所以統一
+  private displayedStores: any[] = [];
+  get totalStoresShowList(): any[] { return this.displayedStores; }
+  set totalStoresShowList(stores: any[]) {
+    this.displayedStores = stores;
+    this.cdr.markForCheck();
+  }
   filteredStoresList: any[] = [];  // 用來儲存篩選後的商店列表
 
   selectedStore?: any;
@@ -3668,9 +3683,11 @@ export class NewSearchComponent implements OnInit, OnDestroy {
         !this.hasMoreStores || this.isLoadingMore || this.isSearchingMore || this.isMapView) return;
     this.bottomEntered = true;
     this.pagePending = true;
+    this.cdr.markForCheck();
     const previousList = this.totalStoresShowList;
     this.pageTimer = setTimeout(() => {
       this.pagePending = false;
+      this.cdr.markForCheck();
       this.pageTimer = null;
       if (previousList !== this.totalStoresShowList || this.isMapView) return;
       if (this.searchMode === 'product') this.loadMoreProductResults();
