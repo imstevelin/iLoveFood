@@ -3679,6 +3679,9 @@ export class NewSearchComponent implements OnInit, OnDestroy {
   }
 
   private requestNextStorePage(): void {
+    // Initial layout and dialog scroll-lock can briefly expose the marker.
+    // Pagination requires the user to have actually scrolled the page.
+    if (window.scrollY <= 0 || this.dialog.openDialogs.length > 0) return;
     if (this.bottomEntered || this.pagePending || !this.totalStoresShowList.length ||
         !this.hasMoreStores || this.isLoadingMore || this.isSearchingMore || this.isMapView) return;
     this.bottomEntered = true;

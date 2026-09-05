@@ -668,7 +668,7 @@
     <span>正在載入下一批 10 間門市…</span>
   </div>
 
-  <span *ngIf="totalStoresShowList.length > 0 && !isMapView && !locationDenied && !showAboutCard"
+  <span *ngIf="totalStoresShowList.length > 0 && !isMapView && !locationDenied && !showAboutCard && (loadingService.state$ | async)?.visible !== true"
     #loadMoreTrigger class="load-more-trigger" aria-hidden="true"></span>
 
   <!-- ===== Product Search completion state ===== -->

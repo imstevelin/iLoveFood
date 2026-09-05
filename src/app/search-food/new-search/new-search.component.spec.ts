@@ -75,6 +75,7 @@ describe('NewSearchComponent', () => {
   }));
 
   it('loads one ten-store page per bottom entry, with visible feedback first', fakeAsync(() => {
+    spyOnProperty(window, 'scrollY', 'get').and.returnValue(1000);
     component.searchMode = 'location';
     component.hasMoreStores = true;
     component.allNearbyStores = Array.from({ length: 40 }, (_, i) => ({ storeName: String(i) }));
