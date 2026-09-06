@@ -1,7 +1,11 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { validateCredentials, validateFavorite } from './auth.mjs';
+import { PASSWORD_ITERATIONS, validateCredentials, validateFavorite } from './auth.mjs';
+
+test('keeps PBKDF2 within the Cloudflare Workers runtime limit', () => {
+  assert.equal(PASSWORD_ITERATIONS, 100_000);
+});
 
 test('normalizes valid account credentials', () => {
   assert.deepEqual(

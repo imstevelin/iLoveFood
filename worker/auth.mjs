@@ -1,6 +1,7 @@
 const SESSION_COOKIE = 'ilovefood_session';
 const SESSION_TTL_SECONDS = 30 * 24 * 60 * 60;
-const PASSWORD_ITERATIONS = 600_000;
+// Cloudflare Workers Web Crypto rejects PBKDF2 requests above 100,000 iterations.
+export const PASSWORD_ITERATIONS = 100_000;
 const MAX_AUTH_BODY_BYTES = 4_096;
 const USERNAME_PATTERN = /^[a-z0-9][a-z0-9._-]{2,31}$/;
 const DUMMY_PASSWORD_SALT = 'aUxvdmVGb29kLWR1bW15LXNhbHQ';
