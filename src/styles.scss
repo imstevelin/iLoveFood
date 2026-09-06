@@ -397,13 +397,6 @@ input:focus-visible {
   }
 }
 
-/* Backdrop — Warm tint with a consistent Gaussian blur in both themes. */
-/* Google appends its challenge outside the Angular dialog overlay. Lift the
-   challenge wrapper (including its click shield), not only the iframe. */
-body > div:has(iframe[src*="/recaptcha/"][src*="bframe"]) {
-  z-index: 2147483647 !important;
-}
-
 app-new-search .store-glass-card.page-expand-card {
   animation: store-page-expand 420ms ease-out both;
   transform-origin: top center;

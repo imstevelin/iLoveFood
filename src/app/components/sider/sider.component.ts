@@ -6,7 +6,7 @@ import { LoginPageComponent } from 'src/app/components/login-page/login-page.com
 import { environment } from 'src/environments/environment';
 import { SevenElevenRequestService } from '../../search-food/new-search/services/seven-eleven-request.service';
 import { StoreDataService } from 'src/app/services/stores-data.service';
-import { of, catchError, forkJoin } from 'rxjs';
+import { of, catchError, forkJoin, take } from 'rxjs';
 import { HapticService } from 'src/app/services/haptic.service';
 
 @Component({
@@ -97,7 +97,7 @@ export class SiderComponent {
       });
       dialogRef.afterClosed().subscribe(result => {
         if (result) {
-          this.authService.getUser().subscribe((user) => {
+          this.authService.getUser().pipe(take(1)).subscribe((user) => {
             if (user) {
               this.user = user;
               this.userUpdated.emit(user); // 通知父組件用戶已登錄

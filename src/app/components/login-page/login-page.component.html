@@ -6,7 +6,7 @@
     <span class="login-icon-badge" aria-hidden="true">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
         stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M7 10V8a5 5 0 0 1 10 0v2"/><rect x="5" y="10" width="14" height="11" rx="3"/><path d="M12 14v3"/>
+        <circle cx="12" cy="8" r="4"/><path d="M5 21a7 7 0 0 1 14 0"/>
       </svg>
     </span>
     <span class="login-heading-copy"><small>收藏與同步</small><h2>快速登入</h2></span>
@@ -16,52 +16,57 @@
     </button>
   </header>
 
-  <p class="login-intro">
-    {{ verificationSent ? '輸入簡訊中的 6 碼驗證碼，完成後即可管理收藏門市。' : '用手機號碼安全登入，不需另外設定密碼。' }}
-  </p>
+  <p class="login-intro">使用友善超人帳號同步收藏，不再需要機器人或簡訊驗證。</p>
+
+  <div class="mode-switch" role="tablist" aria-label="登入方式">
+    <button type="button" role="tab" [attr.aria-selected]="!isRegisterMode"
+      [class.active]="!isRegisterMode" (click)="setMode(false)">登入</button>
+    <button type="button" role="tab" [attr.aria-selected]="isRegisterMode"
+      [class.active]="isRegisterMode" (click)="setMode(true)">建立帳號</button>
+  </div>
 
   <form [formGroup]="authForm" (ngSubmit)="submitForm()" class="login-form">
-    <div *ngIf="!verificationSent" class="login-field-group">
-      <label for="phone">手機號碼</label>
+    <div class="login-field-group">
+      <label for="username">帳號</label>
       <div class="input-shell">
         <span class="input-leading-icon" aria-hidden="true">
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-            stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="2" width="10" height="20" rx="2.5"/><path d="M10 18h4"/></svg>
+            stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.5"/><path d="M6 20a6 6 0 0 1 12 0"/></svg>
         </span>
-        <input type="tel" id="phone" formControlName="phone" placeholder="0912 345 678" maxlength="10"
-          inputmode="numeric" autocomplete="tel" class="input-field" />
+        <input type="text" id="username" formControlName="username" placeholder="3–32 個英數字"
+          maxlength="32" autocapitalize="none" spellcheck="false" autocomplete="username" class="input-field" />
       </div>
-      <small class="field-error" *ngIf="f['phone'].touched && f['phone'].errors?.['required']">請輸入手機號碼</small>
-      <small class="field-error" *ngIf="f['phone'].touched && f['phone'].errors?.['pattern']">請輸入 09 開頭的 10 碼手機號碼</small>
+      <small class="field-error" *ngIf="f['username'].touched && f['username'].invalid">
+        請輸入 3–32 個英文字母、數字、句點、底線或連字號
+      </small>
     </div>
 
-    <div *ngIf="verificationSent" class="login-field-group">
-      <div class="field-label-row">
-        <label for="code">簡訊驗證碼</label>
-        <button type="button" class="edit-phone-btn" (click)="editPhone()">更換手機號碼</button>
-      </div>
-      <div class="input-shell code-input-shell">
+    <div class="login-field-group">
+      <label for="password">密碼</label>
+      <div class="input-shell">
         <span class="input-leading-icon" aria-hidden="true">
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-            stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 5h14v14H5zM8 9h.01M12 9h.01M16 9h.01M8 13h.01M12 13h.01M16 13h.01"/></svg>
+            stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="10" width="14" height="11" rx="3"/><path d="M8 10V7a4 4 0 0 1 8 0v3M12 14v3"/></svg>
         </span>
-        <input type="text" id="code" formControlName="code" placeholder="6 碼驗證碼" maxlength="6"
-          inputmode="numeric" autocomplete="one-time-code" class="input-field code-input" />
+        <input type="password" id="password" formControlName="password" placeholder="至少 10 個字元"
+          maxlength="128" [autocomplete]="isRegisterMode ? 'new-password' : 'current-password'" class="input-field" />
       </div>
-      <small class="field-error" *ngIf="f['code'].touched && f['code'].invalid">請輸入 6 碼數字驗證碼</small>
+      <small class="field-error" *ngIf="f['password'].touched && f['password'].invalid">
+        密碼長度需為 10–128 個字元
+      </small>
     </div>
 
-    <section class="captcha-section" [class.captcha-complete]="verificationSent" aria-label="安全驗證">
-      <div class="captcha-heading">
-        <span>安全驗證</span>
-        <small *ngIf="captchaLoading">載入中…</small>
-        <small *ngIf="!captchaLoading && !captchaReady && !verificationSent">請完成下方驗證</small>
-        <small *ngIf="captchaReady && !verificationSent">驗證完成，可以傳送</small>
-        <small *ngIf="verificationSent">已完成</small>
+    <div *ngIf="isRegisterMode" class="login-field-group">
+      <label for="confirmPassword">再次輸入密碼</label>
+      <div class="input-shell">
+        <span class="input-leading-icon" aria-hidden="true">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m7 12 3 3 7-7"/><circle cx="12" cy="12" r="9"/></svg>
+        </span>
+        <input type="password" id="confirmPassword" formControlName="confirmPassword" placeholder="再輸入一次密碼"
+          maxlength="128" autocomplete="new-password" class="input-field" />
       </div>
-      <div class="captcha-viewport" [attr.aria-busy]="captchaLoading"><div id="phone-recaptcha"></div></div>
-      <p>簡訊登入由 Firebase 提供，驗證用於防止簡訊濫用。</p>
-    </section>
+    </div>
 
     <div *ngIf="errorMessage" class="error-wrapper" role="alert">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -69,11 +74,11 @@
       <span>{{ errorMessage }}</span>
     </div>
 
-    <button type="submit" [disabled]="isSubmitting || (!verificationSent && !captchaReady)" class="login-btn">
-      <span>{{ isSubmitting ? '處理中…' : (verificationSent ? '驗證並登入' : '傳送驗證碼') }}</span>
+    <button type="submit" [disabled]="isSubmitting" class="login-btn">
+      <span>{{ isSubmitting ? '處理中…' : (isRegisterMode ? '建立帳號並登入' : '登入') }}</span>
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
         stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M14 7l5 5-5 5"/></svg>
     </button>
-    <small class="sms-note" *ngIf="!verificationSent">可能產生一般簡訊費用</small>
+    <small class="security-note">密碼只會以不可逆雜湊保存；請使用未在其他網站使用過的密碼。</small>
   </form>
 </div>

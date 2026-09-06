@@ -7,6 +7,7 @@ import { SevenElevenRequestService } from './services/seven-eleven-request.servi
 import { FamilyMartRequestService } from './services/family-mart-request.service';
 import { LoadingService } from '../../services/loading.service'
 import { AuthService } from 'src/app/services/auth.service';
+import { FavoriteStore, FavoritesService } from 'src/app/services/favorites.service';
 
 import { MessageDialogComponent } from 'src/app/components/message-dialog/message-dialog.component';
 import { LoginPageComponent } from 'src/app/components/login-page/login-page.component';
@@ -35,8 +36,6 @@ import { MatDialog } from '@angular/material/dialog';
 
 import { getDistance } from 'geolib';
 
-import { collection, deleteDoc, doc, onSnapshot, setDoc } from 'firebase/firestore';
-import { firestoreDb } from 'src/app/services/firebase-client';
 import { pinyin } from 'pinyin-pro';
 import { normalizeSearchText } from 'src/app/utils/search-text';
 
@@ -187,7 +186,6 @@ export class NewSearchComponent implements OnInit, OnDestroy {
   private routeSearchSubscription: Subscription | null = null;
   private readonly maxRouteSamplePoints = 40;
   private readonly maxRouteDistanceMeters = 300_000;
-  private readonly firestore = firestoreDb;
   private onSystemThemeChange = () => this.applyTheme();
   private discountTimeTimer: number | null = null;
 
@@ -337,6 +335,7 @@ export class NewSearchComponent implements OnInit, OnDestroy {
     private sevenElevenService: SevenElevenRequestService,
     private familyMartService: FamilyMartRequestService,
     private authService: AuthService,
+    private favoritesService: FavoritesService,
     public loadingService: LoadingService,
     public dialog: MatDialog,
     private storeDataService: StoreDataService,
@@ -815,7 +814,8 @@ export class NewSearchComponent implements OnInit, OnDestroy {
   }
 
   // 切換漢堡選單
-  toggleMenu(): void {
+  toggleMenu(event?: Event): void {
+    event?.stopPropagation();
     this.showMenu = !this.showMenu;
   }
 
@@ -1262,7 +1262,7 @@ export class NewSearchComponent implements OnInit, OnDestroy {
       });
       dialogRef.afterClosed().subscribe(result => {
         if (result) {
-          this.authService.getUser().subscribe(user => {
+          this.authService.getUser().pipe(take(1)).subscribe(user => {
             this.user = user;
             if (this.user) {
               this.loadFavoriteStores();
@@ -3804,40 +3804,29 @@ export class NewSearchComponent implements OnInit, OnDestroy {
 
   loadFavoriteStores() {
     if (this.user) {
-      if (this.favoritesSubscription) {
-        this.favoritesSubscription.unsubscribe();
-      }
-      const favoritesRef = collection(this.firestore, 'users', this.user.uid, 'favorites');
-      this.favoritesSubscription = new Subscription(onSnapshot(
-        favoritesRef,
-        snapshot => {
-          const favorites = snapshot.docs.map(document => document.data());
+      this.favoritesSubscription?.unsubscribe();
+      this.favoritesSubscription = this.favoritesService.getAll().subscribe({
+        next: favorites => {
           this.favoriteStores = favorites;
-          this.favoriteStoreNameSet = new Set(favorites.map((favorite: any) => favorite.storeName));
+          this.favoriteStoreNameSet = new Set(favorites.map(favorite => favorite.storeName));
         },
-        error => console.error('收藏資料同步失敗', error)
-      ));
+        error: error => console.error('收藏資料同步失敗', error)
+      });
     }
   }
 
   toggleFavorite(store: any) {
     if (this.user) {
-      const favoriteRef = doc(
-        this.firestore,
-        'users',
-        this.user.uid,
-        'favorites',
-        encodeURIComponent(store.storeName)
-      );
-
-      // 如果商店已經在喜愛清單內，刪除它
       if (this.isFavorite(store)) {
-        void deleteDoc(favoriteRef);
+        this.favoriteStores = this.favoriteStores.filter(favorite => favorite.storeName !== store.storeName);
+        this.favoriteStoreNameSet.delete(store.storeName);
+        this.favoritesService.remove(store.storeName).subscribe({
+          error: () => this.loadFavoriteStores()
+        });
       } else {
-        const favoriteData: any = {
+        const favoriteData: FavoriteStore = {
           storeName: store.storeName
         };
-        // 依照商店設定選擇性的資料
         if (store.StoreName) {
           favoriteData.store711Name = store.StoreName;
           favoriteData.label = '7-11';
@@ -3848,9 +3837,12 @@ export class NewSearchComponent implements OnInit, OnDestroy {
           favoriteData.label = '全家';
         }
 
-        void setDoc(favoriteRef, favoriteData);
+        this.favoriteStores = [favoriteData, ...this.favoriteStores];
+        this.favoriteStoreNameSet.add(store.storeName);
+        this.favoritesService.save(store.storeName, favoriteData).subscribe({
+          error: () => this.loadFavoriteStores()
+        });
       }
-    } else {
     }
   }
 

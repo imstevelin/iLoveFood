@@ -24,6 +24,14 @@
   "vars": {
     "ALLOWED_ORIGINS": "https://ilovefood.imstevelin.com"
   },
+  "d1_databases": [
+    {
+      "binding": "AUTH_DB",
+      "database_name": "ilovefood-auth",
+      "database_id": "9e172bf8-43a5-424e-b6e7-1cd139e4360c",
+      "migrations_dir": "migrations"
+    }
+  ],
   "secrets": {
     "required": [
       "OPENPOINT_GID",
@@ -38,6 +46,14 @@
       "namespace_id": "1001",
       "simple": {
         "limit": 120,
+        "period": 60
+      }
+    },
+    {
+      "name": "AUTH_RATE_LIMITER",
+      "namespace_id": "1002",
+      "simple": {
+        "limit": 10,
         "period": 60
       }
     }

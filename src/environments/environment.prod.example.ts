@@ -12,15 +12,6 @@ export const environment = {
   sevenElevenUrl: {
     icon: 'assets/7-11logo-320.webp',
   },
-  firebaseConfig: {
-    // Firebase Web API key is a public client identifier; restrict it to the production domains in Google Cloud.
-    apiKey: "AIzaSyAsPcTvRVa51DW3und2SMu-ghLlCKIlD-Q",
-    authDomain: "chat-9bfed.firebaseapp.com",
-    projectId: "chat-9bfed",
-    storageBucket: "chat-9bfed.firebasestorage.app",
-    messagingSenderId: "7612717796",
-    appId: "1:7612717796:web:9e231d7f1d97ebf4352af1"
-  },
   // Chatbot Beta remains disabled in automated builds until its provider calls are moved behind the Worker.
   geminiApiKey: "",
   minimaxApiKey: "",

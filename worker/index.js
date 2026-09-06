@@ -1,4 +1,5 @@
 import { generateMidVFromEnv } from './openpoint-midv.mjs';
+import { handleAuthRequest, handleFavoritesRequest } from './auth.mjs';
 
 const OPENPOINT_BASE = 'https://lovefood.openpoint.com.tw/LoveFood/api/';
 const FAMILY_MART_PRODUCT_URL = 'https://stamp.family.com.tw/api/maps/MapProductInfo';
@@ -17,7 +18,9 @@ export default {
     if (!isDynamicRoute) return env.ASSETS.fetch(request);
 
     const origin = request.headers.get('Origin');
-    const isPrimarySiteRequest = url.hostname === 'ilovefood.imstevelin.com' && (!origin || origin === url.origin);
+    const isFirstPartyHost = url.hostname === 'ilovefood.imstevelin.com' ||
+      url.hostname === 'localhost' || url.hostname === '127.0.0.1';
+    const isPrimarySiteRequest = isFirstPartyHost && (!origin || origin === url.origin);
     const allowedOrigins = new Set(
       (env.ALLOWED_ORIGINS || 'https://ilovefood.imstevelin.com')
         .split(',')
@@ -42,6 +45,17 @@ export default {
     if (rateLimitResponse) return withCors(rateLimitResponse, callerOrigin);
 
     try {
+      if (url.pathname.startsWith('/api/auth/')) {
+        if (request.method === 'POST' && ['/api/auth/login', '/api/auth/register'].includes(url.pathname)) {
+          const authRateLimitResponse = await enforceAuthRateLimit(request, env);
+          if (authRateLimitResponse) return withCors(authRateLimitResponse, callerOrigin);
+        }
+        return withCors(await handleAuthRequest(request, env, url.pathname), callerOrigin);
+      }
+      if (url.pathname === '/api/favorites' || url.pathname.startsWith('/api/favorites/')) {
+        return withCors(await handleFavoritesRequest(request, env, url.pathname), callerOrigin);
+      }
+
       let response;
       if (request.method === 'GET' && url.pathname === '/api/maps/resolve') {
         response = await resolveMapsUrl(url.searchParams.get('url'));
@@ -84,13 +98,18 @@ export default {
       return withCors(json(response), callerOrigin);
     } catch (error) {
       const status = Number(error.status) || 502;
-      console.error(JSON.stringify({
+      const logEntry = JSON.stringify({
         message: 'Worker request failed',
         path: url.pathname,
         status,
         error: error instanceof Error ? error.message : String(error)
-      }));
-      return withCors(json({ error: status < 500 ? error.message : 'Upstream service unavailable' }, status), callerOrigin);
+      });
+      if (status >= 500) console.error(logEntry);
+      else console.warn(logEntry);
+      return withCors(json({
+        error: status < 500 ? error.message : 'Upstream service unavailable',
+        code: status < 500 ? error.code : 'server-error'
+      }, status), callerOrigin);
     }
   }
 };
@@ -100,6 +119,15 @@ async function enforceRateLimit(request, env, origin) {
   const forwarded = request.headers.get('CF-Connecting-IP') || 'unknown';
   const result = await env.API_RATE_LIMITER.limit({ key: `${origin}:${forwarded}` });
   return result.success ? null : json({ error: 'Too many requests' }, 429, { 'Retry-After': '60' });
+}
+
+async function enforceAuthRateLimit(request, env) {
+  if (!env.AUTH_RATE_LIMITER?.limit) return null;
+  const forwarded = request.headers.get('CF-Connecting-IP') || 'unknown';
+  const result = await env.AUTH_RATE_LIMITER.limit({ key: `auth:${forwarded}` });
+  return result.success
+    ? null
+    : json({ error: '登入嘗試次數過多，請稍後再試', code: 'too-many-attempts' }, 429, { 'Retry-After': '60' });
 }
 
 async function resolveMapsUrl(rawUrl) {
@@ -299,7 +327,8 @@ function httpError(status, message) {
 function corsHeaders(origin) {
   return {
     'Access-Control-Allow-Origin': origin,
-    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+    'Access-Control-Allow-Credentials': 'true',
+    'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type',
     'Access-Control-Max-Age': '86400',
     Vary: 'Origin'

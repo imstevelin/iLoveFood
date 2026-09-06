@@ -155,7 +155,7 @@
       </button>
 
       <!-- Hamburger Menu Button -->
-      <button #menuButton type="button" class="header-icon-btn" [class.active]="showMenu" (click)="toggleMenu()"
+      <button #menuButton type="button" class="header-icon-btn" [class.active]="showMenu" (click)="toggleMenu($event)"
         aria-label="選單" aria-controls="site-menu" [attr.aria-expanded]="showMenu">
         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 24 24"
           [style.color]="showMenu ? 'var(--accent)' : '#6b7280'">

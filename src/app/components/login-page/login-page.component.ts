@@ -1,7 +1,8 @@
-import { AfterViewInit, ChangeDetectorRef, Component, OnDestroy } from '@angular/core';
+import { Component } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { AuthService } from '../../services/auth.service';
+import { HttpErrorResponse } from '@angular/common/http';
 import { MatDialogRef } from '@angular/material/dialog';
+import { AuthService } from '../../services/auth.service';
 
 @Component({
   standalone: false,
@@ -9,85 +10,65 @@ import { MatDialogRef } from '@angular/material/dialog';
   templateUrl: './login-page.component.html',
   styleUrls: ['./login-page.component.scss'],
 })
-export class LoginPageComponent implements AfterViewInit, OnDestroy {
+export class LoginPageComponent {
   authForm: FormGroup;
-  errorMessage = '';
-  verificationSent = false;
+  isRegisterMode = false;
   isSubmitting = false;
-  captchaLoading = true;
-  captchaReady = false;
-  private destroyed = false;
+  errorMessage = '';
 
   constructor(
     private fb: FormBuilder,
     private authService: AuthService,
-    private dialogRef: MatDialogRef<LoginPageComponent>,
-    private cdr: ChangeDetectorRef
+    private dialogRef: MatDialogRef<LoginPageComponent>
   ) {
-    // 只需要手機號碼，使用台灣手機號碼正則表達式驗證
     this.authForm = this.fb.group({
-      phone: ['', [Validators.required, Validators.pattern('^09\\d{8}$')]],
-      code: ['', [Validators.required, Validators.pattern('^\\d{6}$')]]
+      username: ['', [
+        Validators.required,
+        Validators.pattern('^[A-Za-z0-9][A-Za-z0-9._-]{2,31}$')
+      ]],
+      password: ['', [Validators.required, Validators.minLength(10), Validators.maxLength(128)]],
+      confirmPassword: ['']
     });
-    this.f['code'].disable();
   }
 
-  ngAfterViewInit(): void {
-    void this.prepareCaptcha();
-  }
-
-  ngOnDestroy(): void {
-    this.destroyed = true;
-    this.authService.resetVerification();
-  }
-
-  async submitForm() {
-    const control = this.verificationSent ? this.f['code'] : this.f['phone'];
-    if (control.invalid) {
-      control.markAsTouched();
-      this.errorMessage = this.verificationSent
-        ? '請輸入簡訊中的 6 碼驗證碼。'
-        : '請輸入有效的手機號碼（例如：0912345678）。';
+  async submitForm(): Promise<void> {
+    this.authForm.markAllAsTouched();
+    if (this.authForm.invalid) {
+      this.errorMessage = '請確認帳號與密碼格式。';
+      return;
+    }
+    if (this.isRegisterMode && this.f['password'].value !== this.f['confirmPassword'].value) {
+      this.errorMessage = '兩次輸入的密碼不一致。';
       return;
     }
 
     this.isSubmitting = true;
     this.errorMessage = '';
     try {
-      if (!this.verificationSent) {
-        await this.authService.sendVerificationCode(this.f['phone'].value, 'phone-recaptcha');
-        this.verificationSent = true;
-        this.f['phone'].disable();
-        this.f['code'].enable();
+      const username = this.f['username'].value;
+      const password = this.f['password'].value;
+      if (this.isRegisterMode) {
+        await this.authService.register(username, password);
       } else {
-        await this.authService.verifyCode(this.f['code'].value);
-        this.close(true);
+        await this.authService.login(username, password);
       }
-    } catch (error: any) {
-      console.error('Phone auth error:', error?.code || error);
-      this.errorMessage = this.getAuthErrorMessage(error?.code);
-      if (!this.verificationSent) {
-        this.authService.resetVerification();
-        void this.prepareCaptcha();
-      }
+      this.close(true);
+    } catch (error) {
+      this.errorMessage = this.getAuthErrorMessage(error);
     } finally {
       this.isSubmitting = false;
-      if (!this.destroyed) this.cdr.detectChanges();
     }
   }
 
-  editPhone(): void {
-    this.authService.resetVerification();
-    this.verificationSent = false;
-    this.f['code'].reset();
-    this.f['code'].disable();
-    this.f['phone'].enable();
+  setMode(register: boolean): void {
+    if (this.isSubmitting || this.isRegisterMode === register) return;
+    this.isRegisterMode = register;
     this.errorMessage = '';
-    void this.prepareCaptcha();
+    this.f['password'].reset();
+    this.f['confirmPassword'].reset();
   }
 
-  close(data: boolean) {
-    if (!data) this.authService.resetVerification();
+  close(data: boolean): void {
     this.dialogRef.close(data);
   }
 
@@ -95,38 +76,17 @@ export class LoginPageComponent implements AfterViewInit, OnDestroy {
     return this.authForm.controls;
   }
 
-  private getAuthErrorMessage(code?: string): string {
+  private getAuthErrorMessage(error: unknown): string {
+    const code = error instanceof HttpErrorResponse
+      ? error.error?.code
+      : undefined;
     switch (code) {
-      case 'auth/invalid-verification-code': return '驗證碼不正確，請重新輸入。';
-      case 'auth/code-expired': return '驗證碼已過期，請重新發送。';
-      case 'auth/too-many-requests': return '嘗試次數過多，請稍後再試。';
-      case 'auth/quota-exceeded': return '簡訊驗證服務目前已達上限，請稍後再試。';
-      case 'auth/captcha-check-failed': return '機器人驗證未完成或已過期，請重新驗證。';
-      case 'auth/missing-app-credential':
-      case 'auth/invalid-app-credential': return '無法完成網站安全驗證，請重新整理後再試。';
-      case 'auth/unauthorized-domain': return '目前網址尚未獲准使用登入服務，請聯絡網站管理者。';
-      case 'auth/network-request-failed': return '安全驗證連線中斷，請確認網路後重新驗證。';
-      case 'auth/invalid-phone-number': return '手機號碼格式不正確，請輸入 09 開頭的 10 碼號碼。';
-      default: return '驗證失敗，請確認網路狀態後再試一次。';
-    }
-  }
-
-  private async prepareCaptcha(): Promise<void> {
-    this.captchaLoading = true;
-    this.captchaReady = false;
-    try {
-      await this.authService.prepareRecaptcha('phone-recaptcha', solved => {
-        if (this.destroyed) return;
-        this.captchaReady = solved;
-        this.errorMessage = solved ? '' : '機器人驗證已過期，請重新完成驗證。';
-        this.cdr.detectChanges();
-      });
-    } catch (error) {
-      console.error('Unable to render phone reCAPTCHA:', error);
-      this.errorMessage = '安全驗證載入失敗，請確認網路後重新開啟登入視窗。';
-    } finally {
-      this.captchaLoading = false;
-      if (!this.destroyed) this.cdr.detectChanges();
+      case 'account-exists': return '此帳號已被使用，請直接登入或更換帳號。';
+      case 'invalid-credentials': return '帳號或密碼不正確。';
+      case 'invalid-username': return '帳號格式不正確。';
+      case 'invalid-password': return '密碼長度需為 10 到 128 個字元。';
+      case 'too-many-attempts': return '嘗試次數過多，請一分鐘後再試。';
+      default: return '目前無法完成登入，請確認網路後再試一次。';
     }
   }
 }

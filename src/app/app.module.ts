@@ -1,5 +1,4 @@
 import { NgModule } from '@angular/core';
-import { OVERLAY_DEFAULT_CONFIG } from '@angular/cdk/overlay';
 import { BrowserModule } from '@angular/platform-browser';
 import {
   provideHttpClient,
@@ -51,9 +50,6 @@ import { GestureDirective } from './directives/gesture.directive';
     GestureDirective
   ],
   providers: [
-    // Third-party reCAPTCHA challenges live under body and cannot cover a
-    // browser top-layer popover, regardless of their z-index.
-    { provide: OVERLAY_DEFAULT_CONFIG, useValue: { usePopover: false } },
     provideHttpClient(withInterceptorsFromDi()),
   ],
 })
