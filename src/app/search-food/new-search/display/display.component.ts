@@ -39,6 +39,7 @@ export class DisplayComponent implements OnChanges, OnInit, OnDestroy {
   private computeVersion = 0;  // 用於追蹤且中斷過期的 processBatch 背景運算迴圈
 
   foodDetailCache: { [itemName: string]: any } = {};  // 模板直接讀取此快取
+  private readonly loadedProductImages = new Set<string>();
 
   constructor(
     private sevenElevenRequestService: SevenElevenRequestService,
@@ -353,5 +354,14 @@ export class DisplayComponent implements OnChanges, OnInit, OnDestroy {
       maxWidth: '500px', /* 在電腦版上則限制最大 500px 避免過度放大 */
       maxHeight: '85vh'
     });
+  }
+
+  isProductImageLoaded(imageUrl: string): boolean {
+    return this.loadedProductImages.has(imageUrl);
+  }
+
+  markProductImageLoaded(imageUrl: string): void {
+    this.loadedProductImages.add(imageUrl);
+    this.cdr.markForCheck();
   }
 }

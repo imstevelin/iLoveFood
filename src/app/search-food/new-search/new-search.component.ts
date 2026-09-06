@@ -1260,15 +1260,12 @@ export class NewSearchComponent implements OnInit, OnDestroy {
         autoFocus: false,
         data: {},
       });
-      dialogRef.afterClosed().subscribe(result => {
-        if (result) {
-          this.authService.getUser().pipe(take(1)).subscribe(user => {
-            this.user = user;
-            if (this.user) {
-              this.loadFavoriteStores();
-            }
-          });
-        }
+      dialogRef.afterClosed().subscribe(user => {
+        if (!user) return;
+        this.ngZone.run(() => {
+          this.user = user;
+          this.cdr.detectChanges();
+        });
       });
     }
   }

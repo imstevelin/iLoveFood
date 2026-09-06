@@ -35,8 +35,15 @@ describe('LoginPageComponent', () => {
     await component.submitForm();
 
     expect(authService.login).toHaveBeenCalledWith('friendly', 'a-safe-password-1');
-    expect(dialogRef.close).toHaveBeenCalledWith(true);
+    expect(dialogRef.close).toHaveBeenCalledWith({ uid: 'u1', username: 'friendly', displayName: 'friendly' });
     expect(fixture.nativeElement.querySelector('.captcha-section')).toBeNull();
+  });
+
+  it('only explains the benefit of signing in', () => {
+    const intro = fixture.nativeElement.querySelector('.login-intro') as HTMLElement;
+
+    expect(intro.textContent?.trim()).toBe('登入即可收藏喜愛門市，並在不同裝置同步。');
+    expect(fixture.nativeElement.querySelector('.security-note')).toBeNull();
   });
 
   it('does not register when the password confirmation differs', async () => {

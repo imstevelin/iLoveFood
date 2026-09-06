@@ -31,4 +31,17 @@ describe('ImageDialogComponent', () => {
     expect(closeButton.getAttribute('aria-label')).toBe('關閉圖片');
     expect(getComputedStyle(closeButton).borderRadius).toBe('999px');
   });
+
+  it('breathes while loading and fades the image in after load', () => {
+    const image = fixture.nativeElement.querySelector('.dialog-image') as HTMLImageElement;
+    const loadingState = fixture.nativeElement.querySelector('.image-loading-state') as HTMLElement;
+    expect(image.classList.contains('is-loaded')).toBeFalse();
+    expect(loadingState.classList.contains('is-hidden')).toBeFalse();
+
+    image.dispatchEvent(new Event('load'));
+    fixture.detectChanges();
+
+    expect(image.classList.contains('is-loaded')).toBeTrue();
+    expect(loadingState.classList.contains('is-hidden')).toBeTrue();
+  });
 });

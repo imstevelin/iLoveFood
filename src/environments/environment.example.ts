@@ -1,7 +1,7 @@
 export const environment = {
   production: false,
   familyMartUrl: {
-    icon: 'https://www.family.com.tw/ESG/images/icon/LOGO.ico',
+    icon: 'assets/family-mart-logo.webp',
     base: 'https://stamp.family.com.tw/api/maps',
     storeQuery: 'https://family.map.com.tw/famiport/api/dropdownlist/Select_StoreName',
     endpoint: {

@@ -23,4 +23,12 @@ describe('DisplayComponent', () => {
   it('should create', () => {
     expect(component).toBeTruthy();
   });
+
+  it('tracks loaded product images so they can fade in without flashing', () => {
+    expect(component.isProductImageLoaded('https://example.com/product.jpg')).toBeFalse();
+
+    component.markProductImageLoaded('https://example.com/product.jpg');
+
+    expect(component.isProductImageLoaded('https://example.com/product.jpg')).toBeTrue();
+  });
 });

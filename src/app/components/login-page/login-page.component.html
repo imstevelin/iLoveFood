@@ -10,13 +10,13 @@
       </svg>
     </span>
     <span class="login-heading-copy"><small>收藏與同步</small><h2>快速登入</h2></span>
-    <button type="button" (click)="close(false)" aria-label="關閉登入視窗" class="close-btn">
+    <button type="button" (click)="close()" aria-label="關閉登入視窗" class="close-btn">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
         stroke-width="1.8" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>
     </button>
   </header>
 
-  <p class="login-intro">使用友善超人帳號同步收藏，不再需要機器人或簡訊驗證。</p>
+  <p class="login-intro">登入即可收藏喜愛門市，並在不同裝置同步。</p>
 
   <div class="mode-switch" role="tablist" aria-label="登入方式">
     <button type="button" role="tab" [attr.aria-selected]="!isRegisterMode"
@@ -79,6 +79,5 @@
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
         stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M14 7l5 5-5 5"/></svg>
     </button>
-    <small class="security-note">密碼只會以不可逆雜湊保存；請使用未在其他網站使用過的密碼。</small>
   </form>
 </div>

@@ -27,11 +27,16 @@
                 <div class="product-card-content">
                   <!-- 真正的商品圖片 (不放大) -->
                   <button type="button" class="product-img-wrapper"
+                    [class.image-loaded]="isProductImageLoaded(foodDetailCache[item.ItemName]?.image || 'assets/no-image.jpeg')"
                     (click)="openImageDialog(foodDetailCache[item.ItemName]?.image || 'assets/no-image.jpeg')"
                     [attr.aria-label]="'放大查看 ' + item.ItemName + ' 商品圖片'">
+                    <span class="product-image-skeleton" aria-hidden="true"></span>
                     <img [src]="foodDetailCache[item.ItemName]?.image || 'assets/no-image.jpeg'"
                       [alt]="foodDetailCache[item.ItemName]?.name || item.ItemName"
-                      class="product-img-normal">
+                      (load)="markProductImageLoaded(foodDetailCache[item.ItemName]?.image || 'assets/no-image.jpeg')"
+                      (error)="markProductImageLoaded(foodDetailCache[item.ItemName]?.image || 'assets/no-image.jpeg')"
+                      loading="lazy" decoding="async" class="product-img-normal"
+                      [class.is-loaded]="isProductImageLoaded(foodDetailCache[item.ItemName]?.image || 'assets/no-image.jpeg')">
                   </button>
 
                   <div class="flex-1 min-w-0 block">
@@ -104,11 +109,16 @@
               <div class="product-card-content">
                 <!-- 真正的商品圖片 (不放大) -->
                   <button type="button" class="product-img-wrapper"
+                    [class.image-loaded]="isProductImageLoaded(foodDetailCache[item.ItemName]?.picture_url || 'assets/no-image.jpeg')"
                     (click)="openImageDialog(foodDetailCache[item.ItemName]?.picture_url || 'assets/no-image.jpeg')"
                     [attr.aria-label]="'放大查看 ' + item.ItemName + ' 商品圖片'">
+                    <span class="product-image-skeleton" aria-hidden="true"></span>
                     <img [src]="foodDetailCache[item.ItemName]?.picture_url || 'assets/no-image.jpeg'"
                       [alt]="foodDetailCache[item.ItemName]?.title || item.ItemName"
-                      class="product-img-normal">
+                      (load)="markProductImageLoaded(foodDetailCache[item.ItemName]?.picture_url || 'assets/no-image.jpeg')"
+                      (error)="markProductImageLoaded(foodDetailCache[item.ItemName]?.picture_url || 'assets/no-image.jpeg')"
+                      loading="lazy" decoding="async" class="product-img-normal"
+                      [class.is-loaded]="isProductImageLoaded(foodDetailCache[item.ItemName]?.picture_url || 'assets/no-image.jpeg')">
                   </button>
 
                 <div class="flex-1 min-w-0 block">

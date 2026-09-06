@@ -185,14 +185,6 @@
   &:disabled { opacity: .48; cursor: wait; box-shadow: none; }
 }
 
-.security-note {
-  margin-top: -9px;
-  color: var(--text-secondary);
-  font-size: 10px;
-  line-height: 1.5;
-  text-align: center;
-}
-
 @keyframes shakeX {
   0%, 100% { transform: translateX(0); }
   25% { transform: translateX(-4px); }

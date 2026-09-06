@@ -1,7 +1,10 @@
 <div class="dialog-container">
-  <img [src]="data.image" class="dialog-image"
-       appMotion [initial]="{ scale: 0.7, opacity: 0 }" [animate]="{ scale: 1, opacity: 1 }" 
-       [transition]="{ type: 'spring', stiffness: 260, damping: 20 }">
+  <div class="image-loading-state" [class.is-hidden]="isLoaded" role="status" aria-live="polite">
+    <span class="image-loading-glow" aria-hidden="true"></span>
+    <span>圖片載入中</span>
+  </div>
+  <img [src]="imageSrc" class="dialog-image" [class.is-loaded]="isLoaded"
+       (load)="onImageLoad()" (error)="onImageError()" alt="商品圖片">
   
   <button type="button" class="modern-close-btn" (click)="closeDialog()" aria-label="關閉圖片">
     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">

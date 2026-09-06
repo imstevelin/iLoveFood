@@ -2,7 +2,7 @@ import { Component } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
 import { MatDialogRef } from '@angular/material/dialog';
-import { AuthService } from '../../services/auth.service';
+import { AuthService, LocalUser } from '../../services/auth.service';
 
 @Component({
   standalone: false,
@@ -19,7 +19,7 @@ export class LoginPageComponent {
   constructor(
     private fb: FormBuilder,
     private authService: AuthService,
-    private dialogRef: MatDialogRef<LoginPageComponent>
+    private dialogRef: MatDialogRef<LoginPageComponent, LocalUser | false>
   ) {
     this.authForm = this.fb.group({
       username: ['', [
@@ -47,12 +47,10 @@ export class LoginPageComponent {
     try {
       const username = this.f['username'].value;
       const password = this.f['password'].value;
-      if (this.isRegisterMode) {
-        await this.authService.register(username, password);
-      } else {
-        await this.authService.login(username, password);
-      }
-      this.close(true);
+      const user = this.isRegisterMode
+        ? await this.authService.register(username, password)
+        : await this.authService.login(username, password);
+      this.dialogRef.close(user);
     } catch (error) {
       this.errorMessage = this.getAuthErrorMessage(error);
     } finally {
@@ -68,8 +66,8 @@ export class LoginPageComponent {
     this.f['confirmPassword'].reset();
   }
 
-  close(data: boolean): void {
-    this.dialogRef.close(data);
+  close(): void {
+    this.dialogRef.close(false);
   }
 
   get f() {

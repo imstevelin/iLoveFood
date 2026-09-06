@@ -6,6 +6,7 @@ import { SearchFoodModule } from '../search-food.module';
 
 import { NewSearchComponent } from './new-search.component';
 import { resolveDiscountTimeStatus } from 'src/app/utils/discount-schedule';
+import { of } from 'rxjs';
 
 describe('NewSearchComponent', () => {
   let component: NewSearchComponent;
@@ -56,6 +57,17 @@ describe('NewSearchComponent', () => {
 
     component.onWindowScroll();
 
+    expect(component.showMenu).toBeTrue();
+  });
+
+  it('shows the signed-in state as soon as the login dialog closes', () => {
+    const user = { uid: 'u1', username: 'friendly', displayName: 'friendly' };
+    spyOn(component.dialog, 'open').and.returnValue({ afterClosed: () => of(user) } as any);
+    component.showMenu = true;
+
+    component.loginOrlogout();
+
+    expect(component.user).toEqual(user);
     expect(component.showMenu).toBeTrue();
   });
 
